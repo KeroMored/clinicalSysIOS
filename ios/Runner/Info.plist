@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Clinicalsystem</string>
+	<string>نظام العيادات</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -57,5 +57,22 @@
 		<string>نحتاج إلى الوصول إلى موقعك لتحديد موقع الصيدلية تلقائياً</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
-	</dict>
-</plist>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ar</string>
+		<string>en</string>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ar</string>
+	<key>NSContactsUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى جهات الاتصال لتسهيل التواصل مع الأطباء والصيدليات</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>نحتاج إلى الميكروفون للمكالمات الصوتية</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى التقويم لجدولة المواعيد</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى التذكيرات لإدارة المواعيد</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>نستخدم بياناتك لتحسين تجربتك في التطبيق</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>

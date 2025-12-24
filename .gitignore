@@ -49,3 +49,45 @@ app.*.map.json
 *.keystore
 **/key.properties
 **/upload-keystore.jks
+
+# iOS specific
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Runner.xcworkspace/xcuserdata/
+**/ios/Runner.xcodeproj/xcuserdata/
+**/ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GoogleService-Info.plist.backup
+
+# Firebase
+**/google-services.json.backup
+**/GoogleService-Info.plist.backup
+firebase-debug.log
+.firebase/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Private keys & certificates
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+*.certSigningRequest
+
+# Build & Distribution
+**/ios/build/
+**/android/.gradle/
+**/android/app/build/
+*.ipa
+*.app.dSYM.zip
+*.app.dSYM
+
+# App Store Connect
+AuthKey_*.p8
+metadata/
