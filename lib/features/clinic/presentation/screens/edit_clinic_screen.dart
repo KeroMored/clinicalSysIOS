@@ -1,0 +1,1344 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import '../../data/models/clinic_model.dart';
+import '../../data/models/clinic_department.dart';
+
+class EditClinicScreen extends StatefulWidget {
+  final ClinicModel clinic;
+
+  const EditClinicScreen({
+    super.key,
+    required this.clinic,
+  });
+
+  @override
+  State<EditClinicScreen> createState() => _EditClinicScreenState();
+}
+
+class _EditClinicScreenState extends State<EditClinicScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _doctorNameController;
+  late TextEditingController _specializationController;
+  late TextEditingController _aboutController;
+  late TextEditingController _consultationFeeController;
+  late TextEditingController _phoneController;
+  late TextEditingController _whatsappController;
+  late TextEditingController _addressController;
+
+  File? _clinicImage;
+  File? _doctorImage;
+  bool _isLoading = false;
+  late bool _hasNursery;
+  late bool _onlineBookingEnabled;
+
+  // Auth Emails
+  late List<TextEditingController> _authEmailControllers;
+
+  // Working Hours
+  final Map<String, TimeOfDay?> _workingHoursFrom = {};
+  final Map<String, TimeOfDay?> _workingHoursTo = {};
+  final Map<String, bool> _isClosedDays = {};
+
+  final List<String> _arabicDays = [
+    'السبت',
+    'الأحد',
+    'الاثنين',
+    'الثلاثاء',
+    'الأربعاء',
+    'الخميس',
+    'الجمعة',
+  ];
+
+  final List<String> _englishDays = [
+    'saturday',
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _doctorNameController = TextEditingController(text: widget.clinic.doctorName);
+    _specializationController = TextEditingController(text: widget.clinic.specialization);
+    _aboutController = TextEditingController(text: widget.clinic.about);
+    _consultationFeeController = TextEditingController(text: widget.clinic.consultationFee.toString());
+    _phoneController = TextEditingController(text: widget.clinic.phone);
+    _whatsappController = TextEditingController(text: widget.clinic.whatsapp ?? '');
+    _addressController = TextEditingController(text: widget.clinic.address);
+    _hasNursery = widget.clinic.hasNursery;
+    _onlineBookingEnabled = widget.clinic.onlineBookingEnabled;
+
+    // Initialize auth emails
+    _authEmailControllers = widget.clinic.authEmails.isNotEmpty
+        ? widget.clinic.authEmails.map((email) => TextEditingController(text: email)).toList()
+        : [TextEditingController()];
+
+    // Initialize working hours from existing clinic data
+    for (var i = 0; i < _englishDays.length; i++) {
+      final day = _englishDays[i];
+      final hours = widget.clinic.workingHours[day];
+      
+      if (hours != null) {
+        _isClosedDays[day] = hours.isClosed;
+        if (!hours.isClosed) {
+          _workingHoursFrom[day] = _parseTimeOfDay(hours.from);
+          _workingHoursTo[day] = _parseTimeOfDay(hours.to);
+        }
+      } else {
+        _isClosedDays[day] = false;
+      }
+    }
+  }
+
+  TimeOfDay _parseTimeOfDay(String time) {
+    try {
+      // Remove AM/PM and other non-numeric characters except colon
+      final cleanTime = time.replaceAll(RegExp(r'[^\d:]'), '').trim();
+      final parts = cleanTime.split(':');
+      
+      if (parts.isEmpty) return const TimeOfDay(hour: 9, minute: 0);
+      
+      int hour = int.parse(parts[0]);
+      
+      // Handle AM/PM conversion
+      if (time.toLowerCase().contains('pm') && hour != 12) {
+        hour += 12;
+      } else if (time.toLowerCase().contains('am') && hour == 12) {
+        hour = 0;
+      }
+      
+      return TimeOfDay(
+        hour: hour,
+        minute: parts.length > 1 ? int.parse(parts[1]) : 0,
+      );
+    } catch (e) {
+      return const TimeOfDay(hour: 9, minute: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _doctorNameController.dispose();
+    _specializationController.dispose();
+    _aboutController.dispose();
+    _consultationFeeController.dispose();
+    _phoneController.dispose();
+    _whatsappController.dispose();
+    _addressController.dispose();
+    for (var controller in _authEmailControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '$hour:$minute $period';
+  }
+
+  Future<void> _pickImage(bool isClinicImage) async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+
+    if (image != null) {
+      setState(() {
+        if (isClinicImage) {
+          _clinicImage = File(image.path);
+        } else {
+          _doctorImage = File(image.path);
+        }
+      });
+    }
+  }
+
+  Future<String?> _uploadImage(File image, String path) async {
+    try {
+      final ref = FirebaseStorage.instance.ref().child(path);
+      await ref.putFile(image);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  Future<void> _updateClinic() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Upload new images if selected
+      String? clinicImageUrl = widget.clinic.clinicImageUrl;
+      String? doctorImageUrl = widget.clinic.doctorImageUrl;
+
+      if (_clinicImage != null) {
+        clinicImageUrl = await _uploadImage(
+          _clinicImage!,
+          'clinics/${widget.clinic.id}_clinic_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
+      }
+
+      if (_doctorImage != null) {
+        doctorImageUrl = await _uploadImage(
+          _doctorImage!,
+          'clinics/${widget.clinic.id}_doctor_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        );
+      }
+
+      // Prepare working hours
+      Map<String, WorkingHours> workingHours = {};
+      for (var day in _englishDays) {
+        final from = _workingHoursFrom[day];
+        final to = _workingHoursTo[day];
+        final isClosed = _isClosedDays[day] ?? false;
+
+        if (from != null && to != null) {
+          workingHours[day] = WorkingHours(
+            from: _formatTimeOfDay(from),
+            to: _formatTimeOfDay(to),
+            isClosed: isClosed,
+          );
+        }
+      }
+
+      // Convert working hours to Map
+      Map<String, dynamic> workingHoursMap = {};
+      workingHours.forEach((day, hours) {
+        workingHoursMap[day] = hours.toMap();
+      });
+
+      // Update Firestore
+      await FirebaseFirestore.instance
+          .collection('clinics')
+          .doc(widget.clinic.id)
+          .update({
+        'doctorName': _doctorNameController.text.trim(),
+        'specialization': _specializationController.text.trim(),
+        'about': _aboutController.text.trim(),
+        'consultationFee': double.parse(_consultationFeeController.text.trim()),
+        'phone': _phoneController.text.trim(),
+        'whatsapp': _whatsappController.text.trim().isEmpty 
+            ? null 
+            : _whatsappController.text.trim(),
+        'address': _addressController.text.trim(),
+        'workingHours': workingHoursMap,
+        'hasNursery': _hasNursery,
+        'onlineBookingEnabled': _onlineBookingEnabled,
+        'authEmails': _authEmailControllers
+            .map((c) => c.text.trim())
+            .where((email) => email.isNotEmpty)
+            .toList(),
+        if (clinicImageUrl != null) 'clinicImageUrl': clinicImageUrl,
+        if (doctorImageUrl != null) 'doctorImageUrl': doctorImageUrl,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تحديث بيانات العيادة بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context, bool isFrom, String day) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: isFrom
+          ? (_workingHoursFrom[day] ?? const TimeOfDay(hour: 9, minute: 0))
+          : (_workingHoursTo[day] ?? const TimeOfDay(hour: 17, minute: 0)),
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isFrom) {
+          _workingHoursFrom[day] = picked;
+        } else {
+          _workingHoursTo[day] = picked;
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text(
+            'تعديل بيانات العيادة',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+          backgroundColor: Colors.teal,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    // Images Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.teal.shade50, Colors.teal.shade100],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.teal.shade200, width: 2),
+                      ),
+                      child: Column(
+                        children: [
+                          // Title
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.teal,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.add_photo_alternate_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'صور العيادة',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // Clinic Image
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.teal,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.teal.withValues(alpha: 0.3),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Icon(Icons.local_hospital_rounded, color: Colors.white, size: 16),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'صورة العيادة',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    GestureDetector(
+                                      onTap: () => _pickImage(true),
+                                      child: Stack(
+                                        children: [
+                                          Container(
+                                            width: 150,
+                                            height: 150,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: Colors.teal, width: 3),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.teal.withValues(alpha: 0.3),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 6),
+                                                ),
+                                              ],
+                                            ),
+                                            child: _clinicImage != null
+                                                ? ClipRRect(
+                                                    borderRadius: BorderRadius.circular(17),
+                                                    child: Image.file(_clinicImage!, fit: BoxFit.cover),
+                                                  )
+                                                : widget.clinic.clinicImageUrl != null
+                                                    ? ClipRRect(
+                                                        borderRadius: BorderRadius.circular(17),
+                                                        child: Image.network(
+                                                          widget.clinic.clinicImageUrl!,
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      )
+                                                    : Column(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        children: [
+                                                          Icon(Icons.add_photo_alternate, size: 40, color: Colors.teal.shade300),
+                                                          const SizedBox(height: 8),
+                                                          Text(
+                                                            'اضغط لإضافة\nصورة',
+                                                            textAlign: TextAlign.center,
+                                                            style: TextStyle(
+                                                              color: Colors.teal.shade400,
+                                                              fontWeight: FontWeight.w600,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                          ),
+                                          Positioned(
+                                            bottom: 8,
+                                            right: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.teal,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.2),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: const Icon(
+                                                Icons.camera_alt_rounded,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              const SizedBox(width: 16),
+                              
+                              // Doctor Image
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.teal,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.teal.withValues(alpha: 0.3),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: const [
+                                          Icon(Icons.person_rounded, color: Colors.white, size: 16),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'صورة الدكتور',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    GestureDetector(
+                                      onTap: () => _pickImage(false),
+                                      child: Stack(
+                                        children: [
+                                          Container(
+                                            width: 150,
+                                            height: 150,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: Colors.teal, width: 3),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.teal.withValues(alpha: 0.3),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 6),
+                                                ),
+                                              ],
+                                            ),
+                                            child: _doctorImage != null
+                                                ? ClipRRect(
+                                                    borderRadius: BorderRadius.circular(17),
+                                                    child: Image.file(_doctorImage!, fit: BoxFit.cover),
+                                                  )
+                                                : widget.clinic.doctorImageUrl != null
+                                                    ? ClipRRect(
+                                                        borderRadius: BorderRadius.circular(17),
+                                                        child: Image.network(
+                                                          widget.clinic.doctorImageUrl!,
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      )
+                                                    : Column(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        children: [
+                                                          Icon(Icons.add_photo_alternate, size: 40, color: Colors.teal.shade300),
+                                                          const SizedBox(height: 8),
+                                                          Text(
+                                                            'اضغط لإضافة\nصورة',
+                                                            textAlign: TextAlign.center,
+                                                            style: TextStyle(
+                                                              color: Colors.teal.shade400,
+                                                              fontWeight: FontWeight.w600,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                          ),
+                                          Positioned(
+                                            bottom: 8,
+                                            right: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.teal,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.2),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: const Icon(
+                                                Icons.camera_alt_rounded,
+                                                color: Colors.white,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Doctor Name
+                    TextFormField(
+                      controller: _doctorNameController,
+                      decoration: InputDecoration(
+                        labelText: 'اسم الدكتور *',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.person, color: Colors.white),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'اسم الدكتور مطلوب';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Specialization
+                    TextFormField(
+                      controller: _specializationController,
+                      decoration: InputDecoration(
+                        labelText: 'التخصص *',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.medical_services, color: Colors.white),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'التخصص مطلوب';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // About
+                    TextFormField(
+                      controller: _aboutController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'نبذة عن الدكتور *',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.info, color: Colors.white),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'النبذة مطلوبة';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Consultation Fee
+                    TextFormField(
+                      controller: _consultationFeeController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'سعر الكشف *',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.attach_money, color: Colors.white),
+                        ),
+                        suffix: const Text('جنيه'),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'سعر الكشف مطلوب';
+                        }
+                        if (double.tryParse(value) == null) {
+                          return 'أدخل رقم صحيح';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Nursery availability (only for pediatrics)
+                    if (widget.clinic.department == ClinicDepartment.pediatrics) ...[
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade300, width: 2),
+                        ),
+                        child: CheckboxListTile(
+                          title: const Text(
+                            'يوجد حضانة بالعيادة',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: const Text('للعيادات المخصصة للأطفال'),
+                          value: _hasNursery,
+                          onChanged: (value) {
+                            setState(() {
+                              _hasNursery = value ?? false;
+                            });
+                          },
+                          activeColor: Colors.pink,
+                          secondary: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.pink,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.child_care, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Online Booking
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300, width: 2),
+                      ),
+                      child: CheckboxListTile(
+                        title: const Text(
+                          'متاح الحجز أونلاين',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      //  subtitle: const Text('يسمح للمرضى بالحجز عبر التطبيق'),
+                        value: _onlineBookingEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _onlineBookingEnabled = value ?? false;
+                          });
+                        },
+                        activeColor: Colors.teal,
+                        secondary: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.calendar_month_rounded, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Auth Emails Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade50, Colors.blue.shade100],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.blue.shade200, width: 2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.email_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'إيميلات المصادقة',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      'الإيميلات المسموح لها بالدخول إلى لوحة التحكم',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          ..._authEmailControllers.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final controller = entry.value;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: controller,
+                                      keyboardType: TextInputType.emailAddress,
+                                      decoration: InputDecoration(
+                                        labelText: 'إيميل ${index + 1}',
+                                        prefixIcon: const Icon(Icons.email, color: Colors.blue),
+                                        suffixIcon: _authEmailControllers.length > 1
+                                            ? IconButton(
+                                                icon: const Icon(Icons.delete, color: Colors.red),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    controller.dispose();
+                                                    _authEmailControllers.removeAt(index);
+                                                  });
+                                                },
+                                              )
+                                            : null,
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: const BorderSide(color: Colors.blue, width: 2),
+                                        ),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.trim().isEmpty) {
+                                          return 'الإيميل مطلوب';
+                                        }
+                                        if (!value.contains('@')) {
+                                          return 'صيغة الإيميل غير صحيحة';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          const SizedBox(height: 12),
+                          Center(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _authEmailControllers.add(TextEditingController());
+                                });
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('إضافة إيميل جديد'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Phone
+                    TextFormField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: 'رقم الهاتف *',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.phone, color: Colors.white),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'رقم الهاتف مطلوب';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // WhatsApp
+                    TextFormField(
+                      controller: _whatsappController,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        labelText: 'رقم واتساب (اختياري)',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(MdiIcons.whatsapp, color: Colors.white),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Address
+                    TextFormField(
+                      controller: _addressController,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: 'العنوان *',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.location_on, color: Colors.white),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.teal, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'العنوان مطلوب';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Working Hours Section
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.teal.shade200, width: 2),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.teal,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.access_time_rounded,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'مواعيد العمل',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          ...List.generate(_englishDays.length, (index) {
+                            final englishDay = _englishDays[index];
+                            final arabicDay = _arabicDays[index];
+                            final isClosed = _isClosedDays[englishDay] ?? false;
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isClosed ? Colors.grey.shade300 : Colors.teal.shade200,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: isClosed ? Colors.grey : Colors.teal,
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Icon(
+                                                Icons.calendar_today,
+                                                color: Colors.white,
+                                                size: 18,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              arabicDay,
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: isClosed ? Colors.grey : Colors.black87,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: isClosed ? Colors.red.shade50 : Colors.green.shade50,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: isClosed ? Colors.red.shade200 : Colors.green.shade200,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                isClosed ? 'إجازة' : 'عمل',
+                                                style: TextStyle(
+                                                  color: isClosed ? Colors.red.shade700 : Colors.green.shade700,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Switch(
+                                                value: isClosed,
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _isClosedDays[englishDay] = value;
+                                                  });
+                                                },
+                                                activeColor: Colors.red,
+                                                inactiveThumbColor: Colors.green,
+                                                inactiveTrackColor: Colors.green.shade100,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (!isClosed) ...[
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.teal.shade50,
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(color: Colors.teal.shade200),
+                                              ),
+                                              child: OutlinedButton.icon(
+                                                onPressed: () => _selectTime(context, true, englishDay),
+                                                icon:null,
+                                                label: Text(
+                                                  _workingHoursFrom[englishDay] != null
+                                                      ? 'من: ${_formatTimeOfDay(_workingHoursFrom[englishDay]!)}'
+                                                      : 'من: مغلق',
+                                                  style: const TextStyle(
+                                                    color: Colors.teal,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                style: OutlinedButton.styleFrom(
+                                                  side: BorderSide.none,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.teal.shade50,
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(color: Colors.teal.shade200),
+                                              ),
+                                              child: OutlinedButton.icon(
+                                                onPressed: () => _selectTime(context, false, englishDay),
+                                                icon: null,
+                                                label: Text(
+                                                  _workingHoursTo[englishDay] != null
+                                                      ? 'إلى: ${_formatTimeOfDay(_workingHoursTo[englishDay]!)}'
+                                                      : 'إلى: مغلق',
+                                                  style: const TextStyle(
+                                                    color: Colors.teal,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                style: OutlinedButton.styleFrom(
+                                                  side: BorderSide.none,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Update Button
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.teal, Color(0xFF00897B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.teal.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        onPressed: _updateClinic,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.save_rounded, size: 24),
+                            SizedBox(width: 12),
+                            Text(
+                              'حفظ التعديلات',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+}

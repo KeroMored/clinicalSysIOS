@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "718616577077",
+    "project_id": "clinicalsystem-4da35",
+    "storage_bucket": "clinicalsystem-4da35.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:718616577077:android:a89d1cd590e78406189d7c",
+        "android_client_info": {
+          "package_name": "com.example.clinicalsystem"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "718616577077-h20h9g7l02ckmkeq6f9gsv5l69dmtfj3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.clinicalsystem",
+            "certificate_hash": "b479860ca886b8885c62672d678deac4ac83d92a"
+          }
+        },
+        {
+          "client_id": "718616577077-8lcfvrdufa3feaqrl54pg6relo049csb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCe3PBCeDsTGLqgxi0On9WixxyytIDTFG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "718616577077-8lcfvrdufa3feaqrl54pg6relo049csb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "718616577077-c1lcqntld8ojeevq6v5tffp85p7vf5la.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.clinicalsystem"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:718616577077:android:5bd6c8994750d1b5189d7c",
+        "android_client_info": {
+          "package_name": "com.mored.MallawyHealthCare"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "718616577077-8lcfvrdufa3feaqrl54pg6relo049csb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCe3PBCeDsTGLqgxi0On9WixxyytIDTFG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "718616577077-8lcfvrdufa3feaqrl54pg6relo049csb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "718616577077-c1lcqntld8ojeevq6v5tffp85p7vf5la.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.clinicalsystem"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

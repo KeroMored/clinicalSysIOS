@@ -1,0 +1,44 @@
+{
+  "functions": {
+    "source": "functions",
+    "codebase": "default",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log"
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": [
+    {
+      "bucket": "clinicalsystem-4da35.firebasestorage.app",
+      "rules": "storage.rules"
+    }
+  ],
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "clinicalsystem-4da35",
+          "appId": "1:718616577077:android:a89d1cd590e78406189d7c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "clinicalsystem-4da35",
+          "configurations": {
+            "android": "1:718616577077:android:a89d1cd590e78406189d7c",
+            "ios": "1:718616577077:ios:dc5fe68a823452fc189d7c",
+            "macos": "1:718616577077:ios:dc5fe68a823452fc189d7c",
+            "web": "1:718616577077:web:a47c562f623ee6cd189d7c",
+            "windows": "1:718616577077:web:b547cbf73d596663189d7c"
+          }
+        }
+      }
+    }
+  }
+}

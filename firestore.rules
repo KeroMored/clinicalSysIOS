@@ -1,0 +1,301 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // دالة مساعدة للتحقق من تسجيل الدخول
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // دالة للتحقق من أن المستخدم هو نفسه
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // دالة للتحقق من صلاحيات Admin
+    function isAdmin() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // دالة للتحقق من صلاحيات Pharmacy
+    function isPharmacy() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacy';
+    }
+    
+    // دالة للتحقق من صلاحيات Clinic Owner
+    function isClinicOwner() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'clinic_owner';
+    }
+    
+    // دالة للتحقق من البيانات المطلوبة
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    // دالة للتحقق من صحة البريد الإلكتروني
+    function isValidEmail(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+    
+    // دالة للتحقق من صحة رقم الهاتف
+    function isValidPhone(phone) {
+      return phone.matches('^\\+?[0-9]{10,15}$');
+    }
+    
+    // قواعد مجموعة Users
+    match /users/{userId} {
+      // القراءة: Admin أو المستخدم نفسه
+      allow read: if isAdmin() || isOwner(userId);
+      
+      // الإنشاء: فقط المستخدم نفسه ومع بيانات صحيحة
+      allow create: if isOwner(userId) && 
+                       hasRequiredFields(['email', 'name', 'role', 'createdAt']) &&
+                       isValidEmail(request.resource.data.email) &&
+                       request.resource.data.name.size() > 0 &&
+                       request.resource.data.role in ['user', 'pharmacy', 'clinic_owner', 'admin'];
+      
+      // التحديث: المستخدم نفسه أو Admin
+      allow update: if (isOwner(userId) || isAdmin()) &&
+                       // منع تغيير الدور إلا من Admin
+                       (request.resource.data.role == resource.data.role || isAdmin());
+      
+      // الحذف: Admin فقط
+      allow delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Clinics
+    match /clinics/{clinicId} {
+      // القراءة: الكل (للبحث والعرض)
+      allow read: if true;
+      
+      // الإنشاء: Clinic Owner أو Admin
+      allow create: if (isClinicOwner() || isAdmin()) &&
+                       hasRequiredFields(['name', 'specialty', 'phone', 'address', 'ownerId']) &&
+                       request.resource.data.name.size() > 0 &&
+                       isValidPhone(request.resource.data.phone) &&
+                       request.resource.data.ownerId == request.auth.uid;
+      
+      // التحديث: المالك أو Admin
+      allow update: if (isAdmin() || 
+                       (isClinicOwner() && resource.data.ownerId == request.auth.uid)) &&
+                       // منع تغيير المالك
+                       request.resource.data.ownerId == resource.data.ownerId;
+      
+      // الحذف: Admin فقط
+      allow delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Pharmacies
+    match /pharmacies/{pharmacyId} {
+      // القراءة: الكل (للبحث والعرض)
+      allow read: if true;
+      
+      // الإنشاء: Pharmacy أو Admin
+      allow create: if (isPharmacy() || isAdmin()) &&
+                       hasRequiredFields(['name', 'phone', 'address', 'ownerId']) &&
+                       request.resource.data.name.size() > 0 &&
+                       isValidPhone(request.resource.data.phone) &&
+                       request.resource.data.ownerId == request.auth.uid;
+      
+      // التحديث: المالك أو Admin
+      allow update: if (isAdmin() || 
+                       (isPharmacy() && resource.data.ownerId == request.auth.uid)) &&
+                       request.resource.data.ownerId == resource.data.ownerId;
+      
+      // الحذف: Admin فقط
+      allow delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Bookings
+    match /bookings/{bookingId} {
+      // القراءة: المستخدم الذي أنشأ الحجز أو صاحب العيادة أو Admin
+      allow read: if isAdmin() || 
+                     (resource.data.userId == request.auth.uid) ||
+                     (isClinicOwner() && 
+                      exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                      get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.ownerId == request.auth.uid);
+      
+      // الإنشاء: أي مستخدم مسجل مع بيانات صحيحة
+      allow create: if isSignedIn() &&
+                       hasRequiredFields(['patientName', 'patientPhone', 'clinicId', 'bookingNumber', 'createdAt']) &&
+                       request.resource.data.patientName.size() > 0 &&
+                       isValidPhone(request.resource.data.patientPhone) &&
+                       request.resource.data.bookingNumber is int;
+      
+      // التحديث: صاحب العيادة أو Admin
+      allow update: if isAdmin() || 
+                       (isClinicOwner() && 
+                        exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                        get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.ownerId == request.auth.uid);
+      
+      // الحذف: صاحب العيادة أو Admin
+      allow delete: if isAdmin() || 
+                       (isClinicOwner() && 
+                        exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                        get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.ownerId == request.auth.uid);
+    }
+    
+    // قواعد مجموعة Medicines
+    match /medicines/{medicineId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء والتحديث: Admin فقط
+      allow create, update: if isAdmin();
+      
+      // الحذف: Admin فقط
+      allow delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Notifications
+    match /notifications/{notificationId} {
+      // القراءة: المستخدم المستهدف فقط
+      allow read: if isOwner(resource.data.userId);
+      
+      // الإنشاء: النظام (Admin أو Server)
+      allow create: if isAdmin();
+      
+      // التحديث: المستخدم المستهدف (لتحديث حالة القراءة)
+      allow update: if isOwner(resource.data.userId) &&
+                       // السماح بتحديث isRead فقط
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
+      
+      // الحذف: المستخدم المستهدف أو Admin
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
+    }
+    
+    // قواعد مجموعة Reviews (التقييمات)
+    match /reviews/{reviewId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء: المستخدم الذي كتب التقييم
+      allow create: if isSignedIn() &&
+                       hasRequiredFields(['rating', 'comment', 'userId', 'targetId', 'targetType']) &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.rating >= 1 && 
+                       request.resource.data.rating <= 5;
+      
+      // التحديث: صاحب التقييم فقط
+      allow update: if isOwner(resource.data.userId);
+      
+      // الحذف: صاحب التقييم أو Admin
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
+    }
+    
+    // قواعد مجموعة Reports (التقارير)
+    match /reports/{reportId} {
+      // القراءة: Admin فقط
+      allow read: if isAdmin();
+      
+      // الإنشاء: أي مستخدم مسجل
+      allow create: if isSignedIn() &&
+                       hasRequiredFields(['reportType', 'description', 'reportedBy', 'createdAt']) &&
+                       request.resource.data.reportedBy == request.auth.uid;
+      
+      // التحديث والحذف: Admin فقط
+      allow update, delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Medicine Offers (العروض)
+    match /medicine_offers/{offerId} {
+      // القراءة: الكل (للعرض)
+      allow read: if true;
+      
+      // الإنشاء: Pharmacy فقط
+      allow create: if isPharmacy() || isAdmin();
+      
+      // التحديث: صاحب الصيدلية أو Admin
+      allow update: if isAdmin() || 
+                       (isPharmacy() && resource.data.pharmacyId == request.auth.uid);
+      
+      // الحذف: صاحب الصيدلية أو Admin
+      allow delete: if isAdmin() || 
+                       (isPharmacy() && resource.data.pharmacyId == request.auth.uid);
+    }
+    
+    // قواعد مجموعة Medicine Requests (طلبات الأدوية)
+    match /medicine_requests/{requestId} {
+      // القراءة: الكل (للصيدليات والمستخدمين)
+      allow read: if true;
+      
+      // الإنشاء: أي مستخدم مسجل
+      allow create: if isSignedIn();
+      
+      // التحديث: صاحب الطلب أو Admin أو Pharmacy
+      allow update: if isAdmin() || 
+                       isOwner(resource.data.userId) ||
+                       isPharmacy();
+      
+      // الحذف: صاحب الطلب أو Admin
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
+    }
+    
+    // قواعد مجموعة Deliveries (الديليفري)
+    match /deliveries/{deliveryId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء والتحديث والحذف: Admin فقط
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Laboratories (المعامل)
+    match /laboratories/{labId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء والتحديث والحذف: Admin فقط
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Radiology (الأشعة)
+    match /radiology_centers/{radiologyId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء والتحديث والحذف: Admin فقط
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Rehabilitation (التأهيل)
+    match /rehabilitation_centers/{centerId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء والتحديث والحذف: Admin فقط
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Nurses (الممرضات)
+    match /nurses/{nurseId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء والتحديث والحذف: Admin فقط
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Gyms (الجيم)
+    match /gyms/{gymId} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الإنشاء والتحديث والحذف: Admin فقط
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // السماح بالقراءة لباقي المجموعات (للتوافق مع التطبيق الحالي)
+    match /{document=**} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+  }
+}

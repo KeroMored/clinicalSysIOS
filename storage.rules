@@ -1,0 +1,310 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // دالة للتحقق من تسجيل الدخول
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // دالة للتحقق من أن المستخدم هو نفسه
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // دالة للتحقق من صلاحيات Admin
+    function isAdmin() {
+      return isSignedIn() && 
+             firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // دالة للتحقق من حجم الملف (بالميجا بايت)
+    function fileSizeLimit(sizeMB) {
+      return request.resource.size <= sizeMB * 1024 * 1024;
+    }
+    
+    // دالة للتحقق من نوع الملف
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isPDF() {
+      return request.resource.contentType == 'application/pdf';
+    }
+    
+    function isDocument() {
+      return request.resource.contentType.matches('application/.*') ||
+             request.resource.contentType.matches('text/.*');
+    }
+    
+    // صور المستخدمين - Profile Pictures
+    match /users/{userId}/profile/{fileName} {
+      // القراءة: الكل (للعرض)
+      allow read: if true;
+      
+      // الكتابة: المستخدم نفسه فقط
+      allow write: if isOwner(userId) && 
+                      isImage() && 
+                      fileSizeLimit(5); // حد أقصى 5 ميجا
+    }
+    
+    // صور العيادات - مسار مباشر للإضافة
+    match /clinics/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() && 
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور العيادات - مسار منظم
+    match /clinics/{clinicId}/images/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() && 
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور الصيدليات - مسار مباشر للإضافة
+    match /pharmacies/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور الصيدليات - مسار منظم
+    match /pharmacies/{pharmacyId}/images/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل (للسماح بإضافة صيدليات)
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور المعامل (Laboratories) - مسار مباشر للإضافة
+    match /laboratories/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور المعامل (Laboratories) - مسار منظم
+    match /laboratories/{labId}/images/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور مراكز الأشعة (Radiology) - مسار مباشر للإضافة
+    match /radiology_centers/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور مراكز الأشعة (Radiology) - مسار منظم
+    match /radiology_centers/{centerId}/images/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // صور الجيمات (Gyms) - مسار مباشر للإضافة
+    match /gyms/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      (isImage() || request.resource.contentType.matches('video/.*')) && 
+                      fileSizeLimit(50); // حد أقصى 50 ميجا
+    }
+    
+    // صور الجيمات (Gyms) - مسار منظم
+    match /gyms/{gymId}/images/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // محتوى الجيمات (صور وفيديوهات)
+    match /gyms/{gymId}/content/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      (isImage() || request.resource.contentType.matches('video/.*')) && 
+                      fileSizeLimit(50); // حد أقصى 50 ميجا للفيديوهات
+    }
+    
+    // صور مراكز التأهيل (Rehabilitation Centers) - مسار مباشر للإضافة
+    match /rehabilitation_centers/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      (isImage() || request.resource.contentType.matches('video/.*')) && 
+                      fileSizeLimit(100); // حد أقصى 100 ميجا
+    }
+    
+    // صور مراكز التأهيل (Rehabilitation Centers) - مسار منظم
+    match /rehabilitation_centers/{centerId}/images/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // محتوى مراكز التأهيل (صور وفيديوهات)
+    match /rehabilitation_centers/{centerId}/content/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      (isImage() || request.resource.contentType.matches('video/.*')) && 
+                      fileSizeLimit(100); // حد أقصى 100 ميجا للفيديوهات
+    }
+    
+    // صور الأدوية
+    match /medicines/{medicineId}/images/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: Admin فقط
+      allow write: if isAdmin() && 
+                      isImage() && 
+                      fileSizeLimit(5); // حد أقصى 5 ميجا
+    }
+    
+    // مستندات المستخدمين (تقارير طبية، وصفات، إلخ)
+    match /users/{userId}/documents/{fileName} {
+      // القراءة: المستخدم نفسه أو Admin
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // الكتابة: المستخدم نفسه فقط
+      allow write: if isOwner(userId) && 
+                      (isImage() || isPDF() || isDocument()) && 
+                      fileSizeLimit(20); // حد أقصى 20 ميجا
+    }
+    
+    // مستندات العيادات (تراخيص، شهادات، إلخ)
+    match /clinics/{clinicId}/documents/{fileName} {
+      // القراءة: صاحب العيادة أو Admin
+      allow read: if (isSignedIn() && 
+                      firestore.get(/databases/(default)/documents/clinics/$(clinicId)).data.ownerId == request.auth.uid) ||
+                     isAdmin();
+      
+      // الكتابة: صاحب العيادة أو Admin
+      allow write: if ((isSignedIn() && 
+                        firestore.get(/databases/(default)/documents/clinics/$(clinicId)).data.ownerId == request.auth.uid) ||
+                       isAdmin()) &&
+                      (isImage() || isPDF() || isDocument()) && 
+                      fileSizeLimit(20); // حد أقصى 20 ميجا
+    }
+    
+    // مستندات الصيدليات
+    match /pharmacies/{pharmacyId}/documents/{fileName} {
+      // القراءة: صاحب الصيدلية أو Admin
+      allow read: if (isSignedIn() && 
+                      firestore.get(/databases/(default)/documents/pharmacies/$(pharmacyId)).data.ownerId == request.auth.uid) ||
+                     isAdmin();
+      
+      // الكتابة: صاحب الصيدلية أو Admin
+      allow write: if ((isSignedIn() && 
+                        firestore.get(/databases/(default)/documents/pharmacies/$(pharmacyId)).data.ownerId == request.auth.uid) ||
+                       isAdmin()) &&
+                      (isImage() || isPDF() || isDocument()) && 
+                      fileSizeLimit(20); // حد أقصى 20 ميجا
+    }
+    
+    // الوصفات الطبية
+    match /prescriptions/{prescriptionId}/{fileName} {
+      // القراءة: صاحب الوصفة أو الطبيب أو الصيدلي أو Admin
+      allow read: if isSignedIn(); // سيتم التحقق من الصلاحيات في التطبيق
+      
+      // الكتابة: المستخدم أو الطبيب فقط
+      allow write: if isSignedIn() &&
+                      (isImage() || isPDF()) && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // النسخ الاحتياطية (Backups) - Admin فقط
+    match /backups/{fileName} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ملفات مؤقتة
+    match /temp/{userId}/{fileName} {
+      // القراءة والكتابة: المستخدم نفسه فقط
+      allow read, write: if isOwner(userId) && 
+                            fileSizeLimit(50); // حد أقصى 50 ميجا
+      
+      // حذف تلقائي بعد 24 ساعة (يتم تطبيقه من خلال Cloud Functions)
+    }
+    
+    // محتوى مراكز التأهيل - صور العروض والمحتوى
+    match /rehabilitation/content/{centerId}/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      (isImage() || request.resource.contentType.matches('video/.*')) && 
+                      fileSizeLimit(100); // حد أقصى 100 ميجا للفيديوهات
+    }
+    
+    // صور مراكز التأهيل
+    match /rehabilitation/profiles/{fileName} {
+      // القراءة: الكل
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل
+      allow write: if isSignedIn() &&
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // منع الوصول لأي مسار آخر
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
