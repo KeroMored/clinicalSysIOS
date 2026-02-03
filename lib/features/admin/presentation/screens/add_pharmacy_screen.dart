@@ -3,11 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:io';
 import '../../data/models/pharmacy_request_model.dart';
 import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
+import '../../../../core/widgets/login_required_dialog.dart';
 
 class AddPharmacyScreen extends StatefulWidget {
   const AddPharmacyScreen({super.key});
@@ -22,7 +24,7 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
   // Controllers for form fields
   final _pharmacyNameController = TextEditingController();
   final _addressController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final List<TextEditingController> _phoneControllers = [TextEditingController()];
   final _whatsappController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _workingHoursController = TextEditingController();
@@ -58,7 +60,9 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
   void dispose() {
     _pharmacyNameController.dispose();
     _addressController.dispose();
-    _phoneController.dispose();
+    for (var controller in _phoneControllers) {
+      controller.dispose();
+    }
     _whatsappController.dispose();
     _descriptionController.dispose();
     _workingHoursController.dispose();
@@ -303,6 +307,15 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
   }
 
   void _submitForm() async {
+    // التحقق من تسجيل الدخول أولاً
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      if (mounted) {
+        await LoginRequiredDialog.show(context);
+      }
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       // Validate location
       if (_latitude == 0.0 || _longitude == 0.0) {
@@ -354,10 +367,10 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _pharmacyNameController.text,
         address: _addressController.text,
-        phone: _phoneController.text,
+        phone: _phoneControllers[0].text,
         whatsapp: _whatsappController.text.isNotEmpty 
             ? _whatsappController.text 
-            : _phoneController.text,
+            : _phoneControllers[0].text,
         latitude: _latitude,
         longitude: _longitude,
         workingHours: _workingHoursController.text,
@@ -461,18 +474,84 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // رقم الهاتف
-                  _buildTextField(
-                    controller: _phoneController,
-                    label: 'رقم الهاتف',
-                    icon: Icons.phone,
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'الرجاء إدخال رقم الهاتف';
-                      }
-                      return null;
-                    },
+                  // أرقام الهاتف (Multiple)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'أرقام الهاتف',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (_phoneControllers.length < 5)
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _phoneControllers.add(TextEditingController());
+                                  });
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('إضافة رقم'),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ...List.generate(_phoneControllers.length, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _phoneControllers[index],
+                                    keyboardType: TextInputType.phone,
+                                    decoration: InputDecoration(
+                                      labelText: index == 0 ? 'رقم الهاتف الأساسي *' : 'رقم ${index + 1}',
+                                      prefixIcon: const Icon(Icons.phone),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                    ),
+                                    validator: index == 0
+                                        ? (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'الرجاء إدخال رقم الهاتف الأساسي';
+                                            }
+                                            return null;
+                                          }
+                                        : null,
+                                  ),
+                                ),
+                                if (index > 0)
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        _phoneControllers[index].dispose();
+                                        _phoneControllers.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   

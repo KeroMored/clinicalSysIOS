@@ -4,7 +4,7 @@ class PharmacyModel {
   final String id;
   final String name;
   final String address;
-  final String phone;
+  final List<String> phones;
   final String whatsapp;
   final double latitude;
   final double longitude;
@@ -33,7 +33,7 @@ class PharmacyModel {
     required this.id,
     required this.name,
     required this.address,
-    required this.phone,
+    this.phones = const [],
     required this.whatsapp,
     required this.latitude,
     required this.longitude,
@@ -62,7 +62,9 @@ class PharmacyModel {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       address: json['address'] ?? '',
-      phone: json['phone'] ?? '',
+      phones: json['phones'] != null
+          ? List<String>.from(json['phones'])
+          : (json['phone'] != null ? [json['phone']] : []),
       whatsapp: json['whatsapp'] ?? '',
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
@@ -95,7 +97,9 @@ class PharmacyModel {
       id: doc.id,
       name: json['name'] ?? '',
       address: json['address'] ?? '',
-      phone: json['phone'] ?? '',
+      phones: json['phones'] != null
+          ? List<String>.from(json['phones'])
+          : (json['phone'] != null ? [json['phone']] : []),
       whatsapp: json['whatsapp'] ?? '',
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
@@ -127,7 +131,7 @@ class PharmacyModel {
       'id': id,
       'name': name,
       'address': address,
-      'phone': phone,
+      'phones': phones,
       'whatsapp': whatsapp,
       'latitude': latitude,
       'longitude': longitude,
@@ -156,7 +160,7 @@ class PharmacyModel {
     String? id,
     String? name,
     String? address,
-    String? phone,
+    List<String>? phones,
     String? whatsapp,
     double? latitude,
     double? longitude,
@@ -180,7 +184,7 @@ class PharmacyModel {
       id: id ?? this.id,
       name: name ?? this.name,
       address: address ?? this.address,
-      phone: phone ?? this.phone,
+      phones: phones ?? this.phones,
       whatsapp: whatsapp ?? this.whatsapp,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,

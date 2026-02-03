@@ -2,12 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../laboratory/data/models/laboratory_model.dart';
 import '../../../laboratory/data/models/working_hours.dart';
 import '../../../laboratory/data/models/lab_tests.dart';
 import '../../../laboratory/data/repositories/laboratory_repository.dart';
+import '../../../../core/widgets/login_required_dialog.dart';
 
 class AddLaboratoryScreen extends StatefulWidget {
   const AddLaboratoryScreen({super.key});
@@ -222,6 +224,15 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
   }
 
   Future<void> _submitForm() async {
+    // التحقق من تسجيل الدخول أولاً
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      if (mounted) {
+        await LoginRequiredDialog.show(context);
+      }
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }

@@ -598,20 +598,16 @@ class MedicineRequestsListScreen extends StatelessWidget {
             const SizedBox(height: 10),
             
             // User & date info - compact
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: _buildCompactInfo(
-                    icon: Icons.person_outline,
-                    text: request.userName,
-                  ),
+                _buildCompactInfo(
+                  icon: Icons.person_outline,
+                  text: request.userName,
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: _buildCompactInfo(
-                    icon: Icons.access_time_outlined,
-                    text: _formatDate(request.createdAt),
-                  ),
+                _buildCompactInfo(
+                  icon: Icons.access_time_outlined,
+                  text: _formatDate(request.createdAt),
                 ),
               ],
             ),
@@ -696,9 +692,9 @@ class MedicineRequestsListScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () => _makePhoneCall(request.phoneNumber),
                       icon: const Icon(Icons.phone, size: 16),
-                      label: const Text('اتصال'),
+                      label: const Text('اتصال',style: TextStyle(fontWeight: FontWeight.bold),),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981),
+                        backgroundColor:  Colors.blue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: RoundedRectangleBorder(
@@ -719,7 +715,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
                         request.allMedicines.isNotEmpty ? request.allMedicines[0].quantity : 1,
                       ),
                       icon: Icon(MdiIcons.whatsapp, size: 16),
-                      label: const Text('واتساب'),
+                      label: const Text('واتساب',style: TextStyle(fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF25D366),
                         foregroundColor: Colors.white,
@@ -749,7 +745,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
+      //  borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
@@ -788,7 +784,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
     } else if (difference.inDays < 7) {
       return 'منذ ${difference.inDays} يوم';
     } else {
-      return DateFormat('yyyy-MM-dd hh:mm a').format(date);
+      return DateFormat('yyyy-MM-dd   |   hh:mm a').format(date);
     }
   }
 }

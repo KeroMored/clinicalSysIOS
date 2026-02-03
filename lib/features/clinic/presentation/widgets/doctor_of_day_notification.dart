@@ -60,7 +60,7 @@ class DoctorOfTheDayNotification {
     debugPrint('Daily notification scheduled for 7:00 PM');
   }
 
-  // Get today's featured doctors (3 doctors with varied specializations)
+  // Get today's featured doctors (10 doctors with varied specializations)
   static Future<List<Map<String, dynamic>>> getTodaysFeaturedDoctors() async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -85,11 +85,11 @@ class DoctorOfTheDayNotification {
       List<Map<String, dynamic>> selectedDoctors = [];
       List<String> usedSpecs = [];
       
-      // Try to get 5 doctors from different specializations
+      // Try to get 10 doctors from different specializations
       final specs = bySpecialization.keys.toList()..shuffle(random);
       
       for (var spec in specs) {
-        if (selectedDoctors.length >= 5) break;
+        if (selectedDoctors.length >= 10) break;
         if (!usedSpecs.contains(spec)) {
           final docs = bySpecialization[spec]!;
           final doc = docs[random.nextInt(docs.length)];
@@ -100,14 +100,14 @@ class DoctorOfTheDayNotification {
         }
       }
       
-      // If we have less than 5 doctors, fill with remaining doctors
-      if (selectedDoctors.length < 5) {
+      // If we have less than 10 doctors, fill with remaining doctors
+      if (selectedDoctors.length < 10) {
         final remainingDocs = snapshot.docs.where((doc) {
           return !selectedDoctors.any((selected) => selected['id'] == doc.id);
         }).toList()..shuffle(random);
         
         for (var doc in remainingDocs) {
-          if (selectedDoctors.length >= 5) break;
+          if (selectedDoctors.length >= 10) break;
           final data = doc.data();
           data['id'] = doc.id;
           selectedDoctors.add(data);

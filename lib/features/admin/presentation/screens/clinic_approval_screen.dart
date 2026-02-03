@@ -244,7 +244,10 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
             _buildInfoRow(Icons.attach_money, 
                 'سعر الكشف: ${clinicData['consultationFee']?.toInt() ?? 0} جنيه'),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.email, clinicData['doctorEmail'] ?? 'لا يوجد'),
+            _buildInfoRow(Icons.email, 
+                (clinicData['doctorEmails'] as List<dynamic>?)?.isNotEmpty == true
+                    ? (clinicData['doctorEmails'] as List<dynamic>).first.toString()
+                    : clinicData['doctorEmail'] ?? 'لا يوجد'),
             const SizedBox(height: 8),
             _buildInfoRow(Icons.calendar_today, 
                 'تاريخ الطلب: ${DateFormat('yyyy-MM-dd').format(createdAt)}'),

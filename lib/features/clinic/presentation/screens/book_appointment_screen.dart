@@ -18,6 +18,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   bool _isSubmitting = false;
+  DateTime _selectedAppointmentDate = DateTime.now(); // الافتراضي: الآن
 
   @override
   void dispose() {
@@ -27,17 +28,16 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     super.dispose();
   }
 
-  Future<int> _getNextBookingNumber() async {
-    final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
+  Future<int> _getNextBookingNumber(DateTime appointmentDate) async {
+    final startOfDay = DateTime(appointmentDate.year, appointmentDate.month, appointmentDate.day);
+    final endOfDay = DateTime(appointmentDate.year, appointmentDate.month, appointmentDate.day, 23, 59, 59);
 
-    // جلب كل الحجوزات اليوم (مسترجعة وغير مسترجعة)
+    // جلب كل الحجوزات في نفس يوم الموعد
     final snapshot = await FirebaseFirestore.instance
         .collection('bookings')
         .where('clinicId', isEqualTo: widget.clinic.id)
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+        .where('appointmentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('appointmentDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
         .get();
 
     if (snapshot.docs.isEmpty) {
@@ -62,7 +62,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final bookingNumber = await _getNextBookingNumber();
+      final bookingNumber = await _getNextBookingNumber(_selectedAppointmentDate);
       
       final booking = BookingModel(
         id: '',
@@ -73,6 +73,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         bookingNumber: bookingNumber,
         status: BookingStatus.pending,
         createdAt: DateTime.now(),
+        appointmentDate: _selectedAppointmentDate,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         isOnlineBooking: true, // حجز أونلاين من المريض
       );
@@ -355,6 +356,106 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // اختيار موعد الكشف
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF3B82F6).withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF3B82F6),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.calendar_today,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'موعد الكشف',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Color(0xFF3B82F6),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          InkWell(
+                            onTap: () async {
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: _selectedAppointmentDate,
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                                builder: (context, child) {
+                                  return Theme(
+                                    data: Theme.of(context).copyWith(
+                                      colorScheme: const ColorScheme.light(
+                                        primary: Color(0xFF3B82F6),
+                                      ),
+                                    ),
+                                    child: child!,
+                                  );
+                                },
+                              );
+                              if (date != null) {
+                                setState(() {
+                                  _selectedAppointmentDate = DateTime(
+                                    date.year,
+                                    date.month,
+                                    date.day,
+                                    _selectedAppointmentDate.hour,
+                                    _selectedAppointmentDate.minute,
+                                  );
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey[300]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.date_range, color: Color(0xFF3B82F6)),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      '${_selectedAppointmentDate.day}/${_selectedAppointmentDate.month}/${_selectedAppointmentDate.year}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     

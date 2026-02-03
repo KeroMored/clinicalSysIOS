@@ -21,7 +21,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _addressController;
-  late TextEditingController _phoneController;
+  late List<TextEditingController> _phoneControllers;
   late TextEditingController _workingHoursController;
   
   // Theme colors
@@ -58,7 +58,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.pharmacy.name);
     _addressController = TextEditingController(text: widget.pharmacy.address);
-    _phoneController = TextEditingController(text: widget.pharmacy.phone);
+    _phoneControllers = widget.pharmacy.phones.isNotEmpty
+        ? widget.pharmacy.phones.map((phone) => TextEditingController(text: phone)).toList()
+        : [TextEditingController()];
     _workingHoursController = TextEditingController(text: widget.pharmacy.workingHours);
     _existingImageUrls = List.from(widget.pharmacy.images);
     
@@ -111,7 +113,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   void dispose() {
     _nameController.dispose();
     _addressController.dispose();
-    _phoneController.dispose();
+    for (var controller in _phoneControllers) {
+      controller.dispose();
+    }
     _workingHoursController.dispose();
     for (var controller in _authEmailControllers) {
       controller.dispose();
@@ -263,7 +267,10 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
       final updatedData = {
         'name': _nameController.text.trim(),
         'address': _addressController.text.trim(),
-        'phone': _phoneController.text.trim(),
+        'phones': _phoneControllers
+            .map((c) => c.text.trim())
+            .where((phone) => phone.isNotEmpty)
+            .toList(),
         'workingHours': _workingHoursController.text.trim(),
         'images': allImages,
         'holidays': holidaysString,
@@ -629,24 +636,89 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   },
                                 ),
                                 const SizedBox(height: 20),
-                                TextFormField(
-                                  controller: _phoneController,
-                                  decoration: _buildInputDecoration(
-                                    label: 'رقم الهاتف',
-                                    icon: Icons.phone_rounded,
+                                
+                                // أرقام الهاتف (Multiple)
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: _backgroundColor,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: _secondaryColor.withOpacity(0.2)),
                                   ),
-                                  style: const TextStyle(
-                                    color: _textPrimary,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text(
+                                            'أرقام الهاتف',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: _textPrimary,
+                                            ),
+                                          ),
+                                          if (_phoneControllers.length < 5)
+                                            TextButton.icon(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _phoneControllers.add(TextEditingController());
+                                                });
+                                              },
+                                              icon: const Icon(Icons.add),
+                                              label: const Text('إضافة رقم'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: _primaryColor,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      ...List.generate(_phoneControllers.length, (index) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 12),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller: _phoneControllers[index],
+                                                  keyboardType: TextInputType.phone,
+                                                  decoration: _buildInputDecoration(
+                                                    label: index == 0 ? 'رقم الهاتف الأساسي *' : 'رقم ${index + 1}',
+                                                    icon: Icons.phone_rounded,
+                                                  ),
+                                                  style: const TextStyle(
+                                                    color: _textPrimary,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  validator: index == 0
+                                                      ? (value) {
+                                                          if (value == null || value.isEmpty) {
+                                                            return 'يرجى إدخال رقم الهاتف الأساسي';
+                                                          }
+                                                          return null;
+                                                        }
+                                                      : null,
+                                                ),
+                                              ),
+                                              if (index > 0)
+                                                IconButton(
+                                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _phoneControllers[index].dispose();
+                                                      _phoneControllers.removeAt(index);
+                                                    });
+                                                  },
+                                                ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                    ],
                                   ),
-                                  keyboardType: TextInputType.phone,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'يرجى إدخال رقم الهاتف';
-                                    }
-                                    return null;
-                                  },
                                 ),
                               ],
                             ),

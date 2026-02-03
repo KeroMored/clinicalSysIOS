@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'core/services/notification_service.dart';
 import 'core/security/security_manager.dart';
@@ -26,6 +27,8 @@ import 'features/rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import 'features/gym/data/repositories/gym_repository.dart';
 import 'features/gym/presentation/cubit/gym_cubit.dart';
 import 'features/clinic/presentation/widgets/doctor_of_day_notification.dart';
+import 'features/clinic/data/repositories/patient_repository.dart';
+import 'features/clinic/presentation/cubit/patient_cubit.dart';
 
 // Handle background messages
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -47,7 +50,7 @@ void _warmUpFirestore() {
   
   // 🔥 Pre-warm commonly accessed collections in parallel
   // This speeds up first load of each screen
-  final collections = ['radiology_centers', 'gyms', 'pharmacies', 'clinics'];
+  final collections = ['radiology_centers', 'gyms', 'pharmacies', 'clinics', 'patients', 'medical_visits'];
   for (final collection in collections) {
     FirebaseFirestore.instance
         .collection(collection)
@@ -61,6 +64,9 @@ void _warmUpFirestore() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize locale for calendar
+  await initializeDateFormatting('ar', null);
   
   // Initialize Firebase
   await Firebase.initializeApp(
@@ -142,6 +148,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => GymCubit(GymRepository()),
+        ),
+        BlocProvider(
+          create: (context) => PatientCubit(PatientRepository()),
         ),
       ],
       child: MaterialApp(

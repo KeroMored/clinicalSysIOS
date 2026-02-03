@@ -132,7 +132,7 @@ class OfferCard extends StatelessWidget {
       final pharmacyRepo = PharmacyRepository();
       final pharmacy = await pharmacyRepo.getPharmacyById(pharmacyId);
       
-      if (pharmacy.phone.isEmpty) {
+      if (pharmacy.phones.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -146,7 +146,7 @@ class OfferCard extends StatelessWidget {
 
       final Uri launchUri = Uri(
         scheme: 'tel',
-        path: pharmacy.phone,
+        path: pharmacy.phones[0], // استخدام أول رقم متاح
       );
       
       bool launched = await launchUrl(

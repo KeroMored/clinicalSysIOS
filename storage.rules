@@ -71,6 +71,17 @@ service firebase.storage {
                       fileSizeLimit(10); // حد أقصى 10 ميجا
     }
     
+    // صور الروشتات الطبية - Prescriptions
+    match /prescriptions/{patientId}/{visitId} {
+      // القراءة: الكل (لعرض الروشتة)
+      allow read: if true;
+      
+      // الكتابة: أي مستخدم مسجل (صاحب العيادة)
+      allow write: if isSignedIn() && 
+                      isImage() && 
+                      fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
     // صور الصيدليات - مسار مباشر للإضافة
     match /pharmacies/{fileName} {
       // القراءة: الكل
@@ -113,6 +124,28 @@ service firebase.storage {
       allow write: if isSignedIn() &&
                       isImage() && 
                       fileSizeLimit(10); // حد أقصى 10 ميجا
+    }
+    
+    // نتائج التحاليل PDF
+    match /lab_results/{userId}/{fileName} {
+      // القراءة: المستخدم أو صاحب المعمل
+      allow read: if isSignedIn();
+      
+      // الكتابة: أي مستخدم مسجل (صاحب المعمل)
+      allow write: if isSignedIn() &&
+                      (isPDF() || isImage()) && 
+                      fileSizeLimit(20); // حد أقصى 20 ميجا
+    }
+    
+    // نتائج التحاليل - مسار بـ labId
+    match /lab_results/{labId}/{userId}/{fileName} {
+      // القراءة: المستخدم أو صاحب المعمل
+      allow read: if isSignedIn();
+      
+      // الكتابة: أي مستخدم مسجل (صاحب المعمل)
+      allow write: if isSignedIn() &&
+                      (isPDF() || isImage()) && 
+                      fileSizeLimit(20); // حد أقصى 20 ميجا
     }
     
     // صور مراكز الأشعة (Radiology) - مسار مباشر للإضافة
@@ -302,9 +335,10 @@ service firebase.storage {
                       fileSizeLimit(10); // حد أقصى 10 ميجا
     }
     
-    // منع الوصول لأي مسار آخر
+    // السماح بالقراءة والكتابة لجميع المسارات الأخرى للمستخدمين المسجلين
     match /{allPaths=**} {
-      allow read, write: if false;
+      allow read: if true;
+      allow write: if isSignedIn();
     }
   }
 }

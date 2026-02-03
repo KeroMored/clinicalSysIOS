@@ -177,7 +177,7 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
   String _getEmailField() {
     switch (widget.place.placeType) {
       case PlaceType.clinic:
-        return 'doctorEmail';
+        return 'doctorEmails'; // تغيير إلى doctorEmails
       case PlaceType.pharmacy:
         return 'ownerEmail';
       case PlaceType.laboratory:

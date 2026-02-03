@@ -87,10 +87,10 @@ class MedicineOfferCard extends StatelessWidget {
       final pharmacyRepo = PharmacyRepository();
       final pharmacy = await pharmacyRepo.getPharmacyById(pharmacyId);
       
-      if (pharmacy.phone.isNotEmpty) {
+      if (pharmacy.phones.isNotEmpty) {
         final Uri launchUri = Uri(
           scheme: 'tel',
-          path: pharmacy.phone,
+          path: pharmacy.phones[0], // استخدام أول رقم متاح
         );
         
         try {

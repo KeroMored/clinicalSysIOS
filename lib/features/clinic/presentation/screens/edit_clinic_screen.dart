@@ -25,7 +25,7 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
   late TextEditingController _specializationController;
   late TextEditingController _aboutController;
   late TextEditingController _consultationFeeController;
-  late TextEditingController _phoneController;
+  late List<TextEditingController> _phoneControllers; // أرقام متعددة
   late TextEditingController _whatsappController;
   late TextEditingController _addressController;
 
@@ -35,8 +35,9 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
   late bool _hasNursery;
   late bool _onlineBookingEnabled;
 
-  // Auth Emails
-  late List<TextEditingController> _authEmailControllers;
+  // Doctor & Secretary Emails
+  late List<TextEditingController> _doctorEmailControllers;
+  late List<TextEditingController> _secretaryEmailControllers;
 
   // Working Hours
   final Map<String, TimeOfDay?> _workingHoursFrom = {};
@@ -70,16 +71,23 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
     _specializationController = TextEditingController(text: widget.clinic.specialization);
     _aboutController = TextEditingController(text: widget.clinic.about);
     _consultationFeeController = TextEditingController(text: widget.clinic.consultationFee.toString());
-    _phoneController = TextEditingController(text: widget.clinic.phone);
+    _phoneControllers = widget.clinic.phones.isNotEmpty
+        ? widget.clinic.phones.map((phone) => TextEditingController(text: phone)).toList()
+        : [TextEditingController()]; // رقم واحد على الأقل
     _whatsappController = TextEditingController(text: widget.clinic.whatsapp ?? '');
     _addressController = TextEditingController(text: widget.clinic.address);
     _hasNursery = widget.clinic.hasNursery;
     _onlineBookingEnabled = widget.clinic.onlineBookingEnabled;
 
-    // Initialize auth emails
-    _authEmailControllers = widget.clinic.authEmails.isNotEmpty
-        ? widget.clinic.authEmails.map((email) => TextEditingController(text: email)).toList()
+    // Initialize doctor emails
+    _doctorEmailControllers = widget.clinic.doctorEmails.isNotEmpty
+        ? widget.clinic.doctorEmails.map((email) => TextEditingController(text: email)).toList()
         : [TextEditingController()];
+
+    // Initialize secretary emails
+    _secretaryEmailControllers = widget.clinic.secretaryEmails.isNotEmpty
+        ? widget.clinic.secretaryEmails.map((email) => TextEditingController(text: email)).toList()
+        : [];
 
     // Initialize working hours from existing clinic data
     for (var i = 0; i < _englishDays.length; i++) {
@@ -130,10 +138,15 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
     _specializationController.dispose();
     _aboutController.dispose();
     _consultationFeeController.dispose();
-    _phoneController.dispose();
+    for (var controller in _phoneControllers) {
+      controller.dispose();
+    }
     _whatsappController.dispose();
     _addressController.dispose();
-    for (var controller in _authEmailControllers) {
+    for (var controller in _doctorEmailControllers) {
+      controller.dispose();
+    }
+    for (var controller in _secretaryEmailControllers) {
       controller.dispose();
     }
     super.dispose();
@@ -231,7 +244,10 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
         'specialization': _specializationController.text.trim(),
         'about': _aboutController.text.trim(),
         'consultationFee': double.parse(_consultationFeeController.text.trim()),
-        'phone': _phoneController.text.trim(),
+        'phones': _phoneControllers
+            .map((c) => c.text.trim())
+            .where((phone) => phone.isNotEmpty)
+            .toList(),
         'whatsapp': _whatsappController.text.trim().isEmpty 
             ? null 
             : _whatsappController.text.trim(),
@@ -239,10 +255,19 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
         'workingHours': workingHoursMap,
         'hasNursery': _hasNursery,
         'onlineBookingEnabled': _onlineBookingEnabled,
-        'authEmails': _authEmailControllers
+        'doctorEmails': _doctorEmailControllers
             .map((c) => c.text.trim())
             .where((email) => email.isNotEmpty)
             .toList(),
+        'secretaryEmails': _secretaryEmailControllers
+            .map((c) => c.text.trim())
+            .where((email) => email.isNotEmpty)
+            .toList(),
+        // دمج إيميلات الدكاترة والسكرتيرة في authEmails للمصادقة
+        'authEmails': [
+          ..._doctorEmailControllers.map((c) => c.text.trim()).where((email) => email.isNotEmpty),
+          ..._secretaryEmailControllers.map((c) => c.text.trim()).where((email) => email.isNotEmpty),
+        ],
         if (clinicImageUrl != null) 'clinicImageUrl': clinicImageUrl,
         if (doctorImageUrl != null) 'doctorImageUrl': doctorImageUrl,
       });
@@ -833,19 +858,15 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                    // Auth Emails Section
+                    // Doctor Emails Section
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.blue.shade50, Colors.blue.shade100],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.blue.shade200, width: 2),
+                        color: Colors.blue.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -856,161 +877,321 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   color: Colors.blue,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(
-                                  Icons.email_rounded,
+                                  Icons.person,
                                   color: Colors.white,
-                                  size: 24,
+                                  size: 20,
                                 ),
                               ),
                               const SizedBox(width: 12),
                               const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'إيميلات المصادقة',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'الإيميلات المسموح لها بالدخول إلى لوحة التحكم',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  'إيميلات الدكاترة (صلاحيات كاملة)',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
-                          ..._authEmailControllers.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final controller = entry.value;
+                          const SizedBox(height: 8),
+                          Text(
+                            'الصلاحيات: متابعة المرضى، إدارة الحجوزات، تعديل بيانات العيادة + المصادقة والنوتفيكيشنز',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ...List.generate(_doctorEmailControllers.length, (index) {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Row(
                                 children: [
                                   Expanded(
                                     child: TextFormField(
-                                      controller: controller,
+                                      controller: _doctorEmailControllers[index],
                                       keyboardType: TextInputType.emailAddress,
                                       decoration: InputDecoration(
-                                        labelText: 'إيميل ${index + 1}',
+                                        labelText: index == 0 
+                                            ? 'إيميل الدكتور الأساسي *' 
+                                            : 'إيميل دكتور إضافي ${index + 1}',
+                                        hintText: 'doctor@example.com',
                                         prefixIcon: const Icon(Icons.email, color: Colors.blue),
-                                        suffixIcon: _authEmailControllers.length > 1
-                                            ? IconButton(
-                                                icon: const Icon(Icons.delete, color: Colors.red),
-                                                onPressed: () {
-                                                  setState(() {
-                                                    controller.dispose();
-                                                    _authEmailControllers.removeAt(index);
-                                                  });
-                                                },
-                                              )
-                                            : null,
-                                        filled: true,
-                                        fillColor: Colors.white,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
+                                          borderRadius: BorderRadius.circular(8),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(8),
                                           borderSide: const BorderSide(color: Colors.blue, width: 2),
                                         ),
+                                        fillColor: Colors.white,
+                                        filled: true,
                                       ),
                                       validator: (value) {
-                                        if (value == null || value.trim().isEmpty) {
-                                          return 'الإيميل مطلوب';
+                                        if (index == 0) {
+                                          if (value == null || value.trim().isEmpty) {
+                                            return 'يجب إدخال إيميل الدكتور الأساسي';
+                                          }
                                         }
-                                        if (!value.contains('@')) {
-                                          return 'صيغة الإيميل غير صحيحة';
+                                        if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
+                                          return 'إيميل غير صحيح';
                                         }
                                         return null;
                                       },
                                     ),
                                   ),
+                                  if (index > 0)
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        setState(() {
+                                          _doctorEmailControllers[index].dispose();
+                                          _doctorEmailControllers.removeAt(index);
+                                        });
+                                      },
+                                    ),
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
+                          TextButton.icon(
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('إضافة إيميل دكتور إضافي'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _doctorEmailControllers.add(TextEditingController());
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Secretary Emails Section
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.people,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'إيميلات السكرتيرة (صلاحيات محدودة - اختياري)',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'الصلاحيات: إدارة الحجوزات فقط (بدون متابعة المرضى) + المصادقة والنوتفيكيشنز',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                           const SizedBox(height: 12),
-                          Center(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  _authEmailControllers.add(TextEditingController());
-                                });
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('إضافة إيميل جديد'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                          if (_secretaryEmailControllers.isEmpty)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8),
+                                child: Text(
+                                  'لم يتم إضافة سكرتيرة بعد',
+                                  style: TextStyle(color: Colors.grey),
                                 ),
                               ),
                             ),
+                          ...List.generate(_secretaryEmailControllers.length, (index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _secretaryEmailControllers[index],
+                                      keyboardType: TextInputType.emailAddress,
+                                      decoration: InputDecoration(
+                                        labelText: 'إيميل سكرتيرة ${index + 1}',
+                                        hintText: 'secretary@example.com',
+                                        prefixIcon: const Icon(Icons.person_outline, color: Colors.green),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(color: Colors.green, width: 2),
+                                        ),
+                                        fillColor: Colors.white,
+                                        filled: true,
+                                      ),
+                                      validator: (value) {
+                                        if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
+                                          return 'إيميل غير صحيح';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        _secretaryEmailControllers[index].dispose();
+                                        _secretaryEmailControllers.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          TextButton.icon(
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('إضافة إيميل سكرتيرة'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.green,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _secretaryEmailControllers.add(TextEditingController());
+                              });
+                            },
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Phone
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'رقم الهاتف *',
-                        prefixIcon: Container(
-                          margin: const EdgeInsets.all(8),
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.teal,
-                            borderRadius: BorderRadius.circular(8),
+                    // Phone Numbers Section
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'أرقام التليفون',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Tooltip(
+                              message: 'يمكنك إضافة أكثر من رقم تليفون',
+                              child: Icon(Icons.info_outline, size: 18, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...List.generate(_phoneControllers.length, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _phoneControllers[index],
+                                    keyboardType: TextInputType.phone,
+                                    decoration: InputDecoration(
+                                      labelText: index == 0 ? 'رقم التليفون الأساسي *' : 'رقم تليفون ${index + 1}',
+                                      prefixIcon: Container(
+                                        margin: const EdgeInsets.all(8),
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.teal,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(Icons.phone, color: Colors.white),
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Colors.teal, width: 2),
+                                      ),
+                                      errorBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Colors.red, width: 2),
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (index == 0 && (value == null || value.trim().isEmpty)) {
+                                        return 'رقم التليفون الأساسي مطلوب';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                if (index > 0)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        _phoneControllers[index].dispose();
+                                        _phoneControllers.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                        TextButton.icon(
+                          icon: const Icon(Icons.add_circle_outline),
+                          label: const Text('إضافة رقم تليفون آخر'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.teal,
                           ),
-                          child: const Icon(Icons.phone, color: Colors.white),
+                          onPressed: () {
+                            setState(() {
+                              _phoneControllers.add(TextEditingController());
+                            });
+                          },
                         ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.teal, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'رقم الهاتف مطلوب';
-                        }
-                        return null;
-                      },
+                      ],
                     ),
                     const SizedBox(height: 16),
 

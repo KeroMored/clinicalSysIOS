@@ -8,6 +8,8 @@ import 'edit_clinic_screen.dart';
 import 'clinic_details_screen.dart';
 import 'bookings_management_screen.dart';
 import 'bookings_history_screen.dart';
+import 'patients_management_screen.dart';
+import '../cubit/patient_cubit.dart';
 
 class ClinicControlPage extends StatefulWidget {
   const ClinicControlPage({super.key});
@@ -126,6 +128,18 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
   }
 
   Widget _buildClinicControlPanel() {
+    final authState = context.read<AuthCubit>().state;
+    String? currentUserEmail;
+    if (authState is Authenticated) {
+      currentUserEmail = authState.user.email;
+    }
+
+    // التحقق: هل المستخدم الحالي هو الدكتور؟
+    // نتحقق من authEmails بدلاً من doctorEmails لأن كل من يملك صلاحية الدخول يستطيع رؤية المرضى
+    final bool isDoctor = currentUserEmail != null &&
+                          _clinic!.authEmails.any((email) => 
+                              email.toLowerCase() == currentUserEmail!.toLowerCase());
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -234,6 +248,28 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
           ),
           const SizedBox(height: 12),
 
+          // Patient Management - للدكتور فقط
+          if (isDoctor) ...[
+            _buildControlButton(
+              icon: Icons.people_rounded,
+              title: 'متابعة المرضى',
+              subtitle: 'إدارة المرضى وتسجيل الكشوفات الطبية',
+              color: const Color(0xFF10B981),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BlocProvider.value(
+                      value: context.read<PatientCubit>(),
+                      child: PatientsManagementScreen(clinicId: _clinic!.id),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // Bookings History
           _buildControlButton(
             icon: Icons.history_rounded,
@@ -267,25 +303,27 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
             },
           ),
           const SizedBox(height: 12),
-          // Edit Clinic
-          _buildControlButton(
-            icon: Icons.edit,
-            title: 'تعديل بيانات العيادة',
-            subtitle: 'قم بتحديث معلومات العيادة',
-            color: Colors.orange,
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditClinicScreen(clinic: _clinic!),
-                ),
-              );
-              if (result == true) {
-                _loadClinicData(); // Reload data after edit
-              }
-            },
-          ),
-          const SizedBox(height: 12),
+          // Edit Clinic (Doctor only)
+          if (isDoctor) // فقط الدكتور يمكنه تعديل بيانات العيادة
+            _buildControlButton(
+              icon: Icons.edit,
+              title: 'تعديل بيانات العيادة',
+              subtitle: 'قم بتحديث معلومات العيادة',
+              color: Colors.orange,
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditClinicScreen(clinic: _clinic!),
+                  ),
+                );
+                if (result == true) {
+                  _loadClinicData(); // Reload data after edit
+                }
+              },
+            ),
+          if (isDoctor)
+            const SizedBox(height: 12),
 
           // Toggle Active Status
           _buildControlButton(
@@ -375,7 +413,7 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
           specialization: _clinic!.specialization,
           about: _clinic!.about,
           consultationFee: _clinic!.consultationFee,
-          phone: _clinic!.phone,
+          phones: _clinic!.phones,
           whatsapp: _clinic!.whatsapp,
           address: _clinic!.address,
           latitude: _clinic!.latitude,

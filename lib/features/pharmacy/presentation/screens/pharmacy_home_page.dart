@@ -10,6 +10,7 @@ import '../../../medicine_requests/presentation/screens/medicine_requests_list_s
 import '../../../medicine_requests/presentation/screens/my_medicine_requests_screen.dart';
 import '../../../delivery/presentation/screens/delivery_list_screen.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import 'near_expire_items_screen.dart';
 
 class PharmacyHomePage extends StatelessWidget {
   const PharmacyHomePage({super.key});
@@ -323,47 +324,7 @@ class PharmacyHomePage extends StatelessWidget {
                 );
               },
             ),
-            
-            if (isPharmacyOwner) ...[
               const SizedBox(height: 12),
-              _buildPremiumCard(
-                context: context,
-                icon: Icons.receipt_long_rounded,
-                title: 'طلبات الناس',
-                description: 'طلبات الأدوية من المستخدمين',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => BlocProvider.value(
-                        value: context.read<AuthCubit>(),
-                        child: const MedicineRequestsListScreen(),
-                      ),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.0, 0.05);
-                        const end = Offset.zero;
-                        const curve = Curves.easeOutCubic;
-                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                        var offsetAnimation = animation.drive(tween);
-                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-                          CurvedAnimation(parent: animation, curve: Curves.easeOut),
-                        );
-                        return FadeTransition(
-                          opacity: fadeAnimation,
-                          child: SlideTransition(
-                            position: offsetAnimation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      transitionDuration: const Duration(milliseconds: 400),
-                    ),
-                  );
-                },
-              ),
-            ],
-            
-            const SizedBox(height: 12),
             _buildPremiumCard(
               context: context,
               icon: Icons.medication_rounded,
@@ -400,6 +361,79 @@ class PharmacyHomePage extends StatelessWidget {
               },
             ),
             const SizedBox(height: 12),
+            if (isPharmacyOwner) ...[
+              _buildPremiumCard(
+                context: context,
+                icon: Icons.receipt_long_rounded,
+                title: 'طلبات الناس',
+                description: 'طلبات الأدوية من المستخدمين',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => BlocProvider.value(
+                        value: context.read<AuthCubit>(),
+                        child: const MedicineRequestsListScreen(),
+                      ),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 0.05);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildPremiumCard(
+                context: context,
+                icon: Icons.warning_amber_rounded,
+                title: 'أدوية قاربت على الانتهاء',
+                description: 'عرض وبيع الأدوية القريبة من الانتهاء',
+                gradientColors: [Colors.orange.shade400, Colors.red.shade400],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const NearExpireItemsScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 0.05);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                          CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                        );
+                        return FadeTransition(
+                          opacity: fadeAnimation,
+                          child: SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          ),
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 400),
+                    ),
+                  );
+                },
+              ),
+            ],
+            
+          
           ],
         );
       },
@@ -413,7 +447,14 @@ class PharmacyHomePage extends StatelessWidget {
     required String description,
     required VoidCallback onTap,
     bool isPrimary = false,
+    List<Color>? gradientColors,
   }) {
+    final defaultGradient = [
+      const Color(0xFF06B6D4),
+      const Color(0xFF0891B2),
+    ];
+    final colors = gradientColors ?? defaultGradient;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -440,18 +481,15 @@ class PharmacyHomePage extends StatelessWidget {
                   width: isPrimary ? 56 : 48,
                   height: isPrimary ? 56 : 48,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
+                    gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF06B6D4),
-                        Color(0xFF0891B2),
-                      ],
+                      colors: colors,
                     ),
                     borderRadius: BorderRadius.circular(isPrimary ? 14 : 12),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF06B6D4).withOpacity(0.3),
+                        color: colors[0].withOpacity(0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),

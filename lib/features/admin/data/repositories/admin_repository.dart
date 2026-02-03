@@ -197,7 +197,7 @@ class AdminRepository {
         id: '',
         name: request.name,
         address: request.address,
-        phone: request.phone,
+        phones: [request.phone], // تحويل الرقم الواحد إلى قائمة
         whatsapp: request.whatsapp,
        
         latitude: request.latitude,

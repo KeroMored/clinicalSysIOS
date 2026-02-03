@@ -172,8 +172,6 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                                 const SizedBox(height: 24),
                                 
                                 // Quick Stats
-                                _buildQuickStats(),
-                                const SizedBox(height: 30),
                               ],
                             ),
                           ),
@@ -459,7 +457,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
             _buildInfoRow(
               icon: Icons.phone_rounded,
               label: 'رقم الهاتف',
-              value: _pharmacy!.phone,
+              value: _pharmacy!.phones.isNotEmpty ? _pharmacy!.phones.join(', ') : 'غير متوفر',
               color: const Color(0xFF3B82F6),
             ),
             const SizedBox(height: 18),
@@ -720,95 +718,6 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickStats() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFF59E0B).withOpacity(0.15),
-                        const Color(0xFFFBBF24).withOpacity(0.08),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.analytics_rounded,
-                    color: Color(0xFFF59E0B),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                const Text(
-                  'إحصائيات سريعة',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: _textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('offers')
-                  .where('pharmacyId', isEqualTo: _pharmacy!.id)
-                  .where('isActive', isEqualTo: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                final offersCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        icon: Icons.local_offer_rounded,
-                        label: 'العروض النشطة',
-                        value: '$offersCount',
-                        color: const Color(0xFFF59E0B),
-                        gradientColors: [const Color(0xFFFEF3C7), const Color(0xFFFDE68A).withOpacity(0.3)],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildStatCard(
-                        icon: Icons.check_circle_rounded,
-                        label: 'الحالة',
-                        value: 'نشط',
-                        color: _primaryColor,
-                        gradientColors: [const Color(0xFFD1FAE5), _secondaryColor.withOpacity(0.2)],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
     );
   }
 

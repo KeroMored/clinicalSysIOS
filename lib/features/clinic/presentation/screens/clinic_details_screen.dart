@@ -513,7 +513,7 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                                     ),
                                     child: IconButton(
                                       icon: const Icon(
-                                        Icons.map_rounded,
+                                        Icons.location_on,
                                         color: Colors.white,
                                         size: 20,
                                       ),
@@ -627,51 +627,124 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                       const SizedBox(height: 24),
                     ],
 
-                    // Contact Buttons
-                    const Text(
-                      'تواصل معنا',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    // Contact Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _makePhoneCall(context),
-                            icon: const Icon(Icons.phone),
-                            label: const Text('اتصال'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00BCD4),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF3B82F6),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.phone_in_talk_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'تواصل معنا',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF1E3A5F),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Phone Numbers (Multiple)
+                          if (_clinic.phones.isNotEmpty) ...[ 
+                            ...List.generate(_clinic.phones.length, (index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFF00BCD4).withOpacity(0.3),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _makePhoneCall(context, _clinic.phones[index]),
+                                    icon: const Icon(Icons.phone, size: 20),
+                                    label: Text(
+                                      _clinic.phones.length > 1 
+                                          ? 'رقم ${index + 1}: ${_clinic.phones[index]}'
+                                          : 'اتصال: ${_clinic.phones[index]}',
+                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                       
+                                      backgroundColor: const Color(0xFF00BCD4),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                          
+                          // WhatsApp Button
+                          if (_clinic.whatsapp != null)
+                            Container(
+                              decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFF25D366).withOpacity(0.3),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _openWhatsApp(context),
+                                icon: Icon(MdiIcons.whatsapp, size: 20),
+                                label: const Text(
+                                  'واتساب',
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF25D366),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                  elevation: 0,
+                                  minimumSize: const Size(double.infinity, 50),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _clinic.whatsapp != null 
-                                ? () => _openWhatsApp(context) 
-                                : null,
-                            icon: Icon(MdiIcons.whatsapp),
-                            label: const Text('واتساب'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF25D366),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -946,11 +1019,11 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
     }
   }
 
-  Future<void> _makePhoneCall(BuildContext context) async {
+  Future<void> _makePhoneCall(BuildContext context, String phone) async {
     try {
       final Uri launchUri = Uri(
         scheme: 'tel',
-        path: _clinic.phone,
+        path: phone,
       );
       
       await launchUrl(launchUri);

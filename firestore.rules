@@ -252,8 +252,68 @@ service cloud.firestore {
       // القراءة: الكل
       allow read: if true;
       
-      // الإنشاء والتحديث والحذف: Admin فقط
-      allow create, update, delete: if isAdmin();
+      // الكتابة: أي مستخدم مسجل (بدون أي قيود)
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Test Catalog (كتالوج التحاليل)
+    match /test_catalog/{testId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Lab Bookings (حجوزات المعامل)
+    match /lab_bookings/{bookingId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Lab Results (نتائج التحاليل)
+    match /lab_results/{resultId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Loyalty Points (نقاط الولاء)
+    match /loyalty_points/{pointsId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Appointments (المواعيد)
+    match /appointments/{appointmentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Lab Reviews (تقييمات المعامل)
+    match /lab_reviews/{reviewId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Referral Codes (أكواد الإحالة)
+    match /referral_codes/{codeId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Referral Transactions (معاملات الإحالة)
+    match /referral_transactions/{transactionId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Seasonal Offers (العروض الموسمية)
+    match /seasonal_offers/{offerId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+    
+    // قواعد مجموعة Topic Notifications (إشعارات المواضيع)
+    match /topic_notifications/{notifId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
     
     // قواعد مجموعة Radiology (الأشعة)
@@ -290,6 +350,60 @@ service cloud.firestore {
       
       // الإنشاء والتحديث والحذف: Admin فقط
       allow create, update, delete: if isAdmin();
+    }
+    
+    // قواعد مجموعة Patients (متابعة المرضى)
+    match /patients/{patientId} {
+      // القراءة: صاحب العيادة الذي يتبع لها المريض أو Admin
+      allow read: if isAdmin() || 
+                     (isClinicOwner() && 
+                      exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                      request.auth.email in get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.authEmails);
+      
+      // الإنشاء: صاحب العيادة أو Admin
+      allow create: if (isClinicOwner() || isAdmin()) &&
+                       hasRequiredFields(['name', 'phoneNumber', 'clinicId', 'createdAt']) &&
+                       request.resource.data.name.size() > 0 &&
+                       isValidPhone(request.resource.data.phoneNumber);
+      
+      // التحديث: صاحب العيادة التي يتبع لها المريض أو Admin
+      allow update: if isAdmin() || 
+                       (isClinicOwner() && 
+                        exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                        request.auth.email in get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.authEmails);
+      
+      // الحذف: صاحب العيادة أو Admin
+      allow delete: if isAdmin() || 
+                       (isClinicOwner() && 
+                        exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                        request.auth.email in get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.authEmails);
+    }
+    
+    // قواعد مجموعة Medical Visits (الكشوفات الطبية)
+    match /medical_visits/{visitId} {
+      // القراءة: صاحب العيادة الذي يتبع لها الكشف أو Admin
+      allow read: if isAdmin() || 
+                     (isClinicOwner() && 
+                      exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                      request.auth.email in get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.authEmails);
+      
+      // الإنشاء: صاحب العيادة أو Admin
+      allow create: if (isClinicOwner() || isAdmin()) &&
+                       hasRequiredFields(['patientId', 'clinicId', 'visitDate', 'diagnosis', 'medications', 'createdAt']) &&
+                       request.resource.data.diagnosis.size() > 0 &&
+                       request.resource.data.medications is list;
+      
+      // التحديث: صاحب العيادة التي يتبع لها الكشف أو Admin
+      allow update: if isAdmin() || 
+                       (isClinicOwner() && 
+                        exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                        request.auth.email in get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.authEmails);
+      
+      // الحذف: صاحب العيادة أو Admin
+      allow delete: if isAdmin() || 
+                       (isClinicOwner() && 
+                        exists(/databases/$(database)/documents/clinics/$(resource.data.clinicId)) &&
+                        request.auth.email in get(/databases/$(database)/documents/clinics/$(resource.data.clinicId)).data.authEmails);
     }
     
     // السماح بالقراءة لباقي المجموعات (للتوافق مع التطبيق الحالي)

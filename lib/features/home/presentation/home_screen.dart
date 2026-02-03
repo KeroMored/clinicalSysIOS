@@ -245,7 +245,7 @@ textAlign: TextAlign.center,
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const LaboratoryOwnerDashboard(),
+                            builder: (context) => LaboratoryOwnerDashboard(),
                           ),
                         );
                       },

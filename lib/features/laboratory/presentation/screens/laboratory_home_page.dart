@@ -15,6 +15,7 @@ import '../../../../core/widgets/rating_widget.dart';
 import '../../../../core/widgets/like_button.dart';
 import '../../../../core/widgets/report_button.dart';
 import '../../../pharmacy/presentation/widgets/reviews_dialog.dart';
+import 'lab_booking_screen.dart';
 
 class LaboratoryHomePage extends StatefulWidget {
   const LaboratoryHomePage({super.key});
@@ -703,47 +704,6 @@ class LaboratoryDetailsScreen extends StatelessWidget {
                     
                     const SizedBox(height: 24),
                     
-                    // Available Tests
-                    const Text(
-                      'التحاليل المتاحة',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                    const Divider(),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: currentLab.availableTests.map((test) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.green.shade400, Colors.green.shade600],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            test,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    
                     if (currentLab.hasHomeService) ...[
                       const SizedBox(height: 24),
                       Container(
@@ -781,6 +741,126 @@ class LaboratoryDetailsScreen extends StatelessWidget {
                       ),
                     ],
                   ],
+                ),
+              ),
+              
+              // قسم الأسعار - التحاليل الشائعة
+              if (currentLab.availableTests.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '💰 التحاليل المتوفرة',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.green.shade50, Colors.white],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.shade200),
+                        ),
+                        child: Column(
+                          children: [
+                            ...currentLab.availableTests.take(10).map((test) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      test,
+                                      style: const TextStyle(fontSize: 15),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                            if (currentLab.availableTests.length > 10) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'و ${currentLab.availableTests.length - 10} تحليل آخر',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'للاستفسار عن الأسعار، يرجى التواصل مع المعمل مباشرة',
+                                style: TextStyle(color: Colors.blue, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
+              // زر احجز الآن الكبير
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => LabBookingScreen(laboratory: currentLab),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.calendar_today, size: 24),
+                        SizedBox(width: 12),
+                        Text(
+                          'احجز الآن',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

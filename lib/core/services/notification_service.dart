@@ -193,6 +193,53 @@ class NotificationService {
     }
   }
 
+  /// Subscribe laboratory owner to lab-specific topic for booking notifications
+  Future<void> subscribeToLabTopic(String laboratoryId, String userId) async {
+    try {
+      final labTopic = 'lab_$laboratoryId';
+      await _messaging.subscribeToTopic(labTopic);
+      print('✅ Subscribed to laboratory topic: $labTopic');
+      
+      // Get FCM token
+      String? token = await _messaging.getToken();
+      print('📱 FCM Token for laboratory: $token');
+
+      // Save subscription info and FCM token
+      await _firestore.collection('lab_subscriptions').doc(laboratoryId).set({
+        'subscribedAt': FieldValue.serverTimestamp(),
+        'topic': labTopic,
+        'isActive': true,
+        'fcmToken': token,
+        'userId': userId,
+      });
+
+      // Also update user document with FCM token
+      await _firestore.collection('users').doc(userId).update({
+        'fcmToken': token,
+        'fcmUpdatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('❌ Error subscribing to laboratory topic: $e');
+    }
+  }
+
+  /// Unsubscribe from laboratory topic
+  Future<void> unsubscribeFromLabTopic(String laboratoryId) async {
+    try {
+      final labTopic = 'lab_$laboratoryId';
+      await _messaging.unsubscribeFromTopic(labTopic);
+      print('Unsubscribed from laboratory topic: $labTopic');
+
+      // Update Firestore
+      await _firestore.collection('lab_subscriptions').doc(laboratoryId).update({
+        'unsubscribedAt': FieldValue.serverTimestamp(),
+        'isActive': false,
+      });
+    } catch (e) {
+      print('Error unsubscribing from laboratory topic: $e');
+    }
+  }
+
   /// Handle foreground notifications
   void handleForegroundNotifications() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
@@ -272,5 +319,83 @@ class NotificationService {
         print('Navigate to medicine requests');
       }
     });
+  }
+
+  /// Send notification to specific user by userId
+  static Future<void> sendNotificationToUser({
+    required String userId,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      
+      // Get user's FCM token from Firestore
+      final userDoc = await firestore.collection('users').doc(userId).get();
+      
+      if (!userDoc.exists) {
+        print('❌ User not found: $userId');
+        return;
+      }
+      
+      final fcmToken = userDoc.data()?['fcmToken'] as String?;
+      
+      if (fcmToken == null || fcmToken.isEmpty) {
+        print('❌ No FCM token for user: $userId');
+        return;
+      }
+
+      // Note: Direct FCM sending requires Firebase Admin SDK or Cloud Functions
+      // For now, we'll store the notification in Firestore for the user to read
+      // In production, you should use Cloud Functions to send FCM messages
+      
+      await firestore.collection('notifications').add({
+        'userId': userId,
+        'title': title,
+        'body': body,
+        'data': data ?? {},
+        'fcmToken': fcmToken,
+        'read': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'type': data?['type'] ?? 'general',
+      });
+
+      print('✅ Notification queued for user: $userId');
+      
+    } catch (e) {
+      print('❌ Error sending notification to user: $e');
+    }
+  }
+
+  /// Send notification to all users subscribed to a topic
+  static Future<void> sendNotificationToTopic({
+    required String topic,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      
+      // Note: Direct topic messaging requires Firebase Admin SDK or Cloud Functions
+      // For now, we'll store the notification for processing
+      // In production, use Cloud Functions to send to topics
+      
+      await firestore.collection('topic_notifications').add({
+        'topic': topic,
+        'title': title,
+        'body': body,
+        'data': data ?? {},
+        'createdAt': FieldValue.serverTimestamp(),
+        'sent': false,
+        'type': data?['type'] ?? 'general',
+      });
+
+      print('✅ Notification queued for topic: $topic');
+      
+    } catch (e) {
+      print('❌ Error sending notification to topic: $e');
+    }
   }
 }

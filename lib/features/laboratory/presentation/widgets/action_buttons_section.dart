@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../data/models/laboratory_model.dart';
 import '../screens/laboratory_home_page.dart';
 import '../screens/edit_laboratory_screen.dart';
+import '../screens/lab_bookings_management_screen.dart';
 import 'action_card.dart';
 
+/// قسم الأزرار السريعة - مبسط للضروريات فقط
 class ActionButtonsSection extends StatelessWidget {
   final LaboratoryModel laboratory;
   final VoidCallback onUpdate;
@@ -77,26 +79,19 @@ class ActionButtonsSection extends StatelessWidget {
         
         const SizedBox(height: 12),
         
-        Row(
-          children: [
-            Expanded(
-              child: ActionCard(
-                icon: Icons.biotech,
-                label: 'إدارة التحاليل',
-                color: Colors.purple,
-                onTap: onShowAvailableTests,
+        // زر الحجوزات
+        ActionCard(
+          icon: Icons.calendar_today,
+          label: 'الحجوزات الأونلاين',
+          color: Colors.green,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LabBookingsManagementScreen(laboratory: laboratory),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ActionCard(
-                icon: Icons.access_time,
-                label: 'مواعيد العمل',
-                color: Colors.teal,
-                onTap: onShowWorkingHours,
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ],
     );

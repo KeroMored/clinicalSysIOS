@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../cubit/pharmacy_cubit.dart';
 import '../../../../core/widgets/rating_widget.dart';
@@ -15,7 +16,6 @@ import '../../../../core/utils/pharmacy_hours_helper.dart';
 import '../widgets/reviews_dialog.dart';
 import '../widgets/pharmacy_info_section.dart';
 import '../widgets/pharmacy_delivery_section.dart';
-import '../widgets/pharmacy_contact_buttons.dart';
 import '../widgets/pharmacy_full_screen_image.dart';
 
 class PharmacyDetailsScreen extends StatefulWidget {
@@ -195,8 +195,8 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [
-                                  Colors.black.withValues(alpha: 0.3),
-                                  Colors.black.withValues(alpha: 0.7),
+                                  Colors.black.withValues(alpha: 0.1),
+                                  Colors.black.withValues(alpha: 0.5),
                                 ],
                               ),
                             ),
@@ -264,37 +264,122 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Contact Section
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.pharmacyGradient,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.phone_in_talk_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1.5,
                     ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'تواصل معنا',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.darkColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                PharmacyContactButtons(
-                  phone: pharmacy.phone,
-                  whatsapp: pharmacy.whatsapp,
-                  onPhonePressed: () => _makePhoneCall(pharmacy.phone),
-                  onWhatsAppPressed: () => _openWhatsApp(pharmacy.whatsapp),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.pharmacyGradient,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.phone_in_talk_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'تواصل معنا',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.darkColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Phone Numbers (Multiple)
+                      if (pharmacy.phones.isNotEmpty) ...[
+                        ...List.generate(pharmacy.phones.length, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFF00BCD4).withOpacity(0.3),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _makePhoneCall(pharmacy.phones[index]),
+                                icon: const Icon(Icons.phone, size: 20),
+                                label: Text(
+                                  pharmacy.phones.length > 1 
+                                      ? 'رقم ${index + 1}: ${pharmacy.phones[index]}'
+                                      : 'اتصال: ${pharmacy.phones[index]}',
+                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00BCD4),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                      
+                      // WhatsApp Button
+                      if (pharmacy.whatsapp.isNotEmpty)
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFF25D366).withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: () => _openWhatsApp(pharmacy.whatsapp),
+                            icon:  Icon(MdiIcons.whatsapp, size: 20),
+                            label: const Text(
+                              'واتساب',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              elevation: 0,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
 
@@ -358,7 +443,7 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                   title: 'العنوان',
                   content: pharmacy.address,
                   trailing: IconButton(
-                    icon: const Icon(Icons.map, color: Colors.blue),
+                    icon: const Icon(Icons.location_on, color: Colors.blue),
                     onPressed: () => _openMap(pharmacy.latitude, pharmacy.longitude),
                   ),
                 ),

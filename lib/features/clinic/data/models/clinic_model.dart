@@ -8,7 +8,7 @@ class ClinicModel {
   final String specialization; // تخصص دقيق (مثلاً: جراحة قلب، أطفال حديثي الولادة)
   final String about; // نبذة عن الدكتور
   final double consultationFee; // سعر الكشف
-  final String phone; // رقم هاتف العيادة
+  final List<String> phones; // أرقام هاتف العيادة (يمكن أن تكون متعددة)
   final String? whatsapp; // رقم واتساب العيادة
   final String address;
   final double? latitude;
@@ -16,6 +16,8 @@ class ClinicModel {
   
   // Doctor Account Info
   final List<String> authEmails; // إيميلات المصادقة للدخول (يمكن أن تكون أكثر من إيميل)
+  final List<String> doctorEmails; // إيميلات الدكاترة (صلاحيات كاملة)
+  final List<String> secretaryEmails; // إيميلات السكرتيرة (صلاحيات محدودة)
   final String? doctorPhone; // رقم تليفون الدكتور الشخصي
   
   // Working Hours
@@ -44,12 +46,14 @@ class ClinicModel {
     required this.specialization,
     required this.about,
     required this.consultationFee,
-    required this.phone,
+    this.phones = const [],
     this.whatsapp,
     required this.address,
     this.latitude,
     this.longitude,
     this.authEmails = const [],
+    this.doctorEmails = const [],
+    this.secretaryEmails = const [],
     this.doctorPhone,
     required this.workingHours,
     required this.holidays,
@@ -87,7 +91,9 @@ class ClinicModel {
       specialization: data['specialization'] ?? '',
       about: data['about'] ?? '',
       consultationFee: (data['consultationFee'] ?? 0).toDouble(),
-      phone: data['phone'] ?? '',
+      phones: data['phones'] != null
+          ? List<String>.from(data['phones'])
+          : (data['phone'] != null ? [data['phone']] : []), // للتوافق مع البيانات القديمة
       whatsapp: data['whatsapp'],
       address: data['address'] ?? '',
       latitude: data['latitude']?.toDouble(),
@@ -95,6 +101,12 @@ class ClinicModel {
       authEmails: data['authEmails'] != null 
           ? List<String>.from(data['authEmails'])
           : (data['doctorEmail'] != null ? [data['doctorEmail']] : []), // للتوافق مع البيانات القديمة
+      doctorEmails: data['doctorEmails'] != null
+          ? List<String>.from(data['doctorEmails'])
+          : (data['doctorEmail'] != null ? [data['doctorEmail']] : []), // للتوافق مع doctorEmail القديم
+      secretaryEmails: data['secretaryEmails'] != null
+          ? List<String>.from(data['secretaryEmails'])
+          : [],
       doctorPhone: data['doctorPhone'],
       workingHours: parsedWorkingHours,
       holidays: List<String>.from(data['holidays'] ?? []),
@@ -124,12 +136,14 @@ class ClinicModel {
       'specialization': specialization,
       'about': about,
       'consultationFee': consultationFee,
-      'phone': phone,
+      'phones': phones,
       'whatsapp': whatsapp,
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
       'authEmails': authEmails,
+      'doctorEmails': doctorEmails,
+      'secretaryEmails': secretaryEmails,
       'doctorPhone': doctorPhone,
       'workingHours': workingHoursMap,
       'holidays': holidays,

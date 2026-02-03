@@ -22,6 +22,7 @@ class BookingModel {
   final String? userId; // معرف المستخدم إذا كان مسجلاً
   final DateTime? archivedDate; // تاريخ أرشفة الحجز (عند إنهاء اليوم)
   final bool? isOnlineBooking; // حجز أونلاين من المريض (true) أو حجز يدوي من العيادة (false)
+  final DateTime appointmentDate; // تاريخ ووقت الموعد المحدد للكشف
 
   BookingModel({
     this.id,
@@ -38,6 +39,7 @@ class BookingModel {
     this.userId,
     this.archivedDate,
     this.isOnlineBooking,
+    required this.appointmentDate,
   });
 
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
@@ -58,6 +60,9 @@ class BookingModel {
       userId: data['userId'],
       archivedDate: (data['archivedDate'] as Timestamp?)?.toDate(),
       isOnlineBooking: data['isOnlineBooking'] as bool?,
+      appointmentDate: (data['appointmentDate'] as Timestamp?)?.toDate() ?? 
+                       (data['createdAt'] as Timestamp?)?.toDate() ?? 
+                       DateTime.now(),
     );
   }
 
@@ -76,6 +81,7 @@ class BookingModel {
       'userId': userId,
       'archivedDate': archivedDate != null ? Timestamp.fromDate(archivedDate!) : null,
       'isOnlineBooking': isOnlineBooking,
+      'appointmentDate': Timestamp.fromDate(appointmentDate),
     };
   }
 
@@ -133,6 +139,7 @@ class BookingModel {
     String? userId,
     DateTime? archivedDate,
     bool? isOnlineBooking,
+    DateTime? appointmentDate,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -149,6 +156,7 @@ class BookingModel {
       userId: userId ?? this.userId,
       archivedDate: archivedDate ?? this.archivedDate,
       isOnlineBooking: isOnlineBooking ?? this.isOnlineBooking,
+      appointmentDate: appointmentDate ?? this.appointmentDate,
     );
   }
 }
