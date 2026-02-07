@@ -23,6 +23,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   late TextEditingController _addressController;
   late List<TextEditingController> _phoneControllers;
   late TextEditingController _workingHoursController;
+  late TextEditingController _descriptionController;
   
   // Theme colors
   static const Color _primaryColor = Color(0xFF0891B2);
@@ -41,6 +42,10 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   
   // Auth Emails
   late List<TextEditingController> _authEmailControllers;
+  
+  // Insurance
+  bool _hasInsurance = false;
+  List<TextEditingController> _insuranceCompanyControllers = [];
   
   // Days of the week for holidays selection
   final Map<String, bool> _selectedHolidays = {
@@ -62,12 +67,19 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
         ? widget.pharmacy.phones.map((phone) => TextEditingController(text: phone)).toList()
         : [TextEditingController()];
     _workingHoursController = TextEditingController(text: widget.pharmacy.workingHours);
+    _descriptionController = TextEditingController(text: widget.pharmacy.description ?? '');
     _existingImageUrls = List.from(widget.pharmacy.images);
     
     // Initialize auth emails
     _authEmailControllers = widget.pharmacy.authEmails.isNotEmpty
         ? widget.pharmacy.authEmails.map((email) => TextEditingController(text: email)).toList()
         : [TextEditingController()];
+    
+    // Initialize insurance
+    _hasInsurance = widget.pharmacy.hasInsurance;
+    _insuranceCompanyControllers = widget.pharmacy.insuranceCompanies.isNotEmpty
+        ? widget.pharmacy.insuranceCompanies.map((company) => TextEditingController(text: company)).toList()
+        : [];
     
     // Parse existing working hours
     _parseWorkingHours(widget.pharmacy.workingHours);
@@ -117,7 +129,11 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
       controller.dispose();
     }
     _workingHoursController.dispose();
+    _descriptionController.dispose();
     for (var controller in _authEmailControllers) {
+      controller.dispose();
+    }
+    for (var controller in _insuranceCompanyControllers) {
       controller.dispose();
     }
     super.dispose();
@@ -262,6 +278,14 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
           .map((entry) => entry.key)
           .toList();
       final holidaysString = selectedHolidaysList.join(', ');
+      
+      // Get insurance companies list
+      final insuranceCompanies = _hasInsurance
+          ? _insuranceCompanyControllers
+              .map((controller) => controller.text.trim())
+              .where((name) => name.isNotEmpty)
+              .toList()
+          : <String>[];
 
       // Update pharmacy data
       final updatedData = {
@@ -278,6 +302,11 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
             .map((c) => c.text.trim())
             .where((email) => email.isNotEmpty)
             .toList(),
+        'hasInsurance': _hasInsurance,
+        'insuranceCompanies': insuranceCompanies,
+        'description': _descriptionController.text.trim().isNotEmpty 
+            ? _descriptionController.text.trim() 
+            : null,
       };
 
       print('📤 جاري التحديث في Firestore...');
@@ -637,6 +666,22 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 ),
                                 const SizedBox(height: 20),
                                 
+                                // عن الصيدلية (اختياري)
+                                TextFormField(
+                                  controller: _descriptionController,
+                                  decoration: _buildInputDecoration(
+                                    label: 'عن الصيدلية (اختياري)',
+                                    icon: Icons.description,
+                                  ),
+                                  style: const TextStyle(
+                                    color: _textPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 20),
+                                
                                 // أرقام الهاتف (Multiple)
                                 Container(
                                   padding: const EdgeInsets.all(16),
@@ -986,6 +1031,194 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     );
                                   }).toList(),
                                 ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 20),
+                            
+                            // Insurance Section
+                            _buildSectionCard(
+                              title: 'شركات التأمين',
+                              icon: Icons.health_and_safety,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.blue.shade200,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline_rounded,
+                                        color: Colors.blue.shade700,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'هل الصيدلية متعاقدة مع شركات تأمين؟',
+                                          style: TextStyle(
+                                            color: Colors.blue.shade900,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                SwitchListTile(
+                                  value: _hasInsurance,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _hasInsurance = value;
+                                      if (!value) {
+                                        // Clear insurance companies when disabled
+                                        for (var controller in _insuranceCompanyControllers) {
+                                          controller.dispose();
+                                        }
+                                        _insuranceCompanyControllers.clear();
+                                      }
+                                    });
+                                  },
+                                  title: const Text(
+                                    'متعاقد مع شركات تأمين',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  activeColor: _primaryColor,
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                                if (_hasInsurance) ...[
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'أسماء الشركات',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: _textPrimary,
+                                        ),
+                                      ),
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          setState(() {
+                                            _insuranceCompanyControllers.add(TextEditingController());
+                                          });
+                                        },
+                                        icon: const Icon(Icons.add_circle, size: 20),
+                                        label: const Text('إضافة شركة'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: _primaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  if (_insuranceCompanyControllers.isEmpty)
+                                    Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 16,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade50,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: Colors.grey.shade300,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              Icons.business_outlined,
+                                              size: 48,
+                                              color: Colors.grey.shade400,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'لا توجد شركات تأمين مضافة',
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextButton.icon(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _insuranceCompanyControllers.add(TextEditingController());
+                                                });
+                                              },
+                                              icon: const Icon(Icons.add),
+                                              label: const Text('اضغط لإضافة شركة'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: _primaryColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      itemCount: _insuranceCompanyControllers.length,
+                                      itemBuilder: (context, index) {
+                                        return Padding(
+                                          padding: const EdgeInsets.only(bottom: 12),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextFormField(
+                                                  controller: _insuranceCompanyControllers[index],
+                                                  decoration: InputDecoration(
+                                                    labelText: 'اسم الشركة ${index + 1}',
+                                                    prefixIcon: const Icon(Icons.business),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    filled: true,
+                                                    fillColor: Colors.white,
+                                                  ),
+                                                  validator: (value) {
+                                                    if (_hasInsurance && (value == null || value.trim().isEmpty)) {
+                                                      return 'الرجاء إدخال اسم الشركة';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              IconButton(
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _insuranceCompanyControllers[index].dispose();
+                                                    _insuranceCompanyControllers.removeAt(index);
+                                                  });
+                                                },
+                                                icon: const Icon(Icons.remove_circle),
+                                                color: Colors.red,
+                                                tooltip: 'حذف',
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                ],
                               ],
                             ),
                             

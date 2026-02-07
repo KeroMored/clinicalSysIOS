@@ -25,6 +25,8 @@ import '../../admin/presentation/screens/admin_home_page.dart';
 import '../../admin/presentation/screens/additions_screen.dart';
 import '../../auth/presentation/cubit/auth_cubit.dart';
 import '../../auth/presentation/screens/login_screen.dart';
+import '../../medicine_reminders/presentation/screens/medicines_screen.dart';
+import '../../emergency_numbers/presentation/screens/emergency_numbers_screen.dart';
 import 'widgets/widgets.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -51,7 +53,7 @@ class HomeScreen extends StatelessWidget {
             elevation: 0,
             title: const Text(
               
-            "Mallawy Health Care",
+            "Mallawy Care",
             maxLines: 2,
            // textScaleFactor: 0.9,
 textAlign: TextAlign.center,
@@ -597,7 +599,7 @@ textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               
-              // Fourth Row: الإضافات والأدمن
+              // Fourth Row: الإضافات ومواعيد الأدوية
               Row(
                 children: [
                   Expanded(
@@ -636,28 +638,24 @@ textAlign: TextAlign.center,
                     ),
                   ),
                   const SizedBox(width: 16),
-                 
-                  BlocBuilder<AuthCubit, AuthState>(
-                    builder: (context, authState) {
-                      final currentUser = authState is Authenticated ? authState.user : null;
-                      final isAdmin = currentUser?.email == 'kerolesmored@gmail.com';
-                      
-                      if (!isAdmin) {
-                        return  Expanded(child: Container());
-                      }
-                      
-                      return Expanded(
-                        child: ModernServiceCard(
-                          icon: Icons.admin_panel_settings_rounded,
-                          title: 'الأدمن',
-                          gradient: AppTheme.accentGradient,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                pageBuilder: (context, animation, secondaryAnimation) => const AdminHomePage(),
+                  
+                  // Medicine Reminders Button
+                  Expanded(
+                    child: ModernServiceCard(
+                      icon: Icons.medication,
+                      title: 'مواعيد الأدوية',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation, secondaryAnimation) {
+                              return const MedicinesScreen();
+                            },
                             transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                              const begin = Offset(0.0, 0.05);
+                              const begin = Offset(0.5, -0.9);
                               const end = Offset.zero;
                               const curve = Curves.easeOutCubic;
                               var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
@@ -678,12 +676,128 @@ textAlign: TextAlign.center,
                         );
                       },
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Fifth Row: Admin Section
+              BlocBuilder<AuthCubit, AuthState>(
+                builder: (context, authState) {
+                  final currentUser = authState is Authenticated ? authState.user : null;
+                  final isAdmin = currentUser?.email == 'kerolesmored@gmail.com';
+                  
+                  if (!isAdmin) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ModernServiceCard(
+                              icon: Icons.admin_panel_settings_rounded,
+                              title: 'الأدمن',
+                              gradient: AppTheme.accentGradient,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  PageRouteBuilder(
+                                    pageBuilder: (context, animation, secondaryAnimation) => const AdminHomePage(),
+                                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                      const begin = Offset(0.0, 0.05);
+                                      const end = Offset.zero;
+                                      const curve = Curves.easeOutCubic;
+                                      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                                      var offsetAnimation = animation.drive(tween);
+                                      var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                                        CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                                      );
+                                      return FadeTransition(
+                                        opacity: fadeAnimation,
+                                        child: SlideTransition(
+                                          position: offsetAnimation,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    transitionDuration: const Duration(milliseconds: 400),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Empty space to balance the row
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFAFBFC),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   );
-                    },
+                },
+              ),
+              
+              // Emergency Numbers Button
+              Row(
+                children: [
+                  Expanded(
+                    child: ModernServiceCard(
+                      icon: Icons.emergency,
+                      title: 'أرقام الطوارئ',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation, secondaryAnimation) => const EmergencyNumbersScreen(),
+                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                              const begin = Offset(0.0, 0.1);
+                              const end = Offset.zero;
+                              const curve = Curves.easeOutCubic;
+                              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                              var offsetAnimation = animation.drive(tween);
+                              var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+                                CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                              );
+                              return FadeTransition(
+                                opacity: fadeAnimation,
+                                child: SlideTransition(
+                                  position: offsetAnimation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            transitionDuration: const Duration(milliseconds: 400),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Empty space to balance the row
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFAFBFC),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
+           
             ],
           ),
         ),

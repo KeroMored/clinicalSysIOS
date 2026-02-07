@@ -23,6 +23,12 @@ class PharmacyRequestModel {
   final String ownerName;
   final String ownerPhone;
   final String ownerEmail; // البريد الإلكتروني للمصادقة
+  
+  // Insurance
+  final bool hasInsurance;
+  final List<String> insuranceCompanies;
+  
+  final String? description;
 
   PharmacyRequestModel({
     required this.id,
@@ -45,6 +51,9 @@ class PharmacyRequestModel {
     required this.ownerName,
     required this.ownerPhone,
     required this.ownerEmail,
+    this.hasInsurance = false,
+    this.insuranceCompanies = const [],
+    this.description,
   });
 
   factory PharmacyRequestModel.fromJson(Map<String, dynamic> json) {
@@ -71,6 +80,11 @@ class PharmacyRequestModel {
       ownerName: json['ownerName'] ?? '',
       ownerPhone: json['ownerPhone'] ?? '',
       ownerEmail: json['ownerEmail'] ?? '',
+      hasInsurance: json['hasInsurance'] ?? false,
+      insuranceCompanies: json['insuranceCompanies'] != null
+          ? List<String>.from(json['insuranceCompanies'])
+          : [],
+      description: json['description'],
     );
   }
 
@@ -96,6 +110,9 @@ class PharmacyRequestModel {
       'ownerName': ownerName,
       'ownerPhone': ownerPhone,
       'ownerEmail': ownerEmail,
+      'hasInsurance': hasInsurance,
+      'insuranceCompanies': insuranceCompanies,
+      'description': description,
     };
   }
 
@@ -120,6 +137,9 @@ class PharmacyRequestModel {
     String? ownerName,
     String? ownerPhone,
     String? ownerEmail,
+    bool? hasInsurance,
+    List<String>? insuranceCompanies,
+    String? description,
   }) {
     return PharmacyRequestModel(
       id: id ?? this.id,
@@ -143,6 +163,9 @@ class PharmacyRequestModel {
       ownerName: ownerName ?? this.ownerName,
       ownerPhone: ownerPhone ?? this.ownerPhone,
       ownerEmail: ownerEmail ?? this.ownerEmail,
+      hasInsurance: hasInsurance ?? this.hasInsurance,
+      insuranceCompanies: insuranceCompanies ?? this.insuranceCompanies,
+      description: description ?? this.description,
     );
   }
 }

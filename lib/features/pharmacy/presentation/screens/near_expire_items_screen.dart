@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/near_expire_item_model.dart';

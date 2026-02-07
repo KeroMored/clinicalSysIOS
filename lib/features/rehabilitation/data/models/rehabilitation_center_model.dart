@@ -59,6 +59,8 @@ class RehabilitationCenterModel {
   final List<String> authEmails; // إيميلات المصادقة للدخول
   final List<String> serviceTypes;
   final String address;
+  final String governorate; // المحافظة (مثلاً: المنيا)
+  final String center; // المركز (مثلاً: ملوي)
   final double latitude;
   final double longitude;
   final String? profileImageUrl;
@@ -89,6 +91,8 @@ class RehabilitationCenterModel {
     required this.authEmails,
     required this.serviceTypes,
     required this.address,
+    this.governorate = 'المنيا',
+    this.center = 'ملوي',
     required this.latitude,
     required this.longitude,
     this.profileImageUrl,
@@ -120,6 +124,8 @@ class RehabilitationCenterModel {
       'authEmails': authEmails,
       'serviceTypes': serviceTypes,
       'address': address,
+      'governorate': governorate,
+      'center': center,
       'latitude': latitude,
       'longitude': longitude,
       'profileImageUrl': profileImageUrl,
@@ -165,6 +171,8 @@ class RehabilitationCenterModel {
           : (map['ownerEmail'] != null ? [map['ownerEmail']] : []),
       serviceTypes: List<String>.from(map['serviceTypes'] ?? []),
       address: map['address'] ?? '',
+      governorate: map['governorate'] ?? 'المنيا',
+      center: map['center'] ?? 'ملوي',
       latitude: (map['latitude'] ?? 0.0).toDouble(),
       longitude: (map['longitude'] ?? 0.0).toDouble(),
       profileImageUrl: map['profileImageUrl'],
@@ -191,6 +199,8 @@ class RehabilitationCenterModel {
     List<String>? authEmails,
     List<String>? serviceTypes,
     String? address,
+    String? governorate,
+    String? center,
     double? latitude,
     double? longitude,
     String? profileImageUrl,
@@ -215,6 +225,8 @@ class RehabilitationCenterModel {
       authEmails: authEmails ?? this.authEmails,
       serviceTypes: serviceTypes ?? this.serviceTypes,
       address: address ?? this.address,
+      governorate: governorate ?? this.governorate,
+      center: center ?? this.center,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,

@@ -5,6 +5,9 @@ class UserModel {
   final String photoUrl;
   final String role; // 'user', 'pharmacy', 'admin'
   final String? pharmacyId; // إذا كان صاحب صيدلية
+  final String? phoneNumber; // رقم الهاتف
+  final String? whatsappNumber; // رقم الواتساب
+  final String? address; // العنوان
 
   UserModel({
     required this.uid,
@@ -13,6 +16,9 @@ class UserModel {
     this.photoUrl = '',
     this.role = 'user', // default: مستخدم عادي
     this.pharmacyId,
+    this.phoneNumber,
+    this.whatsappNumber,
+    this.address,
   });
 
   // Convert from Firestore document
@@ -24,6 +30,9 @@ class UserModel {
       photoUrl: json['photoUrl'] ?? '',
       role: json['role'] ?? 'user',
       pharmacyId: json['pharmacyId'],
+      phoneNumber: json['phoneNumber'],
+      whatsappNumber: json['whatsappNumber'],
+      address: json['address'],
     );
   }
 
@@ -36,6 +45,9 @@ class UserModel {
       'photoUrl': photoUrl,
       'role': role,
       'pharmacyId': pharmacyId,
+      'phoneNumber': phoneNumber,
+      'whatsappNumber': whatsappNumber,
+      'address': address,
     };
   }
 
@@ -47,6 +59,9 @@ class UserModel {
     String? photoUrl,
     String? role,
     String? pharmacyId,
+    String? phoneNumber,
+    String? whatsappNumber,
+    String? address,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -55,6 +70,9 @@ class UserModel {
       photoUrl: photoUrl ?? this.photoUrl,
       role: role ?? this.role,
       pharmacyId: pharmacyId ?? this.pharmacyId,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      whatsappNumber: whatsappNumber ?? this.whatsappNumber,
+      address: address ?? this.address,
     );
   }
 

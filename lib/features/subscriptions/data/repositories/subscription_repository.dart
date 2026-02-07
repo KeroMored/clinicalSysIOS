@@ -95,6 +95,42 @@ class SubscriptionRepository {
             .toList());
   }
 
+  // Get subscribed places by type with pagination
+  Stream<List<SubscribedPlaceModel>> getSubscribedPlacesByTypePaginated({required PlaceType type, int limit = 10}) {
+    return _subscribedPlacesCollection
+        .where('placeType', isEqualTo: type.englishName)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+            .toList());
+  }
+
+  // Get more places by type (pagination)
+  Future<List<SubscribedPlaceModel>> getMorePlacesByType({required PlaceType type, int limit = 10, String? afterPlaceId}) async {
+    try {
+      Query query = _subscribedPlacesCollection
+          .where('placeType', isEqualTo: type.englishName)
+          .orderBy('createdAt', descending: true)
+          .limit(limit);
+
+      if (afterPlaceId != null) {
+        final lastDoc = await _subscribedPlacesCollection.doc(afterPlaceId).get();
+        if (lastDoc.exists) {
+          query = query.startAfterDocument(lastDoc);
+        }
+      }
+
+      final snapshot = await query.get();
+      return snapshot.docs
+          .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+    } catch (e) {
+      throw Exception('فشل في تحميل المزيد من الأماكن: $e');
+    }
+  }
+
   // Get subscribed place by ID
   Future<SubscribedPlaceModel?> getSubscribedPlaceById(String id) async {
     try {

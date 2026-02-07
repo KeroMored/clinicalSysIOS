@@ -692,8 +692,6 @@ class _MonthAnalytics extends StatelessWidget {
     final total = bookings.length;
     final completed = bookings.where((b) => b.status == BookingStatus.completed).length;
     final cancelled = bookings.where((b) => b.status == BookingStatus.cancelled).length;
-    final confirmed = bookings.where((b) => b.status == BookingStatus.confirmed).length;
-    final pending = bookings.where((b) => b.status == BookingStatus.pending).length;
     
     final completionRate = total > 0 ? (completed / total * 100).toStringAsFixed(1) : '0';
     final cancellationRate = total > 0 ? (cancelled / total * 100).toStringAsFixed(1) : '0';
@@ -809,37 +807,7 @@ class _MonthAnalytics extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 
-                // الصف الثالث: مؤكد ومعلق
-                Row(
-                  children: [
-                    Expanded(
-                      child: _AnalyticsCard(
-                        icon: Icons.check_circle_rounded,
-                        title: 'مؤكد',
-                        value: confirmed.toString(),
-                        color: Colors.blue,
-                        gradient: LinearGradient(
-                          colors: [Colors.blue, Colors.blue.shade700],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _AnalyticsCard(
-                        icon: Icons.pending_rounded,
-                        title: 'معلق',
-                        value: pending.toString(),
-                        color: Colors.orange,
-                        gradient: LinearGradient(
-                          colors: [Colors.orange, Colors.orange.shade700],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                
-                // الصف الرابع: متوسطات
+                // الصف الثالث: متوسطات
                 Row(
                   children: [
                     Expanded(
@@ -888,8 +856,6 @@ class _DayAnalytics extends StatelessWidget {
     final total = bookings.length;
     final completed = bookings.where((b) => b.status == BookingStatus.completed).length;
     final cancelled = bookings.where((b) => b.status == BookingStatus.cancelled).length;
-    final confirmed = bookings.where((b) => b.status == BookingStatus.confirmed).length;
-    // final pending = bookings.where((b) => b.status == BookingStatus.pending).length;
     
     final completionRate = total > 0 ? (completed / total * 100).toStringAsFixed(1) : '0';
     final cancellationRate = total > 0 ? (cancelled / total * 100).toStringAsFixed(1) : '0';
@@ -935,52 +901,35 @@ class _DayAnalytics extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _CompactStatCard(
-                        icon: Icons.bookmark,
-                        label: 'الإجمالي',
-                        value: total.toString(),
-                        color: const Color(0xFF3B82F6),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _CompactStatCard(
-                        icon: Icons.task_alt,
-                        label: 'تم الكشف',
-                        value: completed.toString(),
-                        color: Colors.green,
-                        percentage: completionRate,
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: _CompactStatCard(
+                    icon: Icons.bookmark,
+                    label: 'الإجمالي',
+                    value: total.toString(),
+                    color: const Color(0xFF3B82F6),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _CompactStatCard(
-                        icon: Icons.cancel,
-                        label: 'ملغي',
-                        value: cancelled.toString(),
-                        color: Colors.red,
-                        percentage: cancellationRate,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _CompactStatCard(
-                        icon: Icons.check_circle,
-                        label: 'مؤكد',
-                        value: confirmed.toString(),
-                        color: Colors.blue,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _CompactStatCard(
+                    icon: Icons.task_alt,
+                    label: 'تم الكشف',
+                    value: completed.toString(),
+                    color: Colors.green,
+                    percentage: completionRate,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _CompactStatCard(
+                    icon: Icons.cancel,
+                    label: 'ملغي',
+                    value: cancelled.toString(),
+                    color: Colors.red,
+                    percentage: cancellationRate,
+                  ),
                 ),
               ],
             ),

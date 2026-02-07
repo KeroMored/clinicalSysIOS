@@ -14,6 +14,7 @@ class NurseModel {
   final String address;
   final String governorate;
   final String city;
+  final String center; // المركز (مثلاً: ملوي)
   final double? latitude;
   final double? longitude;
   
@@ -58,6 +59,7 @@ class NurseModel {
     required this.address,
     required this.governorate,
     required this.city,
+    this.center = 'ملوي',
     this.latitude,
     this.longitude,
     this.email,
@@ -95,6 +97,7 @@ class NurseModel {
       'address': address,
       'governorate': governorate,
       'city': city,
+      'center': center,
       'latitude': latitude,
       'longitude': longitude,
       'email': email,
@@ -133,6 +136,7 @@ class NurseModel {
       address: map['address'] ?? '',
       governorate: map['governorate'] ?? '',
       city: map['city'] ?? '',
+      center: map['center'] ?? 'ملوي',
       latitude: map['latitude']?.toDouble(),
       longitude: map['longitude']?.toDouble(),
       email: map['email'],
@@ -172,6 +176,7 @@ class NurseModel {
     String? address,
     String? governorate,
     String? city,
+    String? center,
     double? latitude,
     double? longitude,
     String? email,
@@ -206,6 +211,7 @@ class NurseModel {
       address: address ?? this.address,
       governorate: governorate ?? this.governorate,
       city: city ?? this.city,
+      center: center ?? this.center,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       email: email ?? this.email,

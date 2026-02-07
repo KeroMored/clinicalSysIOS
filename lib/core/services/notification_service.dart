@@ -8,8 +8,9 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications = 
       FlutterLocalNotificationsPlugin();
 
-  // Topic name for all pharmacies
+  // Topic names
   static const String pharmacyTopic = 'pharmacy_requests';
+  static const String allUsersTopic = 'all_users'; // For general notifications (offers, etc.)
 
   /// Initialize notifications and request permissions
   Future<void> initialize() async {
@@ -84,6 +85,16 @@ class NotificationService {
       enableVibration: true,
     );
 
+    // Medicine offers channel
+    const offersChannel = AndroidNotificationChannel(
+      'medicine_offers',
+      'Medicine Offers',
+      description: 'Notifications for special medicine offers',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
     await _localNotifications
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -99,6 +110,11 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(bookingsChannel);
 
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(offersChannel);
+
     print('✅ Notification channels created');
   }
 
@@ -106,6 +122,26 @@ class NotificationService {
   void _onNotificationTapped(NotificationResponse response) {
     print('Notification tapped: ${response.payload}');
     // You can navigate to specific screens here based on payload
+  }
+
+  /// Subscribe ALL users to the general topic for offers and announcements
+  Future<void> subscribeToAllUsersTopic(String userId) async {
+    try {
+      await _messaging.subscribeToTopic(allUsersTopic);
+      print('✅ Subscribed to all_users topic');
+      
+      // Get FCM token
+      String? token = await _messaging.getToken();
+      
+      // Update user document with FCM token and topic subscription
+      await _firestore.collection('users').doc(userId).update({
+        'fcmToken': token,
+        'subscribedToAllUsers': true,
+        'allUsersTopicSubscribedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('❌ Error subscribing to all_users topic: $e');
+    }
   }
 
   /// Subscribe pharmacy owner to the topic

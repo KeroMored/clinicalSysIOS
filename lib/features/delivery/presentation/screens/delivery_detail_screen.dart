@@ -84,19 +84,6 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
     }
   }
 
-  Future<void> _openMap(double latitude, double longitude) async {
-    final Uri mapUri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude');
-    try {
-      await launchUrl(mapUri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e')),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,16 +97,18 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 16),
+                _buildContactCard(),
+                const SizedBox(height: 16),
                 _buildInfoCard(),
                 const SizedBox(height: 16),
                 _buildReviewsButton(context),
                 const SizedBox(height: 16),
-                _buildContactButtons(),
-                const SizedBox(height: 16),
                 _buildLocationCard(),
                 const SizedBox(height: 16),
-                _buildAboutCard(),
-                const SizedBox(height: 24),
+                if (_delivery.about != null && _delivery.about!.isNotEmpty)
+                  _buildAboutCard(),
+                if (_delivery.about != null && _delivery.about!.isNotEmpty)
+                  const SizedBox(height: 24),
               ],
             ),
           ),
@@ -382,92 +371,124 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
     );
   }
 
-  Widget _buildContactButtons() {
+  Widget _buildContactCard() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.phone_in_talk_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _makePhoneCall(_delivery.deliveryPhone),
-                  borderRadius: BorderRadius.circular(14),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.phone_rounded, color: Colors.white, size: 22),
-                      SizedBox(width: 8),
-                      Text(
-                        'مكالمة',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+              const SizedBox(width: 12),
+              const Text(
+                'تواصل معنا',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Phone Numbers (Multiple)
+          if (_delivery.deliveryPhones.isNotEmpty) ...[
+            ...List.generate(_delivery.deliveryPhones.length, (index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF3B82F6).withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _makePhoneCall(_delivery.deliveryPhones[index]),
+                    icon: const Icon(Icons.phone, size: 20),
+                    label: Text(
+                      _delivery.deliveryPhones.length > 1 
+                          ? 'رقم ${index + 1}: ${_delivery.deliveryPhones[index]}'
+                          : 'اتصال: ${_delivery.deliveryPhones[index]}',
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B82F6),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ],
+          
+          // WhatsApp Button
+          if (_delivery.deliveryWhatsApp.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF25D366).withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () => _openWhatsApp(_delivery.deliveryWhatsApp),
+                icon: Icon(MdiIcons.whatsapp, size: 20),
+                label: const Text(
+                  'واتساب',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  elevation: 0,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF10B981), Color(0xFF059669)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _openWhatsApp(_delivery.deliveryWhatsApp),
-                  borderRadius: BorderRadius.circular(14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(MdiIcons.whatsapp, color: Colors.white, size: 22),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'واتساب',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -491,58 +512,38 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'الموقع',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  size: 20,
+                  color: Color(0xFF06B6D4),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'العنوان',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          _buildInfoRow(
-            Icons.location_on_rounded,
-            'العنوان',
+          Text(
             _delivery.address,
-          ),
-  
-          const SizedBox(height: 16),
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFEC4899), Color(0xFFF43F5E)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFEC4899).withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _openMap(_delivery.latitude, _delivery.longitude),
-                borderRadius: BorderRadius.circular(12),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.map_rounded, color: Colors.white, size: 22),
-                    SizedBox(width: 8),
-                    Text(
-                      'فتح في خرائط جوجل',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color(0xFF64748B),
+              height: 1.6,
             ),
           ),
         ],
@@ -552,6 +553,7 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
 
   Widget _buildAboutCard() {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -568,17 +570,34 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'نبذة عن الديليفري',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.info,
+                  size: 20,
+                  color: Color(0xFF06B6D4),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'نبذة عن الديليفري',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(
-            _delivery.about,
+            _delivery.about!,
             style: const TextStyle(
               fontSize: 15,
               color: Color(0xFF64748B),

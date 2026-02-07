@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PharmacyModel {
   final String id;
   final String name;
+  final String? description; // وصف الصيدلية (اختياري)
   final String address;
   final List<String> phones;
   final String whatsapp;
@@ -23,6 +24,12 @@ class PharmacyModel {
   final String ownerName; // اسم صاحب الصيدلية
   final String ownerPhone; // رقم صاحب الصيدلية
   final List<String> authEmails; // إيميلات المصادقة للدخول
+  final String governorate; // المحافظة (مثلاً: المنيا)
+  final String center; // المركز (مثلاً: ملوي)
+  
+  // Insurance Information
+  final bool hasInsurance; // متعاقد مع شركات تأمين؟
+  final List<String> insuranceCompanies; // أسماء شركات التأمين
   
   // Rating and Engagement
   final double averageRating; // متوسط التقييم (0.0 - 5.0)
@@ -32,6 +39,7 @@ class PharmacyModel {
   PharmacyModel({
     required this.id,
     required this.name,
+    this.description,
     required this.address,
     this.phones = const [],
     required this.whatsapp,
@@ -52,15 +60,20 @@ class PharmacyModel {
     this.ownerName = '',
     this.ownerPhone = '',
     this.authEmails = const [],
+    this.governorate = 'المنيا',
+    this.center = 'ملوي',
     this.averageRating = 0.0,
     this.totalRatings = 0,
     this.totalLikes = 0,
+    this.hasInsurance = false,
+    this.insuranceCompanies = const [],
   });
 
   factory PharmacyModel.fromJson(Map<String, dynamic> json) {
     return PharmacyModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
+      description: json['description'],
       address: json['address'] ?? '',
       phones: json['phones'] != null
           ? List<String>.from(json['phones'])
@@ -85,9 +98,15 @@ class PharmacyModel {
       authEmails: json['authEmails'] != null
           ? List<String>.from(json['authEmails'])
           : (json['ownerEmail'] != null ? [json['ownerEmail']] : []),
+      governorate: json['governorate'] ?? 'المنيا',
+      center: json['center'] ?? 'ملوي',
       averageRating: (json['averageRating'] ?? 0.0).toDouble(),
       totalRatings: json['totalRatings'] ?? 0,
       totalLikes: json['totalLikes'] ?? 0,
+      hasInsurance: json['hasInsurance'] ?? false,
+      insuranceCompanies: json['insuranceCompanies'] != null
+          ? List<String>.from(json['insuranceCompanies'])
+          : [],
     );
   }
 
@@ -96,6 +115,7 @@ class PharmacyModel {
     return PharmacyModel(
       id: doc.id,
       name: json['name'] ?? '',
+      description: json['description'],
       address: json['address'] ?? '',
       phones: json['phones'] != null
           ? List<String>.from(json['phones'])
@@ -120,9 +140,15 @@ class PharmacyModel {
       authEmails: json['authEmails'] != null
           ? List<String>.from(json['authEmails'])
           : (json['ownerEmail'] != null ? [json['ownerEmail']] : []),
+      governorate: json['governorate'] ?? 'المنيا',
+      center: json['center'] ?? 'ملوي',
       averageRating: (json['averageRating'] ?? 0.0).toDouble(),
       totalRatings: json['totalRatings'] ?? 0,
       totalLikes: json['totalLikes'] ?? 0,
+      hasInsurance: json['hasInsurance'] ?? false,
+      insuranceCompanies: json['insuranceCompanies'] != null
+          ? List<String>.from(json['insuranceCompanies'])
+          : [],
     );
   }
 
@@ -130,6 +156,7 @@ class PharmacyModel {
     return {
       'id': id,
       'name': name,
+      'description': description,
       'address': address,
       'phones': phones,
       'whatsapp': whatsapp,
@@ -150,15 +177,20 @@ class PharmacyModel {
       'ownerName': ownerName,
       'ownerPhone': ownerPhone,
       'authEmails': authEmails,
+      'governorate': governorate,
+      'center': center,
       'averageRating': averageRating,
       'totalRatings': totalRatings,
       'totalLikes': totalLikes,
+      'hasInsurance': hasInsurance,
+      'insuranceCompanies': insuranceCompanies,
     };
   }
 
   PharmacyModel copyWith({
     String? id,
     String? name,
+    String? description,
     String? address,
     List<String>? phones,
     String? whatsapp,
@@ -179,10 +211,15 @@ class PharmacyModel {
     String? ownerName,
     String? ownerPhone,
     List<String>? authEmails,
+    String? governorate,
+    String? center,
+    bool? hasInsurance,
+    List<String>? insuranceCompanies,
   }) {
     return PharmacyModel(
       id: id ?? this.id,
       name: name ?? this.name,
+      description: description ?? this.description,
       address: address ?? this.address,
       phones: phones ?? this.phones,
       whatsapp: whatsapp ?? this.whatsapp,
@@ -204,6 +241,10 @@ class PharmacyModel {
       ownerName: ownerName ?? this.ownerName,
       ownerPhone: ownerPhone ?? this.ownerPhone,
       authEmails: authEmails ?? this.authEmails,
+      governorate: governorate ?? this.governorate,
+      center: center ?? this.center,
+      hasInsurance: hasInsurance ?? this.hasInsurance,
+      insuranceCompanies: insuranceCompanies ?? this.insuranceCompanies,
     );
   }
 }

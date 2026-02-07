@@ -74,6 +74,9 @@ class AuthRepository {
         final user = UserModel.fromJson(userDoc.data()!);
         
         // Handle notifications in background (fire and forget)
+        // ALL users subscribe to general topic
+        _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
+        
         if (user.role == 'pharmacy') {
           _notificationService.subscribeToPharmacyTopic(firebaseUser.uid);
         }
@@ -96,6 +99,9 @@ class AuthRepository {
       // Save user (fire and forget - don't wait)
       _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toJson());
       
+      // Subscribe ALL new users to general topic
+      _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
+      
       // Handle pharmacy setup in background (fire and forget)
       if (role == 'pharmacy') {
         _setupPharmacyUser(firebaseUser.uid, firebaseUser.email!);
@@ -110,7 +116,10 @@ class AuthRepository {
   // Background pharmacy setup (fire and forget)
   Future<void> _setupPharmacyUser(String uid, String email) async {
     try {
-      // Subscribe to notifications
+      // Subscribe to ALL users topic (general notifications)
+      await _notificationService.subscribeToAllUsersTopic(uid);
+      
+      // Subscribe to pharmacy-specific notifications
       await _notificationService.subscribeToPharmacyTopic(uid);
       
       // Get pharmacy ID and update user

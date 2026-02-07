@@ -13,6 +13,8 @@ class ClinicModel {
   final String address;
   final double? latitude;
   final double? longitude;
+  final String governorate; // المحافظة (مثلاً: المنيا)
+  final String center; // المركز (مثلاً: ملوي)
   
   // Doctor Account Info
   final List<String> authEmails; // إيميلات المصادقة للدخول (يمكن أن تكون أكثر من إيميل)
@@ -51,6 +53,8 @@ class ClinicModel {
     required this.address,
     this.latitude,
     this.longitude,
+    this.governorate = 'المنيا',
+    this.center = 'ملوي',
     this.authEmails = const [],
     this.doctorEmails = const [],
     this.secretaryEmails = const [],
@@ -98,6 +102,8 @@ class ClinicModel {
       address: data['address'] ?? '',
       latitude: data['latitude']?.toDouble(),
       longitude: data['longitude']?.toDouble(),
+      governorate: data['governorate'] ?? 'المنيا',
+      center: data['center'] ?? 'ملوي',
       authEmails: data['authEmails'] != null 
           ? List<String>.from(data['authEmails'])
           : (data['doctorEmail'] != null ? [data['doctorEmail']] : []), // للتوافق مع البيانات القديمة
@@ -141,6 +147,8 @@ class ClinicModel {
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
+      'governorate': governorate,
+      'center': center,
       'authEmails': authEmails,
       'doctorEmails': doctorEmails,
       'secretaryEmails': secretaryEmails,

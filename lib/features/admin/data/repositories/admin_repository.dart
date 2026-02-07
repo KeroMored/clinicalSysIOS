@@ -39,8 +39,11 @@ class AdminRepository {
               requestDate: DateTime.now(),
               ownerName: data['ownerName'] ?? '',
               ownerPhone: data['ownerPhone'] ?? '',
-              ownerEmail: data['ownerEmail'] ?? '',
-            );
+              ownerEmail: data['ownerEmail'] ?? '',              hasInsurance: data['hasInsurance'] ?? false,
+              insuranceCompanies: data['insuranceCompanies'] != null
+                  ? List<String>.from(data['insuranceCompanies'])
+                  : [],
+              description: data['description'],            );
           })
           .toList();
     } catch (e) {
@@ -84,6 +87,11 @@ class AdminRepository {
               ownerName: data['ownerName'] ?? '',
               ownerPhone: data['ownerPhone'] ?? '',
               ownerEmail: data['ownerEmail'] ?? '',
+              hasInsurance: data['hasInsurance'] ?? false,
+              insuranceCompanies: data['insuranceCompanies'] != null
+                  ? List<String>.from(data['insuranceCompanies'])
+                  : [],
+              description: data['description'],
             );
           })
           .toList();
@@ -216,6 +224,9 @@ class AdminRepository {
         ownerName: request.ownerName,
         ownerPhone: request.ownerPhone,
         authEmails: [request.ownerEmail],
+        hasInsurance: request.hasInsurance,
+        insuranceCompanies: request.insuranceCompanies,
+        description: request.description,
       ).toJson();
 
       await _firestore.collection('pharmacies').add(pharmacyData);

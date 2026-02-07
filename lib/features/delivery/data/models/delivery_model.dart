@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class DeliveryModel {
   final String id;
   final String deliveryName;
-  final String deliveryPhone;
+  final List<String> deliveryPhones; // Changed to list for multiple phones
   final String deliveryWhatsApp;
   final String? profileImageUrl;
   final String vehicleType; // motorcycle, car, bicycle
@@ -12,9 +12,10 @@ class DeliveryModel {
   final String address;
   final String governorate;
   final String city;
-  final double latitude;
-  final double longitude;
-  final String about;
+  final String center; // المركز (مثلاً: ملوي)
+  final double? latitude; // Optional - not used
+  final double? longitude; // Optional - not used
+  final String? about; // Made optional
   final bool availableNow;
   final bool isApproved;
   final bool isActive;
@@ -32,7 +33,7 @@ class DeliveryModel {
   DeliveryModel({
     required this.id,
     required this.deliveryName,
-    required this.deliveryPhone,
+    List<String>? deliveryPhones,
     required this.deliveryWhatsApp,
     this.profileImageUrl,
     required this.vehicleType,
@@ -41,9 +42,10 @@ class DeliveryModel {
     required this.address,
     required this.governorate,
     required this.city,
-    required this.latitude,
-    required this.longitude,
-    required this.about,
+    this.center = 'ملوي',
+    this.latitude, // Optional
+    this.longitude, // Optional
+    this.about, // Now optional
     required this.availableNow,
     required this.isApproved,
     required this.isActive,
@@ -57,13 +59,13 @@ class DeliveryModel {
     this.averageRating = 0.0,
     this.totalRatings = 0,
     this.likesCount = 0,
-  });
+  }) : deliveryPhones = deliveryPhones ?? [];
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'deliveryName': deliveryName,
-      'deliveryPhone': deliveryPhone,
+      'deliveryPhones': deliveryPhones,
       'deliveryWhatsApp': deliveryWhatsApp,
       'profileImageUrl': profileImageUrl,
       'vehicleType': vehicleType,
@@ -72,6 +74,7 @@ class DeliveryModel {
       'address': address,
       'governorate': governorate,
       'city': city,
+      'center': center,
       'latitude': latitude,
       'longitude': longitude,
       'about': about,
@@ -92,10 +95,23 @@ class DeliveryModel {
   }
 
   factory DeliveryModel.fromMap(Map<String, dynamic> map) {
+    // Handle legacy data with single deliveryPhone
+    List<String> phones = [];
+    try {
+      if (map['deliveryPhones'] != null) {
+        phones = List<String>.from(map['deliveryPhones']);
+      } else if (map['deliveryPhone'] != null && map['deliveryPhone'].toString().isNotEmpty) {
+        phones = [map['deliveryPhone'].toString()];
+      }
+    } catch (e) {
+      print('Error parsing delivery phones: $e');
+      phones = [];
+    }
+    
     return DeliveryModel(
       id: map['id'] ?? '',
       deliveryName: map['deliveryName'] ?? '',
-      deliveryPhone: map['deliveryPhone'] ?? '',
+      deliveryPhones: phones,
       deliveryWhatsApp: map['deliveryWhatsApp'] ?? '',
       profileImageUrl: map['profileImageUrl'],
       vehicleType: map['vehicleType'] ?? 'motorcycle',
@@ -104,9 +120,10 @@ class DeliveryModel {
       address: map['address'] ?? '',
       governorate: map['governorate'] ?? '',
       city: map['city'] ?? '',
+      center: map['center'] ?? 'ملوي',
       latitude: (map['latitude'] ?? 0.0).toDouble(),
       longitude: (map['longitude'] ?? 0.0).toDouble(),
-      about: map['about'] ?? '',
+      about: map['about'], // Now nullable
       availableNow: map['availableNow'] ?? false,
       isApproved: map['isApproved'] ?? false,
       isActive: map['isActive'] ?? false,
@@ -126,7 +143,7 @@ class DeliveryModel {
   DeliveryModel copyWith({
     String? id,
     String? deliveryName,
-    String? deliveryPhone,
+    List<String>? deliveryPhones,
     String? deliveryWhatsApp,
     String? profileImageUrl,
     String? vehicleType,
@@ -135,6 +152,7 @@ class DeliveryModel {
     String? address,
     String? governorate,
     String? city,
+    String? center,
     double? latitude,
     double? longitude,
     String? about,
@@ -155,7 +173,7 @@ class DeliveryModel {
     return DeliveryModel(
       id: id ?? this.id,
       deliveryName: deliveryName ?? this.deliveryName,
-      deliveryPhone: deliveryPhone ?? this.deliveryPhone,
+      deliveryPhones: deliveryPhones ?? this.deliveryPhones,
       deliveryWhatsApp: deliveryWhatsApp ?? this.deliveryWhatsApp,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       vehicleType: vehicleType ?? this.vehicleType,
@@ -164,6 +182,7 @@ class DeliveryModel {
       address: address ?? this.address,
       governorate: governorate ?? this.governorate,
       city: city ?? this.city,
+      center: center ?? this.center,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       about: about ?? this.about,
@@ -182,6 +201,9 @@ class DeliveryModel {
       likesCount: likesCount ?? this.likesCount,
     );
   }
+  
+  // Get primary phone
+  String get primaryPhone => deliveryPhones.isNotEmpty ? deliveryPhones.first : '';
 }
 
 class VehicleTypes {

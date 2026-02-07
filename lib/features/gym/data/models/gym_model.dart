@@ -7,6 +7,7 @@ class GymModel {
   final String address;
   final String city;
   final String governorate;
+  final String center; // المركز (مثلاً: ملوي)
   final double latitude;
   final double longitude;
   final String phone;
@@ -71,6 +72,7 @@ class GymModel {
     required this.address,
     required this.city,
     required this.governorate,
+    this.center = 'ملوي',
     required this.latitude,
     required this.longitude,
     required this.phone,
@@ -121,6 +123,7 @@ class GymModel {
       address: data['address'] ?? '',
       city: data['city'] ?? '',
       governorate: data['governorate'] ?? '',
+      center: data['center'] ?? 'ملوي',
       latitude: (data['latitude'] ?? 0.0).toDouble(),
       longitude: (data['longitude'] ?? 0.0).toDouble(),
       phone: data['phone'] ?? '',
@@ -179,6 +182,7 @@ class GymModel {
       'address': address,
       'city': city,
       'governorate': governorate,
+      'center': center,
       'latitude': latitude,
       'longitude': longitude,
       'phone': phone,

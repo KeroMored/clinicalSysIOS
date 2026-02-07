@@ -16,6 +16,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   List<SubscribedPlaceModel> _allPlaces = [];
   bool _hasMoreData = true;
   bool _isLoadingMore = false;
+  PlaceType? _currentFilterType; // Track current filter
 
   SubscriptionCubit(this._repository) : super(SubscriptionInitial());
 
@@ -31,6 +32,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       _allPlaces = [];
       _hasMoreData = true;
       _isLoadingMore = false;
+      _currentFilterType = null; // Reset filter
 
       _placesSubscription?.cancel();
       _placesSubscription = _repository.getAllSubscribedPlacesPaginated(limit: _pageSize).listen(
@@ -63,10 +65,21 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     _isLoadingMore = true;
     
     try {
-      final morePlaces = await _repository.getMoreSubscribedPlaces(
-        limit: _pageSize,
-        afterPlaceId: _allPlaces.isNotEmpty ? _allPlaces.last.id : null,
-      );
+      List<SubscribedPlaceModel> morePlaces;
+      
+      // Check if we have a filter
+      if (_currentFilterType != null) {
+        morePlaces = await _repository.getMorePlacesByType(
+          type: _currentFilterType!,
+          limit: _pageSize,
+          afterPlaceId: _allPlaces.isNotEmpty ? _allPlaces.last.id : null,
+        );
+      } else {
+        morePlaces = await _repository.getMoreSubscribedPlaces(
+          limit: _pageSize,
+          afterPlaceId: _allPlaces.isNotEmpty ? _allPlaces.last.id : null,
+        );
+      }
 
       if (morePlaces.isNotEmpty) {
         _allPlaces.addAll(morePlaces);
@@ -77,6 +90,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
           settings: currentState.settings,
           statistics: currentState.statistics,
           hasMoreData: _hasMoreData,
+          filterType: _currentFilterType,
         ));
       } else {
         _hasMoreData = false;
@@ -85,6 +99,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
           settings: currentState.settings,
           statistics: currentState.statistics,
           hasMoreData: false,
+          filterType: _currentFilterType,
         ));
       }
     } catch (e) {
@@ -94,20 +109,31 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
     }
   }
 
-  // Load places by type
+  // Load places by type (with pagination)
   Future<void> loadPlacesByType(PlaceType type) async {
-    emit(PlacesLoading());
+    emit(SubscriptionLoading());
     try {
       final settings = await _repository.getSettings();
       final statistics = await _repository.getStatistics();
 
+      _allPlaces = [];
+      _hasMoreData = true;
+      _isLoadingMore = false;
+      _currentFilterType = type; // Set current filter
+
       _placesSubscription?.cancel();
-      _placesSubscription = _repository.getSubscribedPlacesByType(type).listen(
+      _placesSubscription = _repository.getSubscribedPlacesByTypePaginated(
+        type: type,
+        limit: _pageSize,
+      ).listen(
         (places) {
+          _allPlaces = places;
+          _hasMoreData = places.length >= _pageSize;
           emit(SubscriptionLoaded(
             places: places,
             settings: settings,
             statistics: statistics,
+            hasMoreData: _hasMoreData,
             filterType: type,
           ));
         },

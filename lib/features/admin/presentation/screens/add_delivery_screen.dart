@@ -21,7 +21,7 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
   
   // Controllers
   final _deliveryNameController = TextEditingController();
-  final _deliveryPhoneController = TextEditingController();
+  final List<TextEditingController> _phoneControllers = [TextEditingController()]; // Multiple phones
   final _deliveryWhatsappController = TextEditingController();
   final _deliveryFeeController = TextEditingController();
   final _addressController = TextEditingController();
@@ -42,12 +42,29 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
   @override
   void dispose() {
     _deliveryNameController.dispose();
-    _deliveryPhoneController.dispose();
+    for (var controller in _phoneControllers) {
+      controller.dispose();
+    }
     _deliveryWhatsappController.dispose();
     _deliveryFeeController.dispose();
     _addressController.dispose();
     _aboutController.dispose();
     super.dispose();
+  }
+  
+  void _addPhoneField() {
+    setState(() {
+      _phoneControllers.add(TextEditingController());
+    });
+  }
+  
+  void _removePhoneField(int index) {
+    if (_phoneControllers.length > 1) {
+      setState(() {
+        _phoneControllers[index].dispose();
+        _phoneControllers.removeAt(index);
+      });
+    }
   }
 
   Future<void> _pickImage() async {
@@ -211,16 +228,6 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
       return;
     }
 
-    if (_latitude == 0.0 || _longitude == 0.0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('يجب تحديد الموقع التلقائي'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
 
     setState(() {
       _isSubmitting = true;
@@ -236,7 +243,10 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
       final delivery = DeliveryModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         deliveryName: _deliveryNameController.text.trim(),
-        deliveryPhone: _deliveryPhoneController.text.trim(),
+        deliveryPhones: _phoneControllers
+            .map((controller) => controller.text.trim())
+            .where((phone) => phone.isNotEmpty)
+            .toList(),
         deliveryWhatsApp: _deliveryWhatsappController.text.trim(),
         profileImageUrl: profileImageUrl,
         vehicleType: _selectedVehicleType,
@@ -245,9 +255,11 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
         address: _addressController.text.trim(),
         governorate: '',
         city: '',
-        latitude: _latitude,
-        longitude: _longitude,
-        about: _aboutController.text.trim(),
+        latitude: null,
+        longitude: null,
+        about: _aboutController.text.trim().isNotEmpty 
+            ? _aboutController.text.trim() 
+            : null, // Now optional
         availableNow: false,
         isApproved: false,
         isActive: false,
@@ -375,23 +387,48 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Phone Number
-                TextFormField(
-                  controller: _deliveryPhoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'رقم الهاتف',
-                    prefixIcon: Icon(Icons.phone),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'يرجى إدخال رقم الهاتف';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                // Phone Numbers (Multiple)
+                ...List.generate(_phoneControllers.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _phoneControllers[index],
+                            decoration: InputDecoration(
+                              labelText: 'رقم الهاتف ${index + 1}',
+                              prefixIcon: const Icon(Icons.phone),
+                              border: const OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              if (index == 0 && (value == null || value.isEmpty)) {
+                                return 'يرجى إدخال رقم هاتف واحد على الأقل';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (index == _phoneControllers.length - 1)
+                          IconButton(
+                            onPressed: _addPhoneField,
+                            icon: const Icon(Icons.add_circle),
+                            color: const Color(0xFF06B6D4),
+                            tooltip: 'إضافة رقم آخر',
+                          ),
+                        if (index > 0)
+                          IconButton(
+                            onPressed: () => _removePhoneField(index),
+                            icon: const Icon(Icons.remove_circle),
+                            color: Colors.red,
+                            tooltip: 'حذف',
+                          ),
+                      ],
+                    ),
+                  );
+                }),
                 
                 // WhatsApp Number
                 TextFormField(
@@ -506,111 +543,6 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                
-                // Location Coordinates
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        key: ValueKey(_latitude),
-                        initialValue: _latitude.toString(),
-                        decoration: const InputDecoration(
-                          labelText: 'خط العرض (Latitude)',
-                          prefixIcon: Icon(Icons.my_location),
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          final parsed = double.tryParse(value);
-                          if (parsed != null) {
-                            _latitude = parsed;
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        key: ValueKey(_longitude),
-                        initialValue: _longitude.toString(),
-                        decoration: const InputDecoration(
-                          labelText: 'خط الطول (Longitude)',
-                          prefixIcon: Icon(Icons.location_on),
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (value) {
-                          final parsed = double.tryParse(value);
-                          if (parsed != null) {
-                            _longitude = parsed;
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-                    icon: _isLoadingLocation
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Icon(Icons.my_location),
-                    label: Text(
-                      _isLoadingLocation
-                          ? 'جاري تحديد الموقع...'
-                          : (_latitude == 0.0 || _longitude == 0.0)
-                              ? 'تحديد الموقع التلقائي *'
-                              : 'تحديد الموقع التلقائي ✓',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: (_latitude == 0.0 || _longitude == 0.0) ? Colors.red : const Color(0xFF4A90E2),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                ),
-                if (_locationStatus.isNotEmpty && !_isLoadingLocation)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      _locationStatus,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _locationStatus.contains('بنجاح')
-                            ? Colors.green
-                            : Colors.red,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                if (_latitude == 0.0 || _longitude == 0.0)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text(
-                      '⚠️ يجب تحديد الموقع التلقائي للمتابعة',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                Text(
-                  'يمكنك تحديد الموقع تلقائياً أو كتابة الإحداثيات يدوياً',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
                       ],
                     ),
                   ),
@@ -631,21 +563,15 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
                         const SizedBox(height: 4),
                         const Divider(),
                         const SizedBox(height: 12),
-                        // About
+                        // About (Optional)
                         TextFormField(
                   controller: _aboutController,
                   decoration: const InputDecoration(
-                    labelText: 'نبذة عن الديليفري',
+                    labelText: 'نبذة عن الديليفري (اختياري)',
                     prefixIcon: Icon(Icons.info),
                     border: OutlineInputBorder(),
                   ),
                   maxLines: 3,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'يرجى إدخال نبذة عن الديليفري';
-                    }
-                    return null;
-                  },
                 ),
                       ],
                     ),

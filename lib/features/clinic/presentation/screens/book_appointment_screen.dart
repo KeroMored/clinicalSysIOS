@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/booking_model.dart';
 
@@ -19,6 +20,38 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   final _notesController = TextEditingController();
   bool _isSubmitting = false;
   DateTime _selectedAppointmentDate = DateTime.now(); // الافتراضي: الآن
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        
+        if (userDoc.exists && mounted) {
+          final userData = userDoc.data();
+          if (userData != null) {
+            if (userData['displayName'] != null) {
+              _nameController.text = userData['displayName'];
+            }
+            if (userData['phoneNumber'] != null && userData['phoneNumber'].toString().isNotEmpty) {
+              _phoneController.text = userData['phoneNumber'];
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Silently fail - not critical
+    }
+  }
 
   @override
   void dispose() {
@@ -81,6 +114,44 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       await FirebaseFirestore.instance
           .collection('bookings')
           .add(booking.toFirestore());
+
+      // Save phone number to user profile if not already saved
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          
+          if (userDoc.exists) {
+            final userData = userDoc.data();
+            final phoneNumber = _phoneController.text.trim();
+            final userName = _nameController.text.trim();
+            
+            final updates = <String, dynamic>{};
+            
+            if (phoneNumber.isNotEmpty && 
+                (userData?['phoneNumber'] == null || userData!['phoneNumber'].toString() != phoneNumber)) {
+              updates['phoneNumber'] = phoneNumber;
+            }
+            
+            if (userName.isNotEmpty && 
+                (userData?['displayName'] == null || userData!['displayName'].toString() != userName)) {
+              updates['displayName'] = userName;
+            }
+            
+            if (updates.isNotEmpty) {
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .update(updates);
+            }
+          }
+        } catch (e) {
+          // Silently fail - not critical
+        }
+      }
 
       if (mounted) {
         Navigator.pop(context);

@@ -14,6 +14,7 @@ class RadiologyModel {
   final double longitude;
   final String governorate;
   final String city;
+  final String center; // المركز (مثلاً: ملوي)
   final String? description; // وصف مركز الأشعة
   final List<String> services; // X-Ray, CT Scan, MRI, Ultrasound, Mammography, DEXA Scan, etc.
   final bool homeVisit; // Mobile radiology service
@@ -44,6 +45,7 @@ class RadiologyModel {
     required this.longitude,
     required this.governorate,
     required this.city,
+    this.center = 'ملوي',
     this.description,
     required this.services,
     required this.homeVisit,
@@ -77,6 +79,7 @@ class RadiologyModel {
       'longitude': longitude,
       'governorate': governorate,
       'city': city,
+      'center': center,
       'description': description,
       'services': services,
       'homeVisit': homeVisit,
@@ -113,6 +116,7 @@ class RadiologyModel {
       longitude: (map['longitude'] ?? 0.0).toDouble(),
       governorate: map['governorate'] ?? '',
       city: map['city'] ?? '',
+      center: map['center'] ?? 'ملوي',
       description: map['description'],
       services: List<String>.from(map['services'] ?? []),
       homeVisit: map['homeVisit'] ?? false,
@@ -149,6 +153,7 @@ class RadiologyModel {
     double? longitude,
     String? governorate,
     String? city,
+    String? center,
     String? description,
     List<String>? services,
     bool? homeVisit,
@@ -176,6 +181,7 @@ class RadiologyModel {
       longitude: longitude ?? this.longitude,
       governorate: governorate ?? this.governorate,
       city: city ?? this.city,
+      center: center ?? this.center,
       description: description ?? this.description,
       services: services ?? this.services,
       homeVisit: homeVisit ?? this.homeVisit,

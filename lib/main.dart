@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'firebase_options.dart';
 import 'core/services/notification_service.dart';
 import 'core/security/security_manager.dart';
@@ -29,6 +30,9 @@ import 'features/gym/presentation/cubit/gym_cubit.dart';
 import 'features/clinic/presentation/widgets/doctor_of_day_notification.dart';
 import 'features/clinic/data/repositories/patient_repository.dart';
 import 'features/clinic/presentation/cubit/patient_cubit.dart';
+import 'features/medicine_reminders/data/repositories/medicine_repository.dart';
+import 'features/medicine_reminders/presentation/cubit/medicine_cubit.dart';
+import 'features/medicine_reminders/services/medicine_notification_service.dart';
 
 // Handle background messages
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -50,7 +54,7 @@ void _warmUpFirestore() {
   
   // 🔥 Pre-warm commonly accessed collections in parallel
   // This speeds up first load of each screen
-  final collections = ['radiology_centers', 'gyms', 'pharmacies', 'clinics', 'patients', 'medical_visits'];
+  final collections = ['radiology_centers', 'gyms', 'pharmacies', 'clinics', 'patients', 'medical_visits', 'medicine_reminders'];
   for (final collection in collections) {
     FirebaseFirestore.instance
         .collection(collection)
@@ -107,6 +111,10 @@ void main() async {
     await DoctorOfTheDayNotification.initialize();
     await DoctorOfTheDayNotification.scheduleDailyNotification();
     print('✅ Awesome Notifications initialized successfully');
+    
+    // Initialize Medicine Reminder notifications
+    await MedicineNotificationService.initialize();
+    print('✅ Medicine Reminder Notifications initialized successfully');
   } catch (e) {
     print('❌ Error initializing Awesome Notifications: $e');
   }
@@ -152,9 +160,12 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => PatientCubit(PatientRepository()),
         ),
+        BlocProvider(
+          create: (context) => MedicineCubit(MedicineRepository()),
+        ),
       ],
       child: MaterialApp(
-        title: "Mallawy Health Care",
+        title: "Mallawy Care",
         debugShowCheckedModeBanner: false,
         theme: AppTheme.getTheme(),
         locale: const Locale('ar', 'EG'),

@@ -1,12 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../core/utils/auth_helpers.dart';
+import 'medicine_request_contact_info_screen.dart';
 
 // Simple model to hold one medicine entry in the UI
 class _MedicineEntry {
@@ -15,6 +11,7 @@ class _MedicineEntry {
   String? type;
   String? unit;
   File? image;
+  String inputMode = 'none'; // 'text', 'image', or 'none'
 
   void dispose() {
     nameController.dispose();
@@ -23,11 +20,12 @@ class _MedicineEntry {
 
   Map<String, dynamic> toMap() {
     return {
-      'medicineName': nameController.text.trim(),
+      'medicineName': inputMode == 'text' ? nameController.text.trim() : '',
       'medicineType': type,
       'quantityUnit': unit,
       'quantity': int.tryParse(quantityController.text.trim()) ?? 1,
-      'imageUrl': null, // filled during upload
+      'imageUrl': null, // Will be filled during upload
+      'imageFile': image, // Pass the file for later upload
     };
   }
 }
@@ -43,14 +41,9 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
   final _formKey = GlobalKey<FormState>();
   // Support multiple medicines in one request
   final List<_MedicineEntry> _medicines = [];
-  final _phoneController = TextEditingController();
-  final _whatsappController = TextEditingController();
-  final _notesController = TextEditingController();
-  
-  // per-entry images are stored inside each _MedicineEntry
-  bool _isSubmitting = false;
   
   final List<String> _medicineTypes = [
+    'روشتة',
     'أقراص',
     'كبسولات',
     'شراب',
@@ -81,16 +74,13 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     for (final entry in _medicines) {
       entry.dispose();
     }
-    _phoneController.dispose();
-    _whatsappController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImageForEntry(int index) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
+      source: ImageSource.camera, // Camera only
       maxWidth: 1024,
       maxHeight: 1024,
       imageQuality: 85,
@@ -99,6 +89,7 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     if (image != null) {
       setState(() {
         _medicines[index].image = File(image.path);
+        _medicines[index].inputMode = 'image';
       });
     }
   }
@@ -117,204 +108,30 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     });
   }
 
-  Future<String?> _uploadImage(File imageFile, String userId) async {
-    try {
-      final String fileName = 'medicine_requests/${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
-      final UploadTask uploadTask = storageRef.putFile(imageFile);
-      final TaskSnapshot snapshot = await uploadTask;
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      print('Error uploading image: $e');
-      return null;
+  String? _validateMedicine(_MedicineEntry entry) {
+    // Check if user selected input mode
+    if (entry.inputMode == 'none') {
+      return 'يجب اختيار طريقة إضافة الدواء (تصوير أو كتابة)';
     }
+    
+    // If text mode, check name is not empty
+    if (entry.inputMode == 'text') {
+      if (entry.nameController.text.trim().isEmpty) {
+        return 'يجب كتابة اسم الدواء';
+      }
+    }
+    
+    // If image mode, check image is selected
+    if (entry.inputMode == 'image') {
+      if (entry.image == null) {
+        return 'يجب تصوير الدواء';
+      }
+    }
+    
+    return null;
   }
 
-  Future<void> _submitRequest(BuildContext context, dynamic user) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    try {
-      // Upload images for each medicine entry and build medicines array
-      final List<Map<String, dynamic>> medicinesData = [];
-      for (int i = 0; i < _medicines.length; i++) {
-        final entry = _medicines[i];
-        String? entryImageUrl;
-        if (entry.image != null) {
-          entryImageUrl = await _uploadImage(entry.image!, user.uid);
-        }
-        final map = entry.toMap();
-        map['imageUrl'] = entryImageUrl;
-        medicinesData.add(map);
-      }
-
-      final requestData = {
-        'userId': user.uid,
-        'userName': user.displayName,
-        'userEmail': user.email,
-        'medicines': medicinesData,
-        'phoneNumber': _phoneController.text.trim(),
-        'whatsappNumber': _whatsappController.text.trim().isEmpty
-            ? null
-            : _whatsappController.text.trim(),
-        'notes': _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'pending',
-      };
-
-      await FirebaseFirestore.instance.collection('medicine_requests').add(requestData);
-
-      // Cloud Function will automatically send notification
-      // No need to call NotificationService here
-
-      if (mounted) {
-        // Show alert dialog instead of snackbar
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (dialogContext) => AlertDialog(
-            title: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Color(0xFF06B6D4), size: 28),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'تم نشر الطلب بنجاح!',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '✅ ستتواصل معك الصيدليات قريباً',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.orange[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange[300]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, color: Colors.orange[900], size: 18),
-                            const SizedBox(width: 6),
-                            Text(
-                              'مهم جداً:',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange[900],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'في حالة تواصل إحدى الصيدليات معك:',
-                        style: TextStyle(
-                          color: Colors.orange[900],
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('1. ', style: TextStyle(color: Colors.orange[900], fontSize: 13)),
-                          Expanded(
-                            child: Text(
-                              'ادخل على "طلباتي"',
-                              style: TextStyle(color: Colors.orange[900], fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('2. ', style: TextStyle(color: Colors.orange[900], fontSize: 13)),
-                          Expanded(
-                            child: Text(
-                              'اضغط على "تم التواصل" أو "حذف الطلب"',
-                              style: TextStyle(color: Colors.orange[900], fontSize: 13),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '⚠️ هذا سيمنع باقي الصيدليات من التواصل معك',
-                        style: TextStyle(
-                          color: Colors.orange[900],
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext); // Close dialog
-                  Navigator.pop(context); // Close request screen
-                },
-                child: const Text(
-                  'فهمت',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
-  }
-
-  void _handleSubmit(BuildContext context) async {
+  Future<void> _goToContactInfo(BuildContext context) async {
     // Check authentication first
     final isAuthenticated = await AuthHelpers.requireAuth(
       context,
@@ -322,11 +139,40 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     );
     
     if (!isAuthenticated || !mounted) return;
-    
-    final authState = context.read<AuthCubit>().state;
-    if (authState is Authenticated) {
-      _submitRequest(context, authState.user);
+
+    // Validate all medicines
+    for (int i = 0; i < _medicines.length; i++) {
+      final validation = _validateMedicine(_medicines[i]);
+      if (validation != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('دواء ${i + 1}: $validation'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
     }
+    
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Prepare medicines data
+    final List<Map<String, dynamic>> medicinesData = [];
+    for (final entry in _medicines) {
+      medicinesData.add(entry.toMap());
+    }
+
+    // Navigate to contact info screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MedicineRequestContactInfoScreen(
+          medicinesData: medicinesData,
+        ),
+      ),
+    );
   }
 
   @override
@@ -404,36 +250,148 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Medicine Name (main entry)
-                TextFormField(
-                  controller: _medicines[0].nameController,
-                  decoration: InputDecoration(
-                    labelText: 'اسم الدواء *',
-                    hintText: 'أدخل اسم الدواء المطلوب',
-                    prefixIcon: const Icon(Icons.medication, color: Color(0xFF06B6D4)),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                // Input Mode Selection Buttons
+                if (_medicines[0].inputMode == 'none') ...[
+                  const Text(
+                    'كيف تريد إضافة الدواء؟',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'اسم الدواء مطلوب';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _medicines[0].inputMode = 'text';
+                            });
+                          },
+                          icon: const Icon(Icons.edit),
+                          label: const Text('كتابة اسم الدواء'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF06B6D4),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _pickImageForEntry(0),
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('تصوير الدواء'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E3A5F),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Text Input Mode
+                if (_medicines[0].inputMode == 'text') ...[
+                  TextFormField(
+                    controller: _medicines[0].nameController,
+                    decoration: InputDecoration(
+                      labelText: 'اسم الدواء',
+                      hintText: 'أدخل اسم الدواء المطلوب',
+                      prefixIcon: const Icon(Icons.medication, color: Color(0xFF06B6D4)),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            _medicines[0].nameController.clear();
+                            _medicines[0].inputMode = 'none';
+                          });
+                        },
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Image Mode
+                if (_medicines[0].inputMode == 'image' && _medicines[0].image != null) ...[
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                    ),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            _medicines[0].image!,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.red,
+                                child: IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                  onPressed: () {
+                                    setState(() {
+                                      _medicines[0].image = null;
+                                      _medicines[0].inputMode = 'none';
+                                    });
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFF06B6D4),
+                                child: IconButton(
+                                  icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                  onPressed: () => _pickImageForEntry(0),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Medicine Type Dropdown
                 DropdownButtonFormField<String>(
@@ -527,63 +485,43 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                 if (_medicines[0].type != null && _unitsByType.containsKey(_medicines[0].type))
                   const SizedBox(height: 16),
 
-                // Image Picker for main entry (moved here, replacing quantity field)
-                GestureDetector(
-                  onTap: () => _pickImageForEntry(0),
-                  child: Container(
-                    height: 150,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.white,
+                // Quantity field (hide if type is "روشتة")
+                if (_medicines[0].type != 'روشتة')
+                  TextFormField(
+                    controller: _medicines[0].quantityController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'الكمية *',
+                      hintText: 'أدخل الكمية المطلوبة',
+                      prefixIcon: const Icon(Icons.shopping_cart, color: Color(0xFF06B6D4)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                      ),
                     ),
-                    child: _medicines[0].image != null
-                        ? Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  _medicines[0].image!,
-                                  width: double.infinity,
-                                  height: 150,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                top: 8,
-                                left: 8,
-                                child: CircleAvatar(
-                                  backgroundColor: Colors.red,
-                                  child: IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.white),
-                                    onPressed: () {
-                                      setState(() {
-                                        _medicines[0].image = null;
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_photo_alternate,
-                                  size: 48, color: Colors.grey[600]),
-                              const SizedBox(height: 8),
-                              Text(
-                                'إضافة صورة الدواء (اختياري)',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'الكمية مطلوبة';
+                      }
+                      final qty = int.tryParse(value.trim());
+                      if (qty == null || qty <= 0) {
+                        return 'الكمية يجب أن تكون رقم صحيح أكبر من 0';
+                      }
+                      return null;
+                    },
                   ),
-                ),
-                const SizedBox(height: 12),
+                if (_medicines[0].type != 'روشتة')
+                  const SizedBox(height: 12),
 
                 // Extra medicine entries (if any)
                 for (int ei = 1; ei < _medicines.length; ei++) ...[
@@ -617,32 +555,151 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _medicines[ei].nameController,
-                            decoration: InputDecoration(
-                              labelText: 'اسم الدواء *',
-                              prefixIcon: const Icon(Icons.medication, color: Color(0xFF06B6D4)),
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+
+                          // Input Mode Selection Buttons
+                          if (_medicines[ei].inputMode == 'none') ...[
+                            const Text(
+                              'كيف تريد إضافة الدواء؟',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0F172A),
                               ),
                             ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) return 'اسم الدواء مطلوب';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 8),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _medicines[ei].inputMode = 'text';
+                                      });
+                                    },
+                                    icon: const Icon(Icons.edit, size: 18),
+                                    label: const Text('كتابة اسم الدواء'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF06B6D4),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _pickImageForEntry(ei),
+                                    icon: const Icon(Icons.camera_alt, size: 18),
+                                    label: const Text('تصوير الدواء'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1E3A5F),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // Text Input Mode
+                          if (_medicines[ei].inputMode == 'text') ...[
+                            TextFormField(
+                              controller: _medicines[ei].nameController,
+                              decoration: InputDecoration(
+                                labelText: 'اسم الدواء',
+                                hintText: 'أدخل اسم الدواء المطلوب',
+                                prefixIcon: const Icon(Icons.medication, color: Color(0xFF06B6D4)),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.red),
+                                  onPressed: () {
+                                    setState(() {
+                                      _medicines[ei].nameController.clear();
+                                      _medicines[ei].inputMode = 'none';
+                                    });
+                                  },
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // Image Mode
+                          if (_medicines[ei].inputMode == 'image' && _medicines[ei].image != null) ...[
+                            Container(
+                              height: 150,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.white,
+                              ),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.file(
+                                      _medicines[ei].image!,
+                                      width: double.infinity,
+                                      height: 150,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    left: 8,
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          backgroundColor: Colors.red,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                                            onPressed: () {
+                                              setState(() {
+                                                _medicines[ei].image = null;
+                                                _medicines[ei].inputMode = 'none';
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        CircleAvatar(
+                                          backgroundColor: const Color(0xFF06B6D4),
+                                          child: IconButton(
+                                            icon: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                                            onPressed: () => _pickImageForEntry(ei),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // Medicine Type Dropdown
                           DropdownButtonFormField<String>(
                             value: _medicines[ei].type,
                             decoration: InputDecoration(
@@ -693,50 +750,40 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                               onChanged: (v) => setState(() => _medicines[ei].unit = v),
                               validator: (v) => (v == null || v.isEmpty) ? 'الوحدة مطلوبة' : null,
                             ),
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: () => _pickImageForEntry(ei),
-                            child: Container(
-                              height: 120,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.white,
+                          if (_medicines[ei].type != null && _unitsByType.containsKey(_medicines[ei].type))
+                            const SizedBox(height: 8),
+
+                          // Quantity field (hide if type is "روشتة")
+                          if (_medicines[ei].type != 'روشتة')
+                            TextFormField(
+                              controller: _medicines[ei].quantityController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'الكمية *',
+                                hintText: 'أدخل الكمية المطلوبة',
+                                prefixIcon: const Icon(Icons.shopping_cart, color: Color(0xFF06B6D4)),
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                ),
                               ),
-                              child: _medicines[ei].image != null
-                                  ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(_medicines[ei].image!, fit: BoxFit.cover, width: double.infinity))
-                                  : Center(child: Text('إضافة صورة (اختياري)', style: TextStyle(color: Colors.grey[600]))),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'الكمية مطلوبة';
+                                final q = int.tryParse(v.trim());
+                                if (q == null || q < 1) return 'الكمية يجب أن تكون رقم صحيح أكبر من 0';
+                                return null;
+                              },
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _medicines[ei].quantityController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'العدد *',
-                              prefixIcon: const Icon(Icons.numbers, color: Color(0xFF06B6D4)),
-                              filled: true,
-                              fillColor: Colors.white,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
-                              ),
-                            ),
-                            validator: (v) {
-                              if (v == null || v.trim().isEmpty) return 'العدد مطلوب';
-                              final q = int.tryParse(v.trim());
-                              if (q == null || q < 1) return 'أدخل عدد صحيح أكبر من 0';
-                              return null;
-                            },
-                          ),
                         ],
                       ),
                     ),
@@ -749,141 +796,10 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                   icon: const Icon(Icons.add),
                   label: const Text('إضافة دواء آخر'),
                 ),
-                const SizedBox(height: 24),
-
-                // Contact Info Card
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF06B6D4).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.contact_phone,
-                                color: Color(0xFF06B6D4),
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'معلومات التواصل',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 24),
-                        // Phone Number
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                            labelText: 'رقم الهاتف *',
-                            hintText: '01xxxxxxxxx',
-                            prefixIcon: const Icon(Icons.phone, color: Color(0xFF06B6D4)),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'رقم الهاتف مطلوب';
-                            }
-                            if (value.trim().length < 11) {
-                              return 'أدخل رقم هاتف صحيح';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // WhatsApp Number
-                        TextFormField(
-                          controller: _whatsappController,
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                            labelText: 'رقم واتساب (اختياري)',
-                            hintText: '01xxxxxxxxx',
-                            prefixIcon: Icon(MdiIcons.whatsapp, color: const Color(0xFF25D366)),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
-                            ),
-                            helperText: 'إذا كان مختلف عن رقم الهاتف',
-                            helperStyle: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Notes
-                        TextFormField(
-                          controller: _notesController,
-                          maxLines: 3,
-                          decoration: InputDecoration(
-                            labelText: 'ملاحظات (اختياري)',
-                            hintText: 'أي معلومات إضافية عن الطلب',
-                            prefixIcon: const Icon(Icons.note, color: Color(0xFF06B6D4)),
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 32),
 
-                // Submit Button
+                // Next Button
                 SizedBox(
-                //  height: 70,
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -899,20 +815,11 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                       ],
                     ),
                     child: ElevatedButton.icon(
-                      onPressed: _isSubmitting ? null : () => _handleSubmit(context),
-                      icon: _isSubmitting
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Icon(Icons.send),
-                      label: Text(
-                        _isSubmitting ? 'جاري النشر...' : 'نشر الطلب',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      onPressed: () => _goToContactInfo(context),
+                      icon: const Icon(Icons.arrow_back),
+                      label: const Text(
+                        'التالي',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,

@@ -114,6 +114,11 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
                     _buildInfoRow(
                         MdiIcons.whatsapp, 'واتساب', request.whatsapp),
                     const SizedBox(height: 16),
+                    
+                    // Description
+                    _buildInfoRow(Icons.description, 'عن الصيدلية', 
+                        request.description?.isNotEmpty == true ? request.description! : 'لا يوجد'),
+                    const SizedBox(height: 16),
 
                     // Working Hours
                     _buildInfoRow(Icons.access_time, 'مواعيد العمل',

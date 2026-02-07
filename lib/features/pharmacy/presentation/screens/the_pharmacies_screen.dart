@@ -32,6 +32,7 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
   // Location fields
   Position? _userLocation;
   String _sortBy = 'name'; // distance, rating, name (default to name to show data without location)
+  bool _filterInsuranceOnly = false; // Filter for insurance companies
 
   @override
   void initState() {
@@ -46,15 +47,19 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
   Future<void> _tryAutoLocation() async {
     final position = await LocationService.getCurrentLocation();
     if (position != null && mounted) {
-      setState(() {
-        _userLocation = position;
-        // Auto switch to distance sort
-        _sortBy = 'distance';
-        _pharmacies.clear();
-        _lastDocument = null;
-        _hasMore = true;
-      });
-      _loadPharmacies();
+      if (mounted) {
+        setState(() {
+          _userLocation = position;
+          // Auto switch to distance sort
+          _sortBy = 'distance';
+          _pharmacies.clear();
+          _lastDocument = null;
+          _hasMore = true;
+        });
+      }
+      if (mounted) {
+        _loadPharmacies();
+      }
     }
     // If location not available, keep default 'name' sort
   }
@@ -65,11 +70,13 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
     
     final position = await LocationService.getCurrentLocation();
     if (position != null && mounted) {
-      setState(() {
-        _userLocation = position;
-        // Reload with distance sort
-        _changeSortOption('distance');
-      });
+      if (mounted) {
+        setState(() {
+          _userLocation = position;
+          // Reload with distance sort
+          _changeSortOption('distance');
+        });
+      }
     } else if (mounted) {
       // Show dialog if location is not available
       _showLocationPermissionDialog();
@@ -108,14 +115,21 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
 
     print('🔍 Loading pharmacies... Current count: ${_pharmacies.length}');
     
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       Query query = FirebaseFirestore.instance
           .collection('pharmacies')
           .where('status', isEqualTo: 'approved');
+      
+      // Apply insurance filter if enabled
+      if (_filterInsuranceOnly) {
+        query = query.where('hasInsurance', isEqualTo: true);
+      }
 
       // Add orderBy based on sort option to get data from DB in correct order
       switch (_sortBy) {
@@ -165,25 +179,31 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
           _sortPharmacies(newPharmacies);
         }
 
-        setState(() {
-          _pharmacies.addAll(newPharmacies);
-          _hasMore = snapshot.docs.length == _pageSize;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _pharmacies.addAll(newPharmacies);
+            _hasMore = snapshot.docs.length == _pageSize;
+            _isLoading = false;
+          });
+        }
         
         print('✅ Total pharmacies now: ${_pharmacies.length}');
       } else {
         print('⚠️ No pharmacies found in Firestore');
-        setState(() {
-          _hasMore = false;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _hasMore = false;
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       print('❌ Error loading pharmacies: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -229,8 +249,28 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
   }
 
   void _changeSortOption(String sortOption) {
+    // Handle insurance filter toggle
+    if (sortOption == 'insurance') {
+      if (mounted) {
+        setState(() {
+          _filterInsuranceOnly = !_filterInsuranceOnly;
+          _pharmacies.clear();
+          _lastDocument = null;
+          _hasMore = true;
+        });
+        _loadPharmacies();
+      }
+      return;
+    }
+    
     // If sorting by distance but location not available, request it
     if (sortOption == 'distance' && _userLocation == null) {
+      // Reset insurance filter even if location request fails
+      if (_filterInsuranceOnly && mounted) {
+        setState(() {
+          _filterInsuranceOnly = false;
+        });
+      }
       _requestLocation();
       return;
     }
@@ -238,6 +278,8 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
     if (mounted) {
       setState(() {
         _sortBy = sortOption;
+        // Reset insurance filter when changing to other sort options
+        _filterInsuranceOnly = false;
         // Clear existing data and reload from database with new sort order
         _pharmacies.clear();
         _lastDocument = null;
@@ -258,13 +300,15 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
       
       if (doc.exists && mounted) {
         final updatedPharmacy = PharmacyModel.fromFirestore(doc);
-        setState(() {
-          final index = _pharmacies.indexWhere((p) => p.id == pharmacyId);
-          if (index != -1) {
-            _pharmacies[index] = updatedPharmacy;
-            print('✅ Pharmacy updated in list');
-          }
-        });
+        if (mounted) {
+          setState(() {
+            final index = _pharmacies.indexWhere((p) => p.id == pharmacyId);
+            if (index != -1) {
+              _pharmacies[index] = updatedPharmacy;
+              print('✅ Pharmacy updated in list');
+            }
+          });
+        }
       }
     } catch (e) {
       print('❌ Error reloading pharmacy: $e');
@@ -359,6 +403,8 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
                 ),
               ),
               actions: [
+                // Insurance Filter Button
+      
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.sort),
                   tooltip: 'ترتيب حسب',
@@ -399,6 +445,26 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
                             style: TextStyle(
                               color: _sortBy == 'rating' ? const Color(0xFF06B6D4) : const Color(0xFF0F172A),
                               fontWeight: _sortBy == 'rating' ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'insurance',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.health_and_safety,
+                            color: _filterInsuranceOnly ? const Color(0xFF06B6D4) : Colors.grey,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'متعاقد مع شركات تأمين',
+                            style: TextStyle(
+                              color: _filterInsuranceOnly ? const Color(0xFF06B6D4) : const Color(0xFF0F172A),
+                              fontWeight: _filterInsuranceOnly ? FontWeight.w600 : FontWeight.normal,
                             ),
                           ),
                         ],

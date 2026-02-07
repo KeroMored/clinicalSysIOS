@@ -263,6 +263,99 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Insurance Companies Section (if available)
+                if (pharmacy.hasInsurance && pharmacy.insuranceCompanies.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.pharmacyGradient,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.health_and_safety,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'متعاقد مع شركات التأمين',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.darkColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'الشركات المتعاقد معها:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ...pharmacy.insuranceCompanies.map((company) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF06B6D4),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    company,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppTheme.darkColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                
                 // Contact Section
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -463,7 +556,19 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                   title: 'الإجازات',
                   content: pharmacy.holidays,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                // Description (if exists)
+                if (pharmacy.description != null && pharmacy.description!.isNotEmpty) ...[
+                  PharmacyInfoSection(
+                    icon: Icons.description,
+                    title: 'عن الصيدلية',
+                    content: pharmacy.description!,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                const SizedBox(height: 8),
 
                 // Home Delivery Section
                 if (pharmacy.hasHomeDelivery) ...[

@@ -26,7 +26,7 @@ setGlobalOptions({
 /**
  * Send notification to all pharmacies when a new medicine request is created
  * Triggers on: medicine_requests collection onCreate
- * Sends to ALL users with emails in ANY pharmacy's authEmails array
+ * Sends to pharmacy_requests topic only (optimized for scalability)
  */
 exports.notifyPharmaciesOnNewRequest = onDocumentCreated(
   'medicine_requests/{requestId}',
@@ -34,32 +34,6 @@ exports.notifyPharmaciesOnNewRequest = onDocumentCreated(
     try {
       const requestData = event.data.data();
       const requestId = event.params.requestId;
-
-      // Get all approved pharmacies
-      const pharmaciesSnapshot = await admin.firestore()
-        .collection('pharmacies')
-        .where('status', '==', 'approved')
-        .get();
-
-      if (pharmaciesSnapshot.empty) {
-        console.log('No approved pharmacies found');
-        return null;
-      }
-
-      // Collect all unique authEmails from all pharmacies
-      const allAuthEmails = new Set();
-      pharmaciesSnapshot.forEach((doc) => {
-        const pharmacyData = doc.data();
-        const authEmails = pharmacyData.authEmails || [];
-        authEmails.forEach(email => allAuthEmails.add(email));
-      });
-
-      const authEmailsArray = Array.from(allAuthEmails);
-      
-      if (authEmailsArray.length === 0) {
-        console.log('No authEmails found in pharmacies');
-        return null;
-      }
 
       // Prepare notification payload
       const message = {
@@ -97,64 +71,21 @@ exports.notifyPharmaciesOnNewRequest = onDocumentCreated(
         },
       };
 
-      // Send to topic (for backwards compatibility)
+      // Send to topic only (efficient for all pharmacies)
       const topicMessage = {...message, topic: 'pharmacy_requests'};
       const topicResponse = await admin.messaging().send(topicMessage);
       console.log('Notification sent to pharmacy topic:', topicResponse);
-
-      // Send to ALL users whose emails are in authEmails
-      // We need to batch this if there are many emails (Firestore 'in' query limit is 30)
-      const sendPromises = [];
-      const batchSize = 30;
-      
-      for (let i = 0; i < authEmailsArray.length; i += batchSize) {
-        const emailBatch = authEmailsArray.slice(i, i + batchSize);
-        
-        const usersSnapshot = await admin.firestore()
-          .collection('users')
-          .where('email', 'in', emailBatch)
-          .get();
-
-        usersSnapshot.forEach((userDoc) => {
-          const userData = userDoc.data();
-          if (userData.fcmToken) {
-            const tokenMessage = {...message};
-            delete tokenMessage.topic;
-            tokenMessage.token = userData.fcmToken;
-            
-            sendPromises.push(
-              admin.messaging().send(tokenMessage)
-                .then(() => {
-                  console.log(`Notification sent to pharmacy user: ${userData.email}`);
-                  return {success: true, email: userData.email};
-                })
-                .catch((error) => {
-                  console.log(`Failed to send to ${userData.email}:`, error.message);
-                  return {success: false, email: userData.email, error: error.message};
-                })
-            );
-          } else {
-            console.log(`No FCM token for pharmacy user: ${userData.email}`);
-          }
-        });
-      }
-
-      const results = await Promise.all(sendPromises);
-      console.log(`Sent notifications to ${results.filter(r => r.success).length}/${authEmailsArray.length} pharmacy users`);
 
       // Update request with notification sent status
       await event.data.ref.update({
         notificationSent: true,
         notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
-        notificationSentToEmails: authEmailsArray,
       });
 
       return {
         success: true, 
         topicResponse: topicResponse,
-        userResults: results,
-        totalEmails: authEmailsArray.length,
-        successCount: results.filter(r => r.success).length,
+        message: 'Notification sent to topic successfully',
       };
     } catch (error) {
       console.error('Error sending notification:', error);
@@ -379,56 +310,106 @@ exports.notifyClinicOnNewBooking = onDocumentCreated(
       const topicResponse = await admin.messaging().send(topicMessage);
       console.log('Booking notification sent to clinic topic:', clinicTopic, topicResponse);
 
-      // Send to ALL users whose emails are in authEmails array
-      const usersSnapshot = await admin.firestore()
-        .collection('users')
-        .where('email', 'in', authEmails)
-        .get();
-
-      const sendPromises = [];
-      
-      usersSnapshot.forEach((userDoc) => {
-        const userData = userDoc.data();
-        if (userData.fcmToken) {
-          const tokenMessage = {...message};
-          delete tokenMessage.topic;
-          tokenMessage.token = userData.fcmToken;
-          
-          sendPromises.push(
-            admin.messaging().send(tokenMessage)
-              .then(() => {
-                console.log(`Notification sent to user: ${userData.email}`);
-                return {success: true, email: userData.email};
-              })
-              .catch((error) => {
-                console.log(`Failed to send to ${userData.email}:`, error.message);
-                return {success: false, email: userData.email, error: error.message};
-              })
-          );
-        } else {
-          console.log(`No FCM token for user: ${userData.email}`);
-        }
-      });
-
-      const results = await Promise.all(sendPromises);
-      console.log(`Sent notifications to ${results.filter(r => r.success).length}/${authEmails.length} users`);
-
       // Update booking with notification sent status
       await event.data.ref.update({
         notificationSent: true,
         notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
-        notificationSentToEmails: authEmails,
       });
 
       return {
         success: true, 
         topicResponse: topicResponse,
-        userResults: results,
-        totalEmails: authEmails.length,
-        successCount: results.filter(r => r.success).length,
+        message: 'Notification sent to clinic topic successfully',
       };
     } catch (error) {
       console.error('Error sending booking notification:', error);
+      return {success: false, error: error.message};
+    }
+  }
+);
+
+/**
+ * Send notification to ALL users when a new medicine offer is added
+ * Triggers on: medicine_offers collection onCreate
+ * Sends to all_users topic
+ */
+exports.notifyUsersOnNewOffer = onDocumentCreated(
+  'medicine_offers/{offerId}',
+  async (event) => {
+    try {
+      const offerData = event.data.data();
+      const offerId = event.params.offerId;
+
+      // Get pharmacy info
+      const pharmacyDoc = await admin.firestore()
+        .collection('pharmacies')
+        .doc(offerData.pharmacyId)
+        .get();
+
+      if (!pharmacyDoc.exists) {
+        console.log('Pharmacy not found:', offerData.pharmacyId);
+        return null;
+      }
+
+      const pharmacyData = pharmacyDoc.data();
+      const discountPercent = Math.round(
+        ((offerData.originalPrice - offerData.offerPrice) / offerData.originalPrice) * 100
+      );
+
+      // Prepare notification payload
+      const message = {
+        notification: {
+          title: `عرض جديد 🎉 خصم ${discountPercent}%`,
+          body: `${offerData.medicineName} - ${pharmacyData.name}`,
+        },
+        data: {
+          type: 'new_medicine_offer',
+          offerId: offerId,
+          pharmacyId: offerData.pharmacyId,
+          pharmacyName: pharmacyData.name,
+          medicineName: offerData.medicineName,
+          originalPrice: offerData.originalPrice.toString(),
+          offerPrice: offerData.offerPrice.toString(),
+          discountPercent: discountPercent.toString(),
+          imageUrl: offerData.imageUrl || '',
+        },
+        android: {
+          priority: 'high',
+          notification: {
+            sound: 'default',
+            channelId: 'medicine_offers',
+            icon: 'ic_notification',
+            color: '#FF9800',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+              badge: 1,
+            },
+          },
+        },
+      };
+
+      // Send to all_users topic (everyone gets pharmacy offers)
+      const topicMessage = {...message, topic: 'all_users'};
+      const topicResponse = await admin.messaging().send(topicMessage);
+      console.log('Offer notification sent to all_users topic:', topicResponse);
+
+      // Update offer with notification sent status
+      await event.data.ref.update({
+        notificationSent: true,
+        notificationSentAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      return {
+        success: true,
+        topicResponse: topicResponse,
+        message: 'Offer notification sent to all users successfully',
+      };
+    } catch (error) {
+      console.error('Error sending offer notification:', error);
       return {success: false, error: error.message};
     }
   }

@@ -4,10 +4,10 @@ import '../theme/app_theme.dart';
 
 /// عرض dialog يخبر المستخدم بضرورة تسجيل الدخول
 class LoginRequiredDialog {
-  static Future<void> show(BuildContext context) async {
+  static Future<void> show(BuildContext context, {String? customMessage}) async {
     return showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
@@ -50,20 +50,20 @@ class LoginRequiredDialog {
                   color: AppTheme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
+                    const Icon(
+                      Icons.medication_rounded,
                       color: AppTheme.primaryColor,
-                      size: 24,
+                      size: 28,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'للاستمرار في هذا الإجراء، يجب عليك تسجيل الدخول أولاً',
-                        style: TextStyle(
-                          fontSize: 16,
-                          height: 1.5,
+                        customMessage ?? 'نظام مواعيد الأدوية يساعدك على:\n• تذكر مواعيد أدويتك 💊\n• تنبيهات في الوقت المحدد ⏰\n• متابعة العلاج بانتظام 📋',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.6,
                           color: AppTheme.secondaryColor,
                         ),
                       ),
@@ -72,31 +72,60 @@ class LoginRequiredDialog {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'سجل الدخول الآن للمتابعة',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+              const Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppTheme.primaryColor,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'سجل الدخول الآن للاستفادة من هذه الميزة',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
           actions: [
             // زر الإلغاء
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey.shade300,
+                  width: 1.5,
+                ),
               ),
-              child: const Text(
-                'إلغاء',
-                style: TextStyle(
-                  fontSize: 16,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(
+                  Icons.close,
                   color: Colors.grey,
-                  fontWeight: FontWeight.w500,
+                  size: 20,
+                ),
+                label: const Text(
+                  'إلغاء',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
               ),
             ),
+            const SizedBox(width: 12),
             // زر تسجيل الدخول
             Container(
               decoration: BoxDecoration(
@@ -111,13 +140,20 @@ class LoginRequiredDialog {
                 ],
               ),
               child: TextButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop(); // إغلاق الـ dialog
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                  );
+                onPressed: () async {
+                  // إغلاق الـ dialog
+                  Navigator.pop(context);
+                  // الانتظار لحظة لضمان إغلاق الـ dialog
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  // ثم الانتقال لصفحة تسجيل الدخول
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    );
+                  }
                 },
                 icon: const Icon(
                   Icons.login,

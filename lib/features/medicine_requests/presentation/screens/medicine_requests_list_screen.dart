@@ -10,6 +10,43 @@ import '../../data/models/medicine_request_model.dart';
 class MedicineRequestsListScreen extends StatelessWidget {
   const MedicineRequestsListScreen({super.key});
 
+  void _showImageFullScreen(BuildContext context, String imageUrl, String heroTag) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            elevation: 0,
+          ),
+          body: Center(
+            child: Hero(
+              tag: heroTag,
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Text(
+                        'فشل تحميل الصورة',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   String _formatWhatsAppNumber(String input) {
     // Keep digits and '+' only initially
     String n = input.trim();
@@ -535,20 +572,49 @@ class MedicineRequestsListScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    // Display image if available, otherwise display name
+                    if (med.imageUrl != null && med.imageUrl!.isNotEmpty) ...[
+                      Hero(
+                        tag: 'medicine_${request.id}_$idx',
+                        child: GestureDetector(
+                          onTap: () => _showImageFullScreen(context, med.imageUrl!, 'medicine_${request.id}_$idx'),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              med.imageUrl!,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 80,
+                                  height: 80,
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.error, color: Colors.red),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            med.medicineName,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
+                          // Only show name if no image OR if name is not empty
+                          if (med.imageUrl == null || med.imageUrl!.isEmpty)
+                            Text(
+                              med.medicineName.isNotEmpty ? med.medicineName : 'صورة الدواء',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0F172A),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
                           const SizedBox(height: 3),
                           Row(
                             children: [

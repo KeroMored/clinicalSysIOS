@@ -50,11 +50,12 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => SubscriptionCubit(SubscriptionRepository())..loadAllPlaces(),
-      child: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          appBar: GradientAppBar(
-            title: 'إدارة الاشتراكات',
+      child: Builder(
+        builder: (context) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            appBar: GradientAppBar(
+              title: 'إدارة الاشتراكات',
             gradient: const LinearGradient(
               colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
             ),
@@ -181,11 +182,19 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
                       searchController: _searchController,
                       selectedType: _selectedType,
                       onTypeSelected: (type) {
+                        print('🔍 Filter selected: ${type?.arabicName ?? "الكل"}');
                         setState(() => _selectedType = type);
-                        if (type == null) {
-                          context.read<SubscriptionCubit>().loadAllPlaces();
-                        } else {
-                          context.read<SubscriptionCubit>().loadPlacesByType(type);
+                        try {
+                          if (type == null) {
+                            context.read<SubscriptionCubit>().loadAllPlaces();
+                          } else {
+                            context.read<SubscriptionCubit>().loadPlacesByType(type);
+                          }
+                        } catch (e) {
+                          print('❌ Error in filter: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('خطأ: $e')),
+                          );
                         }
                       },
                       onPlaceTap: (place) => _navigateToDetails(context, place),
@@ -251,9 +260,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen>
               ), // End of Expanded
             ], // End of Column children
           ), // End of body Column
-        ),
-      ),
-    );
+        ), // End of Scaffold
+      ), // End of Directionality
+      ), // End of Builder
+    ); // End of BlocProvider
   }
 
   void _navigateToDetails(BuildContext context, SubscribedPlaceModel place) {

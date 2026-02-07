@@ -28,7 +28,7 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
       final matchesSearch = delivery.deliveryName
               .toLowerCase()
               .contains(_searchQuery.toLowerCase()) ||
-          delivery.deliveryPhone.contains(_searchQuery) ||
+          delivery.deliveryPhones.any((phone) => phone.contains(_searchQuery)) ||
           delivery.address.toLowerCase().contains(_searchQuery.toLowerCase());
 
       final matchesVehicle =
@@ -319,8 +319,20 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
               ],
             ),
             const Divider(height: 24),
-            _buildInfoRow(Icons.phone, 'هاتف', delivery.deliveryPhone),
-            const SizedBox(height: 8),
+            if (delivery.deliveryPhones.isNotEmpty) ...[
+              ...delivery.deliveryPhones.asMap().entries.map((entry) {
+                final index = entry.key;
+                final phone = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _buildInfoRow(
+                    Icons.phone, 
+                    delivery.deliveryPhones.length > 1 ? 'هاتف ${index + 1}' : 'هاتف', 
+                    phone
+                  ),
+                );
+              }),
+            ],
             _buildInfoRow(MdiIcons.whatsapp, 'واتساب', delivery.deliveryWhatsApp),
             const SizedBox(height: 8),
             _buildInfoRow(
@@ -334,19 +346,21 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
               'العنوان',
               delivery.address,
             ),
-            const SizedBox(height: 12),
-            Text(
-              'نبذة:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
+            if (delivery.about != null && delivery.about!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'نبذة:',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[700],
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              delivery.about,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+              const SizedBox(height: 4),
+              Text(
+                delivery.about!,
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
             if (delivery.notes != null) ...[
               const SizedBox(height: 12),
               Container(

@@ -17,17 +17,23 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _displayNameController;
+  late TextEditingController _phoneController;
+  late TextEditingController _addressController;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _displayNameController = TextEditingController(text: widget.user.displayName);
+    _phoneController = TextEditingController(text: widget.user.phoneNumber ?? '');
+    _addressController = TextEditingController(text: widget.user.address ?? '');
   }
 
   @override
   void dispose() {
     _displayNameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -42,6 +48,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           .doc(widget.user.uid)
           .update({
         'displayName': _displayNameController.text.trim(),
+        'phoneNumber': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       });
 
       if (mounted) {
@@ -215,13 +223,85 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           }
                           return null;
                         },
+                      ),                      const SizedBox(height: 24),
+
+                      // Phone Number
+                      TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          labelText: 'رقم الهاتف (اختياري)',
+                          hintText: '01xxxxxxxxx',
+                          prefixIcon: Container(
+                            margin: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00BCD4).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.phone,
+                              color: Color(0xFF00BCD4),
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFF00BCD4), width: 2),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 24),
+
+                      // Address
+                      TextFormField(
+                        controller: _addressController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: 'العنوان (اختياري)',
+                          hintText: 'المدينة، الشارع، رقم المنزل...',
+                          alignLabelWithHint: true,
+                          prefixIcon: Container(
+                            margin: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00BCD4).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.location_on,
+                              color: Color(0xFF00BCD4),
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFF00BCD4), width: 2),
+                          ),
+                        ),
+                      ),                      const SizedBox(height: 40),
 
                       // Save Button
                       SizedBox(
                         width: double.infinity,
-                        height: 56,
                         child: ElevatedButton(
                           onPressed: _updateProfile,
                           style: ElevatedButton.styleFrom(
