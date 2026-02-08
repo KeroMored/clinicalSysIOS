@@ -471,59 +471,83 @@ class OfferCard extends StatelessWidget {
   }
 
   Widget _buildCompactSingleImage() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      child: Image.network(
-        images[0],
-        height: 160,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 160,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.grey[300]!, Colors.grey[200]!],
+    return Builder(
+      builder: (context) {
+        return GestureDetector(
+          onTap: () {
+            _showImageViewer(context, images[0], 0);
+          },
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Hero(
+              tag: 'offer_image_${offerId}_0',
+              child: Image.network(
+                images[0],
+                height: 160,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    height: 160,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.grey[300]!, Colors.grey[200]!],
+                      ),
+                    ),
+                    child: Icon(Icons.image_outlined, size: 48, color: Colors.grey[500]),
+                  );
+                },
               ),
             ),
-            child: Icon(Icons.image_outlined, size: 48, color: Colors.grey[500]),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildCompactMultipleImages() {
     return SizedBox(
       height: 140,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: images.length,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        physics: const BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                images[index],
-                width: 200,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 200,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.grey[300]!, Colors.grey[200]!],
+      child: Builder(
+        builder: (context) {
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            physics: const BouncingScrollPhysics(),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    _showImageViewer(context, images[index], index);
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Hero(
+                      tag: 'offer_image_${offerId}_$index',
+                      child: Image.network(
+                        images[index],
+                        width: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 200,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.grey[300]!, Colors.grey[200]!],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.image_outlined, size: 40, color: Colors.grey[500]),
+                          );
+                        },
                       ),
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.image_outlined, size: 40, color: Colors.grey[500]),
-                  );
-                },
-              ),
-            ),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -633,6 +657,219 @@ class OfferCard extends StatelessWidget {
             ),
             child: const Text('حذف'),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Show full screen image viewer with Hero animation
+  void _showImageViewer(BuildContext context, String imageUrl, int initialIndex) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _ImageViewerScreen(
+          images: images,
+          initialIndex: initialIndex,
+          offerId: offerId,
+        ),
+      ),
+    );
+  }
+}
+
+// Full screen image viewer
+class _ImageViewerScreen extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+  final String offerId;
+
+  const _ImageViewerScreen({
+    required this.images,
+    required this.initialIndex,
+    required this.offerId,
+  });
+
+  @override
+  State<_ImageViewerScreen> createState() => _ImageViewerScreenState();
+}
+
+class _ImageViewerScreenState extends State<_ImageViewerScreen> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // PageView for images
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return Center(
+                child: Hero(
+                  tag: 'offer_image_${widget.offerId}_$index',
+                  child: InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 4.0,
+                    child: Image.network(
+                      widget.images[index],
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Icon(
+                            Icons.error_outline,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          
+          // Top bar with close button
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 8,
+                bottom: 16,
+                left: 16,
+                right: 16,
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.7),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                  if (widget.images.length > 1)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_currentIndex + 1} / ${widget.images.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Navigation arrows for multiple images
+          if (widget.images.length > 1) ...[
+            // Previous button
+            if (_currentIndex > 0)
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                      onPressed: () {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            // Next button
+            if (_currentIndex < widget.images.length - 1)
+              Positioned(
+                left: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      onPressed: () {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ],
       ),
     );
