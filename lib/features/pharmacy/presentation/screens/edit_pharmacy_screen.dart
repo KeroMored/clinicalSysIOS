@@ -47,6 +47,11 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   bool _hasInsurance = false;
   List<TextEditingController> _insuranceCompanyControllers = [];
   
+  // Home Delivery
+  bool _hasHomeDelivery = false;
+  double? _deliveryFee;
+  double? _minimumOrderForDelivery;
+  
   // Days of the week for holidays selection
   final Map<String, bool> _selectedHolidays = {
     'السبت': false,
@@ -80,6 +85,11 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
     _insuranceCompanyControllers = widget.pharmacy.insuranceCompanies.isNotEmpty
         ? widget.pharmacy.insuranceCompanies.map((company) => TextEditingController(text: company)).toList()
         : [];
+    
+    // Initialize home delivery
+    _hasHomeDelivery = widget.pharmacy.hasHomeDelivery;
+    _deliveryFee = widget.pharmacy.deliveryFee;
+    _minimumOrderForDelivery = widget.pharmacy.minimumOrderForDelivery;
     
     // Parse existing working hours
     _parseWorkingHours(widget.pharmacy.workingHours);
@@ -304,6 +314,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
             .toList(),
         'hasInsurance': _hasInsurance,
         'insuranceCompanies': insuranceCompanies,
+        'hasHomeDelivery': _hasHomeDelivery,
+        'deliveryFee': _hasHomeDelivery ? _deliveryFee : null,
+        'minimumOrderForDelivery': _hasHomeDelivery ? _minimumOrderForDelivery : null,
         'description': _descriptionController.text.trim().isNotEmpty 
             ? _descriptionController.text.trim() 
             : null,
@@ -1031,6 +1044,147 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     );
                                   }).toList(),
                                 ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 20),
+                            
+                            // Home Delivery Section
+                            _buildSectionCard(
+                              title: 'خدمة التوصيل للمنزل',
+                              icon: Icons.delivery_dining,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF06B6D4).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline_rounded,
+                                        color: const Color(0xFF06B6D4),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'هل خدمة التوصيل للمنازل متاحة؟',
+                                          style: TextStyle(
+                                            color: const Color(0xFF0891B2),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                SwitchListTile(
+                                  value: _hasHomeDelivery,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _hasHomeDelivery = value;
+                                    });
+                                  },
+                                  title: Text(
+                                    _hasHomeDelivery ? 'خدمة التوصيل متاحة' : 'خدمة التوصيل غير متاحة',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: _hasHomeDelivery ? const Color(0xFF06B6D4) : _textSecondary,
+                                    ),
+                                  ),
+                                  activeColor: const Color(0xFF06B6D4),
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                                if (_hasHomeDelivery) ...[
+                                  const SizedBox(height: 16),
+                                  TextFormField(
+                                    initialValue: _deliveryFee?.toString() ?? '',
+                                    decoration: InputDecoration(
+                                      labelText: 'رسوم التوصيل (اختياري)',
+                                      hintText: 'مثال: 10',
+                                      prefixIcon: Container(
+                                        margin: const EdgeInsets.all(8),
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF06B6D4).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(
+                                          Icons.money,
+                                          color: Color(0xFF06B6D4),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      suffixText: 'جنيه',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                      ),
+                                      filled: true,
+                                      fillColor: _cardColor,
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (value) {
+                                      _deliveryFee = double.tryParse(value);
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextFormField(
+                                    initialValue: _minimumOrderForDelivery?.toString() ?? '',
+                                    decoration: InputDecoration(
+                                      labelText: 'الحد الأدنى للطلب (اختياري)',
+                                      hintText: 'مثال: 50',
+                                      prefixIcon: Container(
+                                        margin: const EdgeInsets.all(8),
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF06B6D4).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(
+                                          Icons.shopping_cart,
+                                          color: Color(0xFF06B6D4),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      suffixText: 'جنيه',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                      ),
+                                      filled: true,
+                                      fillColor: _cardColor,
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (value) {
+                                      _minimumOrderForDelivery = double.tryParse(value);
+                                    },
+                                  ),
+                                ],
                               ],
                             ),
                             
