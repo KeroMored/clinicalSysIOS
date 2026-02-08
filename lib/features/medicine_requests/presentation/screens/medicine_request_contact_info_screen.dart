@@ -147,6 +147,11 @@ class _MedicineRequestContactInfoScreenState
                 .collection('users')
                 .doc(user.uid)
                 .update(updateData);
+            
+            // Refresh user data in AuthCubit
+            if (mounted) {
+              context.read<AuthCubit>().refreshUser();
+            }
           }
         } catch (e) {
           // Silently fail - not critical

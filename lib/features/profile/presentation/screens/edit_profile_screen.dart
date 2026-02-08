@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/data/models/user_model.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -18,6 +20,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _displayNameController;
   late TextEditingController _phoneController;
+  late TextEditingController _whatsappController;
   late TextEditingController _addressController;
   bool _isLoading = false;
 
@@ -26,6 +29,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _displayNameController = TextEditingController(text: widget.user.displayName);
     _phoneController = TextEditingController(text: widget.user.phoneNumber ?? '');
+    _whatsappController = TextEditingController(text: widget.user.whatsappNumber ?? '');
     _addressController = TextEditingController(text: widget.user.address ?? '');
   }
 
@@ -33,6 +37,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void dispose() {
     _displayNameController.dispose();
     _phoneController.dispose();
+    _whatsappController.dispose();
     _addressController.dispose();
     super.dispose();
   }
@@ -49,8 +54,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           .update({
         'displayName': _displayNameController.text.trim(),
         'phoneNumber': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        'whatsappNumber': _whatsappController.text.trim().isEmpty ? null : _whatsappController.text.trim(),
         'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       });
+
+      // Refresh user data in AuthCubit
+      if (mounted) {
+        await context.read<AuthCubit>().refreshUser();
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -257,6 +268,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: const BorderSide(color: Color(0xFF00BCD4), width: 2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // WhatsApp Number
+                      TextFormField(
+                        controller: _whatsappController,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          labelText: 'رقم واتساب (اختياري)',
+                          hintText: '01xxxxxxxxx',
+                          prefixIcon: Container(
+                            margin: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF25D366).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.message,
+                              color: Color(0xFF25D366),
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFF25D366), width: 2),
                           ),
                         ),
                       ),

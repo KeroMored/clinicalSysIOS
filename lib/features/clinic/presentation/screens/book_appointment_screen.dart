@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/booking_model.dart';
 
@@ -146,6 +148,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   .collection('users')
                   .doc(user.uid)
                   .update(updates);
+              
+              // Refresh user data in AuthCubit
+              if (mounted) {
+                final authCubit = context.read<AuthCubit>();
+                authCubit.refreshUser();
+              }
             }
           }
         } catch (e) {
@@ -318,7 +326,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    widget.clinic.doctorName,
+                   "د. ${widget.clinic.doctorName}",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
