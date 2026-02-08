@@ -30,9 +30,24 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
 
   Future<void> _initializePlayer() async {
     try {
+      // Validate URL first
+      if (widget.videoUrl.isEmpty) {
+        throw Exception('رابط الفيديو غير صحيح');
+      }
+
       _videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
+        httpHeaders: {'User-Agent': 'Mozilla/5.0'},
       );
+
+      // Set error handler before initialization
+      _videoPlayerController.addListener(() {
+        if (_videoPlayerController.value.hasError && mounted) {
+          setState(() {
+            _errorMessage = 'خطأ في تشغيل الفيديو: ${_videoPlayerController.value.errorDescription}';
+          });
+        }
+      });
 
       await _videoPlayerController.initialize();
 
@@ -115,8 +130,9 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
 
   @override
   void dispose() {
-    _videoPlayerController.dispose();
+    _chewieController?.pause();
     _chewieController?.dispose();
+    _videoPlayerController.dispose();
     super.dispose();
   }
 
@@ -157,13 +173,33 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('العودة'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _errorMessage = null;
+                              _isInitialized = false;
+                            });
+                            _initializePlayer();
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('إعادة المحاولة'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purple,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('العودة'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
