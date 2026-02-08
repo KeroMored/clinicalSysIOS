@@ -59,9 +59,8 @@ class PharmacyRepository {
   Future<List<PharmacyOfferModel>> getAllOffers() async {
     try {
       final snapshot = await _firestore
-          .collection('pharmacy_offers')
+          .collection('offers')
           .where('isActive', isEqualTo: true)
-          .where('endDate', isGreaterThan: DateTime.now().toIso8601String())
           .get();
       return snapshot.docs
           .map((doc) => PharmacyOfferModel.fromJson({
@@ -79,7 +78,7 @@ class PharmacyRepository {
       String pharmacyId) async {
     try {
       final snapshot = await _firestore
-          .collection('pharmacy_offers')
+          .collection('offers')
           .where('pharmacyId', isEqualTo: pharmacyId)
           .where('isActive', isEqualTo: true)
           .get();

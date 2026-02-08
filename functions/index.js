@@ -329,12 +329,12 @@ exports.notifyClinicOnNewBooking = onDocumentCreated(
 );
 
 /**
- * Send notification to ALL users when a new medicine offer is added
- * Triggers on: medicine_offers collection onCreate
- * Sends to all_users topic
+ * Send notification to ALL users when a new pharmacy offer is added
+ * Triggers on: offers collection onCreate
+ * Sends to all_users topic (using Firebase Cloud Messaging Topics - NO user reads!)
  */
 exports.notifyUsersOnNewOffer = onDocumentCreated(
-  'medicine_offers/{offerId}',
+  'offers/{offerId}',
   async (event) => {
     try {
       const offerData = event.data.data();
@@ -352,26 +352,22 @@ exports.notifyUsersOnNewOffer = onDocumentCreated(
       }
 
       const pharmacyData = pharmacyDoc.data();
-      const discountPercent = Math.round(
-        ((offerData.originalPrice - offerData.offerPrice) / offerData.originalPrice) * 100
-      );
 
-      // Prepare notification payload
+      // Prepare notification payload for general offers (not medicine-specific)
       const message = {
         notification: {
-          title: `عرض جديد 🎉 خصم ${discountPercent}%`,
-          body: `${offerData.medicineName} - ${pharmacyData.name}`,
+          title: `عرض جديد من ${pharmacyData.name} 🎉`,
+          body: offerData.title || offerData.description || 'عرض خاص للصيدلية',
         },
         data: {
-          type: 'new_medicine_offer',
+          type: 'new_pharmacy_offer',
           offerId: offerId,
           pharmacyId: offerData.pharmacyId,
           pharmacyName: pharmacyData.name,
-          medicineName: offerData.medicineName,
-          originalPrice: offerData.originalPrice.toString(),
-          offerPrice: offerData.offerPrice.toString(),
-          discountPercent: discountPercent.toString(),
-          imageUrl: offerData.imageUrl || '',
+          title: offerData.title || '',
+          description: offerData.description || '',
+          notes: offerData.notes || '',
+          imageUrl: (offerData.images && offerData.images.length > 0) ? offerData.images[0] : '',
         },
         android: {
           priority: 'high',
