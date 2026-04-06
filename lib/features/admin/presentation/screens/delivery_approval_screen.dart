@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../delivery/data/models/delivery_model.dart';
 import '../../../delivery/presentation/cubit/delivery_cubit.dart';
 import '../../../delivery/presentation/cubit/delivery_state.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class DeliveryApprovalScreen extends StatefulWidget {
   const DeliveryApprovalScreen({super.key});
@@ -13,7 +16,6 @@ class DeliveryApprovalScreen extends StatefulWidget {
 }
 
 class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
-  String _filterVehicleType = 'all';
   String _filterStatus = 'all';
   String _searchQuery = '';
 
@@ -25,28 +27,31 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
 
   List<DeliveryModel> _filterDeliveries(List<DeliveryModel> deliveries) {
     return deliveries.where((delivery) {
-      final matchesSearch = delivery.deliveryName
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
-          delivery.deliveryPhones.any((phone) => phone.contains(_searchQuery)) ||
-          delivery.address.toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSearch =
+          delivery.deliveryName.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          delivery.deliveryPhones.any(
+            (phone) => phone.contains(_searchQuery),
+          ) ||
+          delivery.governorate.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          delivery.city.toLowerCase().contains(_searchQuery.toLowerCase());
 
-      final matchesVehicle =
-          _filterVehicleType == 'all' || delivery.vehicleType == _filterVehicleType;
-
-      final matchesStatus = _filterStatus == 'all' ||
+      final matchesStatus =
+          _filterStatus == 'all' ||
           (_filterStatus == 'pending' && delivery.status == 'pending') ||
           (_filterStatus == 'approved' && delivery.status == 'approved') ||
           (_filterStatus == 'rejected' && delivery.status == 'rejected');
 
-      return matchesSearch && matchesVehicle && matchesStatus;
+      return matchesSearch && matchesStatus;
     }).toList();
   }
 
-
   Future<void> _showRejectDialog(String deliveryId) async {
     final TextEditingController reasonController = TextEditingController();
-    
+
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -68,9 +73,9 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
             onPressed: () {
               if (reasonController.text.trim().isNotEmpty) {
                 context.read<DeliveryCubit>().rejectDelivery(
-                      deliveryId,
-                      reasonController.text.trim(),
-                    );
+                  deliveryId,
+                  reasonController.text.trim(),
+                );
                 Navigator.pop(context);
               }
             },
@@ -85,188 +90,171 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الموافقة على الديليفري'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+      appBar: GradientAppBar(
+        title: 'الموافقة على الديليفري',
+        gradient: AppTheme.primaryGradient,
       ),
-      body: Column(
-        children: [
-          // Search and Filter Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
-            child: Column(
-              children: [
-                // Search Bar
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'ابحث بالاسم أو الهاتف أو العنوان...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                // Status Filter
-                Row(
-                  children: [
-                    const Text(
-                      'الحالة:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _filterStatus,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('الكل')),
-                          DropdownMenuItem(value: 'pending', child: Text('قيد الانتظار')),
-                          DropdownMenuItem(value: 'approved', child: Text('مقبول')),
-                          DropdownMenuItem(value: 'rejected', child: Text('مرفوض')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _filterStatus = value!;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Vehicle Type Filter
-                Row(
-                  children: [
-                    const Text(
-                      'نوع المركبة:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _filterVehicleType,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('الكل')),
-                          DropdownMenuItem(
-                              value: 'دراجة نارية', child: Text('دراجة نارية')),
-                          DropdownMenuItem(value: 'سيارة', child: Text('سيارة')),
-                          DropdownMenuItem(value: 'دراجة', child: Text('دراجة')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _filterVehicleType = value!;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
           ),
-          // Deliveries List
-          Expanded(
-            child: BlocConsumer<DeliveryCubit, DeliveryState>(
-              listener: (context, state) {
-                if (state is DeliveryApproved) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.green,
+        ),
+        child: Column(
+          children: [
+            // Search and Filter Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.grey[100],
+              child: Column(
+                children: [
+                  // Search Bar
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'ابحث بالاسم أو الهاتف أو العنوان...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
                     ),
-                  );
-                  context.read<DeliveryCubit>().getAllDeliveries();
-                } else if (state is DeliveryRejected) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  context.read<DeliveryCubit>().getAllDeliveries();
-                } else if (state is DeliveryError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                if (state is DeliveryLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (state is DeliveryLoaded) {
-                  final filteredDeliveries = _filterDeliveries(state.deliveries);
-                  
-                  if (filteredDeliveries.isEmpty) {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            size: 100,
-                            color: Colors.grey,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // Status Filter
+                  Row(
+                    children: [
+                      const Text(
+                        'الحالة:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _filterStatus,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                           ),
-                          SizedBox(height: 16),
-                          Text(
-                            'لا توجد طلبات معلقة',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                        ],
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('الكل')),
+                            DropdownMenuItem(
+                              value: 'pending',
+                              child: Text('قيد الانتظار'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'approved',
+                              child: Text('مقبول'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'rejected',
+                              child: Text('مرفوض'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _filterStatus = value!;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Deliveries List
+            Expanded(
+              child: BlocConsumer<DeliveryCubit, DeliveryState>(
+                listener: (context, state) {
+                  if (state is DeliveryApproved) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    context.read<DeliveryCubit>().getAllDeliveries();
+                  } else if (state is DeliveryRejected) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    context.read<DeliveryCubit>().getAllDeliveries();
+                  } else if (state is DeliveryError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.red,
                       ),
                     );
                   }
+                },
+                builder: (context, state) {
+                  if (state is DeliveryLoading) {
+                    return const Center(child: AppLoadingIndicator());
+                  }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredDeliveries.length,
-                    itemBuilder: (context, index) {
-                      final delivery = filteredDeliveries[index];
-                      return _buildDeliveryCard(delivery);
-                    },
-                  );
-                }
+                  if (state is DeliveryLoaded) {
+                    final filteredDeliveries = _filterDeliveries(
+                      state.deliveries,
+                    );
 
-                return const SizedBox.shrink();
-              },
+                    if (filteredDeliveries.isEmpty) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 100,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'لا توجد طلبات معلقة',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredDeliveries.length,
+                      itemBuilder: (context, index) {
+                        final delivery = filteredDeliveries[index];
+                        return _buildDeliveryCard(delivery);
+                      },
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -282,15 +270,20 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 35,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: delivery.profileImageUrl != null
-                      ? NetworkImage(delivery.profileImageUrl!)
-                      : null,
-                  child: delivery.profileImageUrl == null
-                      ? const Icon(Icons.person, size: 35)
-                      : null,
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.two_wheeler_rounded,
+                    size: 35,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -305,12 +298,22 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        delivery.vehicleType,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${delivery.city} - ${delivery.governorate}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -326,41 +329,28 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: _buildInfoRow(
-                    Icons.phone, 
-                    delivery.deliveryPhones.length > 1 ? 'هاتف ${index + 1}' : 'هاتف', 
-                    phone
+                    Icons.phone,
+                    delivery.deliveryPhones.length > 1
+                        ? 'هاتف ${index + 1}'
+                        : 'هاتف',
+                    phone,
                   ),
                 );
               }),
             ],
-            _buildInfoRow(MdiIcons.whatsapp, 'واتساب', delivery.deliveryWhatsApp),
-            const SizedBox(height: 8),
             _buildInfoRow(
-              Icons.attach_money,
-              'رسوم التوصيل',
-              '${delivery.deliveryFee} جنيه',
+              MdiIcons.whatsapp,
+              'واتساب',
+              delivery.deliveryWhatsApp,
             ),
             const SizedBox(height: 8),
             _buildInfoRow(
-              Icons.location_on,
-              'العنوان',
-              delivery.address,
+              Icons.location_city,
+              'المحافظة',
+              delivery.governorate,
             ),
-            if (delivery.about != null && delivery.about!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'نبذة:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                delivery.about!,
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-            ],
+            const SizedBox(height: 8),
+            _buildInfoRow(Icons.location_on, 'المدينة', delivery.city),
             if (delivery.notes != null) ...[
               const SizedBox(height: 12),
               Container(
@@ -372,7 +362,11 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange[700], size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.orange[700],
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -391,7 +385,9 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        context.read<DeliveryCubit>().approveDelivery(delivery.id);
+                        context.read<DeliveryCubit>().approveDelivery(
+                          delivery.id,
+                        );
                       },
                       icon: const Icon(Icons.check),
                       label: const Text('موافقة'),
@@ -453,10 +449,7 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
           ),
         ),
         Expanded(
-          child: Text(
-            value,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
+          child: Text(value, style: TextStyle(color: Colors.grey[600])),
         ),
       ],
     );

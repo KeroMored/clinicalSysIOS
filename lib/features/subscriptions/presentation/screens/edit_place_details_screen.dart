@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/subscribed_place_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EditPlaceDetailsScreen extends StatefulWidget {
   final SubscribedPlaceModel place;
 
-  const EditPlaceDetailsScreen({
-    super.key,
-    required this.place,
-  });
+  const EditPlaceDetailsScreen({super.key, required this.place});
 
   @override
   State<EditPlaceDetailsScreen> createState() => _EditPlaceDetailsScreenState();
@@ -33,10 +31,14 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
     _ownerNameController = TextEditingController(text: widget.place.ownerName);
     _phoneController = TextEditingController(text: widget.place.phone);
     _emailController = TextEditingController();
-    _addressController = TextEditingController(text: widget.place.address ?? '');
-    _governorateController = TextEditingController(text: widget.place.governorate ?? '');
+    _addressController = TextEditingController(
+      text: widget.place.address ?? '',
+    );
+    _governorateController = TextEditingController(
+      text: widget.place.governorate ?? '',
+    );
     _cityController = TextEditingController(text: widget.place.city ?? '');
-    
+
     // Load actual data from the original collection
     _loadPlaceData();
   }
@@ -51,11 +53,11 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
 
       if (doc.exists && mounted) {
         final data = doc.data() as Map<String, dynamic>;
-        
+
         // Get email from the correct field
         final email = data[_getEmailField()] as String?;
         _emailController.text = email ?? '';
-        
+
         // Update other fields if needed
         if (data['address'] != null) {
           _addressController.text = data['address'] ?? '';
@@ -66,7 +68,7 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
         if (data['city'] != null) {
           _cityController.text = data['city'] ?? '';
         }
-        
+
         setState(() {});
       }
     } catch (e) {
@@ -98,14 +100,22 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
           .collection(collectionName)
           .doc(widget.place.placeId)
           .update({
-        _getNameField(): _nameController.text.trim(),
-        _getOwnerNameField(): _ownerNameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        _getEmailField(): _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-        'governorate': _governorateController.text.trim().isEmpty ? null : _governorateController.text.trim(),
-        'city': _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
-      });
+            _getNameField(): _nameController.text.trim(),
+            _getOwnerNameField(): _ownerNameController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            _getEmailField(): _emailController.text.trim().isEmpty
+                ? null
+                : _emailController.text.trim(),
+            'address': _addressController.text.trim().isEmpty
+                ? null
+                : _addressController.text.trim(),
+            'governorate': _governorateController.text.trim().isEmpty
+                ? null
+                : _governorateController.text.trim(),
+            'city': _cityController.text.trim().isEmpty
+                ? null
+                : _cityController.text.trim(),
+          });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -119,10 +129,7 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -208,7 +215,7 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
           ),
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: AppLoadingIndicator())
             : Form(
                 key: _formKey,
                 child: ListView(
@@ -224,7 +231,10 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.teal.shade200, width: 2),
+                        border: Border.all(
+                          color: Colors.teal.shade200,
+                          width: 2,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -270,7 +280,10 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                     const SizedBox(height: 24),
 
                     // Basic Info Section
-                    _buildSectionTitle('المعلومات الأساسية', Icons.info_rounded),
+                    _buildSectionTitle(
+                      'المعلومات الأساسية',
+                      Icons.info_rounded,
+                    ),
                     const SizedBox(height: 12),
 
                     // Place name
@@ -292,7 +305,10 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                     const SizedBox(height: 24),
 
                     // Contact Info Section
-                    _buildSectionTitle('معلومات التواصل', Icons.contact_phone_rounded),
+                    _buildSectionTitle(
+                      'معلومات التواصل',
+                      Icons.contact_phone_rounded,
+                    ),
                     const SizedBox(height: 12),
 
                     // Phone
@@ -309,7 +325,10 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                       decoration: BoxDecoration(
                         color: Colors.amber.shade50,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.shade200, width: 2),
+                        border: Border.all(
+                          color: Colors.amber.shade200,
+                          width: 2,
+                        ),
                       ),
                       padding: const EdgeInsets.all(12),
                       child: Column(
@@ -317,7 +336,11 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.warning_amber_rounded, color: Colors.amber.shade700, size: 20),
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.amber.shade700,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'إيميل المصادقة (Authentication)',
@@ -352,7 +375,10 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
                     const SizedBox(height: 24),
 
                     // Location Info Section
-                    _buildSectionTitle('معلومات الموقع', Icons.location_on_rounded),
+                    _buildSectionTitle(
+                      'معلومات الموقع',
+                      Icons.location_on_rounded,
+                    ),
                     const SizedBox(height: 12),
 
                     // Governorate

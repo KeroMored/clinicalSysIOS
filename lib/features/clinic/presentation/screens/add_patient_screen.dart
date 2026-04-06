@@ -5,16 +5,13 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/patient_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../cubit/patient_state.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddPatientScreen extends StatefulWidget {
   final String clinicId;
   final PatientModel? patient;
 
-  const AddPatientScreen({
-    super.key,
-    required this.clinicId,
-    this.patient,
-  });
+  const AddPatientScreen({super.key, required this.clinicId, this.patient});
 
   @override
   State<AddPatientScreen> createState() => _AddPatientScreenState();
@@ -34,7 +31,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     if (widget.patient != null) {
       _nameController.text = widget.patient!.name;
       _phoneController.text = widget.patient!.phoneNumber;
-      if (widget.patient!.whatsappNumber != null && 
+      if (widget.patient!.whatsappNumber != null &&
           widget.patient!.whatsappNumber != widget.patient!.phoneNumber) {
         _sameAsPhone = false;
         _whatsappController.text = widget.patient!.whatsappNumber!;
@@ -57,118 +54,216 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(gradient: AppTheme.clinicGradient),
-          child: SafeArea(
-            child: BlocListener<PatientCubit, PatientState>(
-              listener: (context, state) {
-                if (state is PatientActionLoading) {
-                  setState(() => _isLoading = true);
-                } else {
-                  setState(() => _isLoading = false);
-                  if (state is PatientActionSuccess) {
-                    Navigator.pop(context, true);
-                  } else if (state is PatientError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: Column(
-                children: [
-                  _buildAppBar(isEdit),
-                  Expanded(child: _buildForm()),
-                ],
-              ),
-            ),
-          ),
+        backgroundColor: const Color(0xFFF1F7FB),
+        appBar: _buildAppBar(isEdit),
+        body: BlocListener<PatientCubit, PatientState>(
+          listener: (context, state) {
+            if (state is PatientActionLoading) {
+              setState(() => _isLoading = true);
+            } else {
+              setState(() => _isLoading = false);
+              if (state is PatientActionSuccess) {
+                Navigator.pop(context, true);
+              } else if (state is PatientError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+          child: _buildForm(),
         ),
       ),
     );
   }
 
-  Widget _buildAppBar(bool isEdit) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isEdit ? 'تعديل بيانات المريض' : 'إضافة مريض جديد',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+  PreferredSizeWidget _buildAppBar(bool isEdit) {
+    return AppBar(
+      toolbarHeight: 68,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      centerTitle: true,
+      title: Text(
+        isEdit ? 'تعديل بيانات المريض' : 'إضافة مريض جديد',
+        style: const TextStyle(
+          color: Color(0xFF0F172A),
+          fontWeight: FontWeight.w800,
+          fontSize: 15,
+        ),
+      ),
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Color(0xFF334155),
+          size: 18,
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(end: 12),
+          child: FilledButton.icon(
+            onPressed: _isLoading ? null : _submitForm,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF0B8293),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
+            icon: const Icon(Icons.check_rounded, size: 18),
+            label: const Text(
+              'حفظ',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE0F2F8), Color(0xFFEAF7FB)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFCFE7F3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.health_and_safety_rounded,
+                  color: Color(0xFF0B8293),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'أدخل بيانات المريض بدقة لتسهيل البحث والتواصل من شاشة الحجوزات.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: const Color(0xFF1E3A5F).withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _buildSectionCard(
+            title: 'البيانات الأساسية',
+            icon: Icons.person_rounded,
+            child: Column(
+              children: [
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'اسم المريض',
+                  icon: Icons.badge_rounded,
+                  hint: 'أدخل الاسم الكامل',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'يرجى إدخال اسم المريض';
+                    }
+                    if (value.length < 3) {
+                      return 'الاسم يجب أن يكون 3 أحرف على الأقل';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildTextField(
+                  controller: _phoneController,
+                  label: 'رقم التليفون',
+                  icon: Icons.phone_rounded,
+                  hint: '01xxxxxxxxx',
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'يرجى إدخال رقم التليفون';
+                    }
+                    if (value.length != 11 || !value.startsWith('01')) {
+                      return 'رقم التليفون غير صحيح';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _buildSectionCard(
+            title: 'بيانات واتساب',
+            icon: MdiIcons.whatsapp,
+            child: _buildWhatsappSection(),
+          ),
+          const SizedBox(height: 24),
+          _buildSubmitButton(),
         ],
       ),
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
     return Container(
-      decoration: const BoxDecoration(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFDDE7EF)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _nameController,
-              label: 'اسم المريض',
-              icon: Icons.person,
-              hint: 'أدخل الاسم الكامل',
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'يرجى إدخال اسم المريض';
-                }
-                if (value.length < 3) {
-                  return 'الاسم يجب أن يكون 3 أحرف على الأقل';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-            _buildTextField(
-              controller: _phoneController,
-              label: 'رقم التليفون',
-              icon: Icons.phone,
-              hint: '01xxxxxxxxx',
-              keyboardType: TextInputType.phone,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'يرجى إدخال رقم التليفون';
-                }
-                if (value.length != 11 || !value.startsWith('01')) {
-                  return 'رقم التليفون غير صحيح';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-            _buildWhatsappSection(),
-            const SizedBox(height: 40),
-            _buildSubmitButton(),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE9F6FA),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: const Color(0xFF0B8293)),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }
@@ -177,32 +272,33 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'رقم الواتساب',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFDDE7EF)),
+          ),
+          child: CheckboxListTile(
+            value: _sameAsPhone,
+            onChanged: (value) {
+              setState(() {
+                _sameAsPhone = value ?? true;
+                if (_sameAsPhone) {
+                  _whatsappController.clear();
+                }
+              });
+            },
+            title: const Text(
+              'رقم الواتساب نفس رقم المكالمات',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: AppTheme.primaryColor,
           ),
         ),
-        const SizedBox(height: 8),
-        CheckboxListTile(
-          value: _sameAsPhone,
-          onChanged: (value) {
-            setState(() {
-              _sameAsPhone = value ?? true;
-              if (_sameAsPhone) {
-                _whatsappController.clear();
-              }
-            });
-          },
-          title: const Text('رقم الواتساب نفس رقم المكالمات'),
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppTheme.primaryColor,
-        ),
         if (!_sameAsPhone) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           TextFormField(
             controller: _whatsappController,
             keyboardType: TextInputType.phone,
@@ -217,27 +313,11 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
               }
               return null;
             },
-            decoration: InputDecoration(
-              hintText: '01xxxxxxxxx',
-              prefixIcon: Icon(MdiIcons.whatsapp, color: Colors.green),
-              filled: true,
-              fillColor: Colors.grey[100],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.green, width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red),
-              ),
+            decoration: _inputDecoration(
+              label: 'رقم الواتساب',
+              hint: '01xxxxxxxxx',
+              icon: MdiIcons.whatsapp,
+              iconColor: const Color(0xFF16A34A),
             ),
           ),
         ],
@@ -253,46 +333,42 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     String? Function(String?)? validator,
     TextInputType? keyboardType,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: Icon(icon, color: AppTheme.primaryColor),
-            filled: true,
-            fillColor: Colors.grey[100],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-          ),
-        ),
-      ],
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: _inputDecoration(label: label, hint: hint, icon: icon),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required String hint,
+    required IconData icon,
+    Color iconColor = AppTheme.primaryColor,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(icon, color: iconColor),
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
     );
   }
 
@@ -302,12 +378,12 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     return Container(
       decoration: BoxDecoration(
         gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -316,19 +392,27 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Text(
-                isEdit ? 'تحديث البيانات' : 'إضافة المريض',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+            ? const AppLoadingIndicator(color: Colors.white)
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    isEdit ? 'تحديث البيانات' : 'إضافة المريض',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
       ),
     );
@@ -339,8 +423,8 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
 
     final name = _nameController.text.trim();
     final phoneNumber = _phoneController.text.trim();
-    final whatsappNumber = _sameAsPhone 
-        ? phoneNumber 
+    final whatsappNumber = _sameAsPhone
+        ? phoneNumber
         : _whatsappController.text.trim();
 
     if (widget.patient != null) {
@@ -354,11 +438,11 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
     } else {
       // Add new patient
       context.read<PatientCubit>().addPatient(
-            clinicId: widget.clinicId,
-            name: name,
-            phoneNumber: phoneNumber,
-            whatsappNumber: whatsappNumber,
-          );
+        clinicId: widget.clinicId,
+        name: name,
+        phoneNumber: phoneNumber,
+        whatsappNumber: whatsappNumber,
+      );
     }
   }
 }

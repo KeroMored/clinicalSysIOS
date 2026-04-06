@@ -10,7 +10,11 @@ class AuthRepository {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final NotificationService _notificationService = NotificationService();
-  
+
+  // Cache for user model to avoid repeated Firestore reads
+  UserModel? _cachedUser;
+  String? _cachedUserId;
+
   // قائمة الأدمن (إيميلات محددة مسبقاً)
   final List<String> _adminEmails = [
     'admin@clinicalsystem.com',
@@ -23,18 +27,48 @@ class AuthRepository {
   // Stream of auth state changes
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
+  /// 🧹 تنظيف الاشتراكات القديمة عند تسجيل الدخول
+  /// إذا تم تغيير دور المستخدم من pharmacy إلى user، يجب إلغاء الاشتراك من topics
+  Future<void> _cleanupOldSubscriptions(UserModel user, String userId) async {
+    try {
+      // إذا كان المستخدم 'user' عادي، يجب إلغاء الاشتراك من أي pharmacy topics
+      if (user.role == 'user') {
+        // التحقق من وجود pharmacy_subscription
+        final pharmacySubDoc = await _firestore
+            .collection('pharmacy_subscriptions')
+            .doc(userId)
+            .get();
+
+        if (pharmacySubDoc.exists) {
+          print('🧹 إلغاء اشتراك المستخدم من pharmacy_requests topic');
+          await _notificationService.unsubscribeFromPharmacyTopic(userId);
+          // حذف subscription document
+          await _firestore
+              .collection('pharmacy_subscriptions')
+              .doc(userId)
+              .delete();
+          print('✅ تم إلغاء اشتراك pharmacy بنجاح');
+        }
+      }
+    } catch (e) {
+      print('⚠️ خطأ في تنظيف الاشتراكات القديمة: $e');
+      // لا نرمي الخطأ لأن هذا ليس حرجاً - المستخدم يمكنه تسجيل الدخول بدون تنظيف
+    }
+  }
+
   // Sign in with Google - ULTRA FAST VERSION
   Future<UserModel?> signInWithGoogle() async {
     try {
       // Trigger Google Sign In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
+
       if (googleUser == null) {
         return null;
       }
 
       // Obtain auth details
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // Create credential
       final credential = GoogleAuthProvider.credential(
@@ -43,11 +77,11 @@ class AuthRepository {
       );
 
       // Sign in to Firebase
-      final UserCredential userCredential = 
-          await _firebaseAuth.signInWithCredential(credential);
+      final UserCredential userCredential = await _firebaseAuth
+          .signInWithCredential(credential);
 
       final User? firebaseUser = userCredential.user;
-      
+
       if (firebaseUser == null) {
         throw Exception('Failed to sign in');
       }
@@ -60,33 +94,43 @@ class AuthRepository {
         // Replace dots and underscores with spaces and capitalize
         userName = userName.replaceAll('.', ' ').replaceAll('_', ' ');
         // Capitalize first letter of each word
-        userName = userName.split(' ').map((word) {
-          if (word.isEmpty) return word;
-          return word[0].toUpperCase() + word.substring(1);
-        }).join(' ');
+        userName = userName
+            .split(' ')
+            .map((word) {
+              if (word.isEmpty) return word;
+              return word[0].toUpperCase() + word.substring(1);
+            })
+            .join(' ');
       }
 
       // FAST PATH: Check if user exists in cache first
-      final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
 
       if (userDoc.exists) {
         // User exists - return immediately from cache
         final user = UserModel.fromJson(userDoc.data()!);
-        
+
+        // ✅ CLEANUP: إلغاء الاشتراك من topics إذا تم تغيير الدور
+        // إذا كان المستخدم كان pharmacy/clinic لكن تم تغييره إلى user، يجب إلغاء الاشتراك
+        await _cleanupOldSubscriptions(user, firebaseUser.uid);
+
         // Handle notifications in background (fire and forget)
         // ALL users subscribe to general topic
         _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
-        
+
         if (user.role == 'pharmacy') {
           _notificationService.subscribeToPharmacyTopic(firebaseUser.uid);
         }
-        
+
         return user;
       }
 
       // NEW USER: Determine role and create (only happens once per user)
       final role = await _determineUserRole(firebaseUser.email!);
-      
+
       final newUser = UserModel(
         uid: firebaseUser.uid,
         email: firebaseUser.email!,
@@ -97,11 +141,14 @@ class AuthRepository {
       );
 
       // Save user (fire and forget - don't wait)
-      _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toJson());
-      
+      _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .set(newUser.toJson());
+
       // Subscribe ALL new users to general topic
       _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
-      
+
       // Handle pharmacy setup in background (fire and forget)
       if (role == 'pharmacy') {
         _setupPharmacyUser(firebaseUser.uid, firebaseUser.email!);
@@ -118,10 +165,10 @@ class AuthRepository {
     try {
       // Subscribe to ALL users topic (general notifications)
       await _notificationService.subscribeToAllUsersTopic(uid);
-      
+
       // Subscribe to pharmacy-specific notifications
       await _notificationService.subscribeToPharmacyTopic(uid);
-      
+
       // Get pharmacy ID and update user
       final pharmacyId = await _getPharmacyIdByEmail(email);
       if (pharmacyId != null) {
@@ -144,41 +191,45 @@ class AuthRepository {
     // For new users, run queries with timeout to avoid hanging
     // This makes first login much faster
     try {
-      final results = await Future.wait([
-        _firestore
-            .collection('pharmacies')
-            .where('authEmails', arrayContains: email)
-            .limit(1)
-            .get(),
-        _firestore
-            .collection('clinics')
-            .where('authEmails', arrayContains: email)
-            .limit(1)
-            .get(),
-        _firestore
-            .collection('laboratories')
-            .where('authEmails', arrayContains: email)
-            .limit(1)
-            .get(),
-        _firestore
-            .collection('radiology_centers')
-            .where('authEmails', arrayContains: email)
-            .limit(1)
-            .get(),
-        _firestore
-            .collection('gyms')
-            .where('authEmails', arrayContains: email)
-            .limit(1)
-            .get(),
-        _firestore
-            .collection('rehabilitation_centers')
-            .where('authEmails', arrayContains: email)
-            .limit(1)
-            .get(),
-      ]).timeout(const Duration(seconds: 10), onTimeout: () {
-        // If timeout, throw to be caught below
-        throw TimeoutException('Role check timeout');
-      });
+      final results =
+          await Future.wait([
+            _firestore
+                .collection('pharmacies')
+                .where('authEmails', arrayContains: email)
+                .limit(1)
+                .get(),
+            _firestore
+                .collection('clinics')
+                .where('authEmails', arrayContains: email)
+                .limit(1)
+                .get(),
+            _firestore
+                .collection('laboratories')
+                .where('authEmails', arrayContains: email)
+                .limit(1)
+                .get(),
+            _firestore
+                .collection('radiology_centers')
+                .where('authEmails', arrayContains: email)
+                .limit(1)
+                .get(),
+            _firestore
+                .collection('gyms')
+                .where('authEmails', arrayContains: email)
+                .limit(1)
+                .get(),
+            _firestore
+                .collection('rehabilitation_centers')
+                .where('authEmails', arrayContains: email)
+                .limit(1)
+                .get(),
+          ]).timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              // If timeout, throw to be caught below
+              throw TimeoutException('Role check timeout');
+            },
+          );
 
       // Check in priority order
       // Pharmacy
@@ -190,22 +241,22 @@ class AuthRepository {
       if (results[1].docs.isNotEmpty) {
         return 'clinic_owner';
       }
-      
+
       // Laboratory
       if (results[2].docs.isNotEmpty) {
         return 'laboratory';
       }
-      
+
       // Radiology
       if (results[3].docs.isNotEmpty) {
         return 'radiology';
       }
-      
+
       // Gym
       if (results[4].docs.isNotEmpty) {
         return 'gym';
       }
-      
+
       // Rehabilitation
       if (results[5].docs.isNotEmpty) {
         return 'rehabilitation_center';
@@ -219,8 +270,6 @@ class AuthRepository {
     // Default to regular user
     return 'user';
   }
-
-
 
   // Get pharmacy ID by owner email
   Future<String?> _getPharmacyIdByEmail(String email) async {
@@ -246,30 +295,90 @@ class AuthRepository {
   Future<UserModel?> getCurrentUserModel() async {
     try {
       final user = currentUser;
+      if (user == null) {
+        _cachedUser = null;
+        _cachedUserId = null;
+        return null;
+      }
+
+      // Return cached user if same user and cache exists
+      if (_cachedUserId == user.uid && _cachedUser != null) {
+        return _cachedUser;
+      }
+
+      final docSnapshot = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get()
+          .timeout(const Duration(seconds: 8));
+
+      if (docSnapshot.exists) {
+        final userModel = UserModel.fromJson(docSnapshot.data()!);
+        // Cache the user model
+        _cachedUser = userModel;
+        _cachedUserId = user.uid;
+        return userModel;
+      }
+      // Fallback to Firebase Auth data if Firestore user document is missing.
+      final fallbackUser = UserModel(
+        uid: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName ?? '',
+        photoUrl: user.photoURL ?? '',
+        role: 'user',
+      );
+      _cachedUser = fallbackUser;
+      _cachedUserId = user.uid;
+      return fallbackUser;
+    } on TimeoutException {
+      final user = currentUser;
       if (user == null) return null;
 
-      final docSnapshot = await _firestore.collection('users').doc(user.uid).get();
-      
-      if (docSnapshot.exists) {
-        return UserModel.fromJson(docSnapshot.data()!);
-      }
-      return null;
+      // If Firestore is slow/offline, continue with cached Firebase Auth profile.
+      final fallbackUser = UserModel(
+        uid: user.uid,
+        email: user.email ?? '',
+        displayName: user.displayName ?? '',
+        photoUrl: user.photoURL ?? '',
+        role: 'user',
+      );
+      _cachedUser = fallbackUser;
+      _cachedUserId = user.uid;
+      return fallbackUser;
     } catch (e) {
       throw Exception('Failed to get current user: $e');
     }
+  }
+
+  // Fallback model from FirebaseAuth profile when Firestore is unavailable.
+  UserModel? getFallbackCurrentUserModel() {
+    final user = currentUser;
+    if (user == null) return null;
+
+    final fallbackUser = UserModel(
+      uid: user.uid,
+      email: user.email ?? '',
+      displayName: user.displayName ?? '',
+      photoUrl: user.photoURL ?? '',
+      role: 'user',
+    );
+    _cachedUser = fallbackUser;
+    _cachedUserId = user.uid;
+    return fallbackUser;
   }
 
   // Sign out - FAST VERSION
   Future<void> signOut() async {
     try {
       final user = currentUser;
-      
+
+      // Clear cache
+      _cachedUser = null;
+      _cachedUserId = null;
+
       // Sign out immediately (don't wait for notification cleanup)
-      await Future.wait([
-        _googleSignIn.signOut(),
-        _firebaseAuth.signOut(),
-      ]);
-      
+      await Future.wait([_googleSignIn.signOut(), _firebaseAuth.signOut()]);
+
       // Cleanup notifications in background (fire and forget)
       if (user != null) {
         _cleanupUserNotifications(user.uid);
@@ -297,5 +406,13 @@ class AuthRepository {
   // Check if user is signed in
   bool isSignedIn() {
     return currentUser != null;
+  }
+
+  /// Ensure currently signed-in user is subscribed to general app notifications.
+  Future<void> ensureAllUsersTopicSubscription() async {
+    final user = currentUser;
+    if (user == null) return;
+
+    await _notificationService.subscribeToAllUsersTopic(user.uid);
   }
 }

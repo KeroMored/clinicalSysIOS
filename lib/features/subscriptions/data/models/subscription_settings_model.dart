@@ -46,10 +46,11 @@ class SubscriptionSettingsModel {
   }
 
   // Default settings
-  static SubscriptionSettingsModel get defaultSettings => SubscriptionSettingsModel(
-    id: 'settings',
-    monthlyPrice: 100.0,
-    yearlyPrice: 1000.0,
-    updatedAt: DateTime.now(),
-  );
+  static SubscriptionSettingsModel get defaultSettings =>
+      SubscriptionSettingsModel(
+        id: 'settings',
+        monthlyPrice: 100.0,
+        yearlyPrice: 1000.0,
+        updatedAt: DateTime.now(),
+      );
 }

@@ -1,10 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum PaymentType {
-  monthly,
-  yearly,
-  custom,
-}
+enum PaymentType { monthly, yearly, custom }
 
 extension PaymentTypeExtension on PaymentType {
   String get arabicName {
@@ -56,10 +52,17 @@ class PaymentRecordModel {
       id: docId,
       subscribedPlaceId: map['subscribedPlaceId'] ?? '',
       amount: (map['amount'] ?? 0).toDouble(),
-      paymentType: PaymentTypeExtension.fromString(map['paymentType'] ?? 'monthly'),
-      paymentDate: (map['paymentDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      subscriptionStartDate: (map['subscriptionStartDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      subscriptionEndDate: (map['subscriptionEndDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      paymentType: PaymentTypeExtension.fromString(
+        map['paymentType'] ?? 'monthly',
+      ),
+      paymentDate:
+          (map['paymentDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      subscriptionStartDate:
+          (map['subscriptionStartDate'] as Timestamp?)?.toDate() ??
+          DateTime.now(),
+      subscriptionEndDate:
+          (map['subscriptionEndDate'] as Timestamp?)?.toDate() ??
+          DateTime.now(),
       notes: map['notes'],
       recordedBy: map['recordedBy'] ?? '',
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -98,7 +101,8 @@ class PaymentRecordModel {
       amount: amount ?? this.amount,
       paymentType: paymentType ?? this.paymentType,
       paymentDate: paymentDate ?? this.paymentDate,
-      subscriptionStartDate: subscriptionStartDate ?? this.subscriptionStartDate,
+      subscriptionStartDate:
+          subscriptionStartDate ?? this.subscriptionStartDate,
       subscriptionEndDate: subscriptionEndDate ?? this.subscriptionEndDate,
       notes: notes ?? this.notes,
       recordedBy: recordedBy ?? this.recordedBy,
@@ -114,7 +118,9 @@ class PaymentRecordModel {
       case PaymentType.yearly:
         return 'سنة كاملة';
       case PaymentType.custom:
-        final days = subscriptionEndDate.difference(subscriptionStartDate).inDays;
+        final days = subscriptionEndDate
+            .difference(subscriptionStartDate)
+            .inDays;
         return '$days يوم';
     }
   }

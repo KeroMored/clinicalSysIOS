@@ -1,16 +1,19 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'firebase_options.dart';
 import 'core/services/notification_service.dart';
 import 'core/security/security_manager.dart';
 import 'core/theme/app_theme.dart';
-import 'features/home/presentation/home_screen.dart';
+import 'features/auth/presentation/screens/auth_wrapper.dart';
 import 'features/pharmacy/data/repositories/pharmacy_repository.dart';
 import 'features/pharmacy/presentation/cubit/pharmacy_cubit.dart';
 import 'features/pharmacy/presentation/screens/pharmacy_details_screen.dart';
@@ -28,105 +31,124 @@ import 'features/rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import 'features/gym/data/repositories/gym_repository.dart';
 import 'features/gym/presentation/cubit/gym_cubit.dart';
 import 'features/clinic/presentation/widgets/doctor_of_day_notification.dart';
+import 'features/home/services/daily_health_tip_notification_service.dart';
 import 'features/clinic/data/repositories/patient_repository.dart';
 import 'features/clinic/presentation/cubit/patient_cubit.dart';
 import 'features/medicine_reminders/data/repositories/medicine_repository.dart';
 import 'features/medicine_reminders/presentation/cubit/medicine_cubit.dart';
-import 'features/medicine_reminders/services/medicine_notification_service.dart';
 
 // Handle background messages
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  // Initialize Firebase only if not already initialized
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
   print('Background message: ${message.messageId}');
 }
 
 // 🔥 Warm up Firestore connection in background
 // This pre-establishes the connection before user needs it for login
 void _warmUpFirestore() {
-  // Fire and forget - don't await
-  // This makes a simple query to establish connection
-  FirebaseFirestore.instance
-      .collection('app_config')
-      .doc('version')
-      .get()
-      .then((_) => print('✅ Firestore connection warmed up'))
-      .catchError((e) => print('Firestore warm-up: $e'));
-  
-  // 🔥 Pre-warm commonly accessed collections in parallel
-  // This speeds up first load of each screen
-  final collections = ['radiology_centers', 'gyms', 'pharmacies', 'clinics', 'patients', 'medical_visits', 'medicine_reminders'];
-  for (final collection in collections) {
-    FirebaseFirestore.instance
-        .collection(collection)
-        .where('isApproved', isEqualTo: true)
-        .limit(1)
-        .get()
-        .then((_) => print('✅ $collection warmed up'))
-        .catchError((e) => print('$collection warm-up: $e'));
-  }
+  // Intentionally disabled to minimize startup reads.
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize locale for calendar
   await initializeDateFormatting('ar', null);
-  
+
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Enable Firebase App Check to avoid placeholder tokens in Firestore calls.
+  try {
+    if (Platform.isAndroid || Platform.isIOS) {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: kDebugMode
+            ? AndroidProvider.debug
+            : AndroidProvider.playIntegrity,
+        appleProvider: kDebugMode
+            ? AppleProvider.debug
+            : AppleProvider.appAttestWithDeviceCheckFallback,
+      );
+    }
+  } catch (e) {
+    print('⚠️ App Check activation skipped: $e');
+  }
+
   // 🚀 Enable Firestore offline persistence and warm up connection
   // This makes the first login much faster
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
-  
-  // 🔥 Warm up Firestore connection in background (don't wait)
-  // This pre-establishes the connection before user needs it
+
+  // Set up background message handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  runApp(const MyApp());
+
+  // Keep startup scroll smooth: run heavy background tasks in phases.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(_startDeferredAppInitialization());
+  });
+}
+
+Future<void> _startDeferredAppInitialization() async {
+  // Allow UI to settle first.
+  await Future<void>.delayed(const Duration(seconds: 2));
+
+  // Firestore warm-up can be expensive on some devices, so run it after first interaction.
   _warmUpFirestore();
-  
-  // Initialize Security Manager 🔐
-  print('🔐 Initializing Security Manager...');
-  final securityManager = SecurityManager();
-  await securityManager.initialize();
-  
-  // Perform initial security check
-  final securityCheck = await securityManager.performSecurityCheck();
-  if (!securityCheck.isSecure) {
-    print('⚠️ Security warnings detected:');
-    for (final warning in securityCheck.warnings) {
-      print('  - $warning');
-    }
-  }
-  
-  // Initialize notification service
+
+  // Core messaging setup (needed for push delivery and local foreground handling).
+  await _initializeCoreNotificationServices();
+
+  // Low-priority services should never compete with first user interaction.
+  unawaited(_initializeLowPriorityServices());
+}
+
+Future<void> _initializeCoreNotificationServices() async {
   final notificationService = NotificationService();
-  await notificationService.initialize();
-  
-  // Initialize Doctor of the Day notifications
+  try {
+    await notificationService.initialize();
+    notificationService.handleForegroundNotifications();
+    notificationService.handleNotificationTaps();
+  } catch (e) {
+    print('❌ Notification initialization error: $e');
+  }
+}
+
+Future<void> _initializeLowPriorityServices() async {
+  await Future<void>.delayed(const Duration(seconds: 8));
+
+  // Security checks are intentionally skipped in debug to avoid startup stutter.
+  try {
+    if (!kDebugMode) {
+      print('🔐 Initializing Security Manager...');
+      final securityManager = SecurityManager();
+      await securityManager.initialize();
+    }
+  } catch (e) {
+    print('❌ Security initialization error: $e');
+  }
+
+  // Awesome notifications are low-priority at app startup.
   try {
     await DoctorOfTheDayNotification.initialize();
     await DoctorOfTheDayNotification.scheduleDailyNotification();
-    print('✅ Awesome Notifications initialized successfully');
-    
-    // Initialize Medicine Reminder notifications
-    await MedicineNotificationService.initialize();
-    print('✅ Medicine Reminder Notifications initialized successfully');
+
+    await DailyHealthTipNotificationService.initialize();
+    await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
+
+    // Medicine notification service initializes lazily when scheduling reminders.
+    print('✅ Background services initialized successfully');
   } catch (e) {
     print('❌ Error initializing Awesome Notifications: $e');
   }
-  
-  // Set up background message handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
-  // Handle foreground and notification taps
-  notificationService.handleForegroundNotifications();
-  notificationService.handleNotificationTaps();
-  
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -136,42 +158,28 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) => PharmacyCubit(PharmacyRepository()),
-        ),
-        BlocProvider(
-          create: (context) => AdminCubit(AdminRepository()),
-        ),
+        BlocProvider(create: (context) => PharmacyCubit(PharmacyRepository())),
+        BlocProvider(create: (context) => AdminCubit(AdminRepository())),
         BlocProvider(
           create: (context) => AuthCubit(AuthRepository())..checkAuthState(),
         ),
         BlocProvider(
           create: (context) => RadiologyCubit(RadiologyRepository()),
         ),
-        BlocProvider(
-          create: (context) => DeliveryCubit(DeliveryRepository()),
-        ),
+        BlocProvider(create: (context) => DeliveryCubit(DeliveryRepository())),
         BlocProvider(
           create: (context) => RehabilitationCubit(RehabilitationRepository()),
         ),
-        BlocProvider(
-          create: (context) => GymCubit(GymRepository()),
-        ),
-        BlocProvider(
-          create: (context) => PatientCubit(PatientRepository()),
-        ),
-        BlocProvider(
-          create: (context) => MedicineCubit(MedicineRepository()),
-        ),
+        BlocProvider(create: (context) => GymCubit(GymRepository())),
+        BlocProvider(create: (context) => PatientCubit(PatientRepository())),
+        BlocProvider(create: (context) => MedicineCubit(MedicineRepository())),
       ],
       child: MaterialApp(
         title: "Mallawy Care",
         debugShowCheckedModeBanner: false,
         theme: AppTheme.getTheme(),
         locale: const Locale('ar', 'EG'),
-        supportedLocales: const [
-          Locale('ar', 'EG'),
-        ],
+        supportedLocales: const [Locale('ar', 'EG')],
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
@@ -189,7 +197,7 @@ class MyApp extends StatelessWidget {
             ),
           );
         },
-        home: const HomeScreen(),
+        home: const AuthWrapper(),
         onGenerateRoute: (settings) {
           if (settings.name == '/pharmacy-details') {
             final pharmacyId = settings.arguments as String;

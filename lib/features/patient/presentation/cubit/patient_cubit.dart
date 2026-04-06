@@ -16,9 +16,9 @@ class PatientLoading extends PatientState {}
 
 class PatientLoaded extends PatientState {
   final List<PatientModel> patients;
-  
+
   PatientLoaded(this.patients);
-  
+
   @override
   List<Object?> get props => [patients];
 }
@@ -27,18 +27,18 @@ class PatientActionLoading extends PatientState {}
 
 class PatientActionSuccess extends PatientState {
   final String message;
-  
+
   PatientActionSuccess(this.message);
-  
+
   @override
   List<Object?> get props => [message];
 }
 
 class PatientError extends PatientState {
   final String message;
-  
+
   PatientError(this.message);
-  
+
   @override
   List<Object?> get props => [message];
 }
@@ -56,10 +56,13 @@ class PatientCubit extends Cubit<PatientState> {
     _currentClinicId = clinicId;
     emit(PatientLoading());
     _patientsSubscription?.cancel();
-    _patientsSubscription = _repository.getPatientsByClinic(clinicId).listen(
-      (patients) => emit(PatientLoaded(patients)),
-      onError: (e) => emit(PatientError('فشل في تحميل المرضى: ${e.toString()}')),
-    );
+    _patientsSubscription = _repository
+        .getPatientsByClinic(clinicId)
+        .listen(
+          (patients) => emit(PatientLoaded(patients)),
+          onError: (e) =>
+              emit(PatientError('فشل في تحميل المرضى: ${e.toString()}')),
+        );
   }
 
   // إضافة مريض جديد
@@ -74,7 +77,10 @@ class PatientCubit extends Cubit<PatientState> {
   }
 
   // تحديث بيانات مريض
-  Future<void> updatePatient(String patientId, Map<String, dynamic> updates) async {
+  Future<void> updatePatient(
+    String patientId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       emit(PatientActionLoading());
       await _repository.updatePatient(patientId, updates);
@@ -98,7 +104,7 @@ class PatientCubit extends Cubit<PatientState> {
   // البحث عن مرضى
   void searchPatients(String query) {
     if (_currentClinicId == null) return;
-    
+
     if (query.isEmpty) {
       loadPatients(_currentClinicId!);
       return;
@@ -106,10 +112,12 @@ class PatientCubit extends Cubit<PatientState> {
 
     emit(PatientLoading());
     _patientsSubscription?.cancel();
-    _patientsSubscription = _repository.searchPatients(_currentClinicId!, query).listen(
-      (patients) => emit(PatientLoaded(patients)),
-      onError: (e) => emit(PatientError('فشل في البحث: ${e.toString()}')),
-    );
+    _patientsSubscription = _repository
+        .searchPatients(_currentClinicId!, query)
+        .listen(
+          (patients) => emit(PatientLoaded(patients)),
+          onError: (e) => emit(PatientError('فشل في البحث: ${e.toString()}')),
+        );
   }
 
   @override

@@ -8,7 +8,10 @@ class RadiologyRepository {
   // Add new radiology center
   Future<void> addRadiologyCenter(RadiologyModel radiology) async {
     try {
-      await _firestore.collection(_collection).doc(radiology.id).set(radiology.toMap());
+      await _firestore
+          .collection(_collection)
+          .doc(radiology.id)
+          .set(radiology.toMap());
     } catch (e) {
       throw Exception('فشل في إضافة مركز الأشعة: $e');
     }
@@ -42,8 +45,10 @@ class RadiologyRepository {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => RadiologyModel.fromMap(doc.data())).toList();
-    });
+          return snapshot.docs
+              .map((doc) => RadiologyModel.fromMap(doc.data()))
+              .toList();
+        });
   }
 
   // Get approved radiology centers only (for users)
@@ -54,8 +59,10 @@ class RadiologyRepository {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => RadiologyModel.fromMap(doc.data())).toList();
-    });
+          return snapshot.docs
+              .map((doc) => RadiologyModel.fromMap(doc.data()))
+              .toList();
+        });
   }
 
   // Get pending radiology centers (for admin approval)
@@ -66,8 +73,10 @@ class RadiologyRepository {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => RadiologyModel.fromMap(doc.data())).toList();
-    });
+          return snapshot.docs
+              .map((doc) => RadiologyModel.fromMap(doc.data()))
+              .toList();
+        });
   }
 
   // Get radiology center by ID
@@ -91,11 +100,11 @@ class RadiologyRepository {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        return RadiologyModel.fromMap(snapshot.docs.first.data());
-      }
-      return null;
-    });
+          if (snapshot.docs.isNotEmpty) {
+            return RadiologyModel.fromMap(snapshot.docs.first.data());
+          }
+          return null;
+        });
   }
 
   // Search radiology centers by name in database
@@ -104,9 +113,9 @@ class RadiologyRepository {
       if (query.trim().isEmpty) {
         return [];
       }
-      
+
       final lowerQuery = query.toLowerCase().trim();
-      
+
       // Try to search by name using Firestore range query
       try {
         final nameSnapshot = await _firestore
@@ -118,7 +127,7 @@ class RadiologyRepository {
             .endAt(['$lowerQuery\uf8ff'])
             .limit(20)
             .get();
-        
+
         if (nameSnapshot.docs.isNotEmpty) {
           return nameSnapshot.docs
               .map((doc) => RadiologyModel.fromMap(doc.data()))
@@ -127,7 +136,7 @@ class RadiologyRepository {
       } catch (e) {
         print('Search index not available: $e');
       }
-      
+
       // Fallback: search all and filter
       final snapshot = await _firestore
           .collection(_collection)
@@ -137,11 +146,13 @@ class RadiologyRepository {
 
       return snapshot.docs
           .map((doc) => RadiologyModel.fromMap(doc.data()))
-          .where((radiology) =>
-              radiology.centerName.toLowerCase().contains(lowerQuery) ||
-              radiology.address.toLowerCase().contains(lowerQuery) ||
-              radiology.governorate.toLowerCase().contains(lowerQuery) ||
-              radiology.city.toLowerCase().contains(lowerQuery))
+          .where(
+            (radiology) =>
+                radiology.centerName.toLowerCase().contains(lowerQuery) ||
+                radiology.address.toLowerCase().contains(lowerQuery) ||
+                radiology.governorate.toLowerCase().contains(lowerQuery) ||
+                radiology.city.toLowerCase().contains(lowerQuery),
+          )
           .toList();
     } catch (e) {
       throw Exception('فشل في البحث: $e');
@@ -149,7 +160,9 @@ class RadiologyRepository {
   }
 
   // Filter by governorate
-  Stream<List<RadiologyModel>> getRadiologyCentersByGovernorate(String governorate) {
+  Stream<List<RadiologyModel>> getRadiologyCentersByGovernorate(
+    String governorate,
+  ) {
     return _firestore
         .collection(_collection)
         .where('governorate', isEqualTo: governorate)
@@ -157,8 +170,10 @@ class RadiologyRepository {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => RadiologyModel.fromMap(doc.data())).toList();
-    });
+          return snapshot.docs
+              .map((doc) => RadiologyModel.fromMap(doc.data()))
+              .toList();
+        });
   }
 
   // Filter by service
@@ -170,8 +185,10 @@ class RadiologyRepository {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => RadiologyModel.fromMap(doc.data())).toList();
-    });
+          return snapshot.docs
+              .map((doc) => RadiologyModel.fromMap(doc.data()))
+              .toList();
+        });
   }
 
   // Get radiology centers with home visit service
@@ -183,8 +200,10 @@ class RadiologyRepository {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => RadiologyModel.fromMap(doc.data())).toList();
-    });
+          return snapshot.docs
+              .map((doc) => RadiologyModel.fromMap(doc.data()))
+              .toList();
+        });
   }
 
   // Approve radiology center
@@ -245,7 +264,9 @@ class RadiologyRepository {
         .where('isApproved', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => RadiologyModel.fromMap(doc.data())).toList();
-    });
+          return snapshot.docs
+              .map((doc) => RadiologyModel.fromMap(doc.data()))
+              .toList();
+        });
   }
 }

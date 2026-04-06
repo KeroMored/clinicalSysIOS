@@ -190,14 +190,16 @@ class AdminCubit extends Cubit<AdminState> {
   // Get laboratory requests by status
   void loadLaboratoryRequestsByStatus(String status) {
     emit(AdminLoading());
-    repository.getLaboratoryRequestsByStatus(status).listen(
-      (laboratories) {
-        emit(LaboratoryRequestsLoaded(laboratories));
-      },
-      onError: (error) {
-        emit(AdminError(error.toString()));
-      },
-    );
+    repository
+        .getLaboratoryRequestsByStatus(status)
+        .listen(
+          (laboratories) {
+            emit(LaboratoryRequestsLoaded(laboratories));
+          },
+          onError: (error) {
+            emit(AdminError(error.toString()));
+          },
+        );
   }
 
   // Approve laboratory request

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/report_model.dart';
 import '../services/report_service.dart';
 import '../theme/app_theme.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class ReportsAdminScreen extends StatefulWidget {
   const ReportsAdminScreen({super.key});
@@ -34,12 +35,8 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('إدارة البلاغات'),
-        ),
-        body: const Center(
-          child: Text('يجب تسجيل الدخول أولاً'),
-        ),
+        appBar: AppBar(title: const Text('إدارة البلاغات')),
+        body: const Center(child: Text('يجب تسجيل الدخول أولاً')),
       );
     }
 
@@ -138,9 +135,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
         stream: _reportService.streamReports(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: AppLoadingIndicator());
           }
           return _buildReportsListContent(snapshot);
         },
@@ -150,9 +145,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
         future: _reportService.getReportsByStatus(status),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: AppLoadingIndicator());
           }
           return _buildReportsListContent(snapshot);
         },
@@ -162,9 +155,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
 
   Widget _buildReportsListContent(AsyncSnapshot<List<ReportModel>> snapshot) {
     if (snapshot.hasError) {
-      return Center(
-        child: Text('خطأ: ${snapshot.error}'),
-      );
+      return Center(child: Text('خطأ: ${snapshot.error}'));
     }
 
     final reports = snapshot.data ?? [];
@@ -174,18 +165,11 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 100,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.inbox_outlined, size: 100, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
               'لا توجد بلاغات',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -267,11 +251,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                     color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    statusIcon,
-                    color: statusColor,
-                    size: 24,
-                  ),
+                  child: Icon(statusIcon, color: statusColor, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -289,10 +269,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                       const SizedBox(height: 4),
                       Text(
                         _getServiceTypeArabic(report.serviceType),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -335,10 +312,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                     const SizedBox(width: 8),
                     Text(
                       'البلاغ من: ${report.reporterName}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -354,10 +328,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                     Expanded(
                       child: Text(
                         report.reporterEmail,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                       ),
                     ),
                   ],
@@ -373,10 +344,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                     const SizedBox(width: 8),
                     Text(
                       _formatDate(report.createdAt),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -408,7 +376,8 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                   ),
                 ),
                 // Admin Notes
-                if (report.adminNotes != null && report.adminNotes!.isNotEmpty) ...[
+                if (report.adminNotes != null &&
+                    report.adminNotes!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const Text(
                     'ملاحظات الإدارة:',
@@ -425,10 +394,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                     decoration: BoxDecoration(
                       color: Colors.blue[50],
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: Colors.blue[200]!,
-                        width: 1,
-                      ),
+                      border: Border.all(color: Colors.blue[200]!, width: 1),
                     ),
                     child: Text(
                       report.adminNotes!,
@@ -444,18 +410,11 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(
-                        Icons.update,
-                        size: 16,
-                        color: Colors.grey[600],
-                      ),
+                      Icon(Icons.update, size: 16, color: Colors.grey[600]),
                       const SizedBox(width: 4),
                       Text(
                         'تم المراجعة: ${_formatDate(report.reviewedAt!)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -585,10 +544,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -611,9 +567,7 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
           maxLines: 5,
           decoration: InputDecoration(
             hintText: 'أضف ملاحظاتك هنا...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
         actions: [

@@ -25,10 +25,7 @@ class PaymentHistorySectionWidget extends StatelessWidget {
               const SizedBox(width: 8),
               const Text(
                 'سجل الدفع',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               Text(

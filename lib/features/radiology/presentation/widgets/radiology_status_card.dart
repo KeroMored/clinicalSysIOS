@@ -5,15 +5,14 @@ import '../../data/models/radiology_model.dart';
 class RadiologyStatusCard extends StatelessWidget {
   final RadiologyModel radiology;
 
-  const RadiologyStatusCard({
-    super.key,
-    required this.radiology,
-  });
+  const RadiologyStatusCard({super.key, required this.radiology});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: radiology.isApproved ? Colors.green.shade50 : Colors.orange.shade50,
+      color: radiology.isApproved
+          ? Colors.green.shade50
+          : Colors.orange.shade50,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -33,7 +32,9 @@ class RadiologyStatusCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: radiology.isApproved ? Colors.green.shade900 : Colors.orange.shade900,
+                      color: radiology.isApproved
+                          ? Colors.green.shade900
+                          : Colors.orange.shade900,
                     ),
                   ),
                   const SizedBox(height: 4),

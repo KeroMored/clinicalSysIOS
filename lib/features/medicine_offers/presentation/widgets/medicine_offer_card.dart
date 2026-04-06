@@ -10,10 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class MedicineOfferCard extends StatelessWidget {
   final MedicineOfferModel offer;
 
-  const MedicineOfferCard({
-    super.key,
-    required this.offer,
-  });
+  const MedicineOfferCard({super.key, required this.offer});
 
   String _formatWhatsAppNumber(String input) {
     // Keep digits and '+' only initially
@@ -37,7 +34,7 @@ class MedicineOfferCard extends StatelessWidget {
       // جلب بيانات الصيدلية للحصول على رقم الواتساب
       final pharmacyRepo = PharmacyRepository();
       final pharmacy = await pharmacyRepo.getPharmacyById(pharmacyId);
-      
+
       if (pharmacy.whatsapp.isNotEmpty) {
         final formatted = _formatWhatsAppNumber(pharmacy.whatsapp);
         if (formatted.isEmpty) {
@@ -48,10 +45,12 @@ class MedicineOfferCard extends StatelessWidget {
           }
           return;
         }
-        
-        final message = 'مرحباً 👋\nأنا مهتم بالعرض الخاص بـ *${offer.medicineName}*\nالسعر: ${offer.price} جنيه\n\nهل العرض لا زال متاحاً؟';
-        final url = 'https://wa.me/$formatted?text=${Uri.encodeComponent(message)}';
-        
+
+        final message =
+            'مرحباً 👋\nأنا مهتم بالعرض الخاص بـ *${offer.medicineName}*\nالسعر: ${offer.price} جنيه\n\nهل العرض لا زال متاحاً؟';
+        final url =
+            'https://wa.me/$formatted?text=${Uri.encodeComponent(message)}';
+
         try {
           bool launched = await launchUrl(Uri.parse(url));
           if (!launched) {
@@ -59,9 +58,9 @@ class MedicineOfferCard extends StatelessWidget {
           }
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تعذر فتح واتساب')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('تعذر فتح واتساب')));
           }
         }
       } else {
@@ -73,9 +72,9 @@ class MedicineOfferCard extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('حدث خطأ: $e')));
       }
     }
   }
@@ -86,34 +85,34 @@ class MedicineOfferCard extends StatelessWidget {
       // جلب بيانات الصيدلية للحصول على رقم التليفون
       final pharmacyRepo = PharmacyRepository();
       final pharmacy = await pharmacyRepo.getPharmacyById(pharmacyId);
-      
+
       if (pharmacy.phones.isNotEmpty) {
         final Uri launchUri = Uri(
           scheme: 'tel',
           path: pharmacy.phones[0], // استخدام أول رقم متاح
         );
-        
+
         try {
           await launchUrl(launchUri);
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تعذر الاتصال')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('تعذر الاتصال')));
           }
         }
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('رقم الهاتف غير متوفر')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('رقم الهاتف غير متوفر')));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('حدث خطأ: $e')));
       }
     }
   }
@@ -143,7 +142,9 @@ class MedicineOfferCard extends StatelessWidget {
           // صورة الدواء
           if (offer.imageUrl != null && offer.imageUrl!.isNotEmpty)
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
               child: Image.network(
                 offer.imageUrl!,
                 height: 200,
@@ -153,7 +154,11 @@ class MedicineOfferCard extends StatelessWidget {
                   return Container(
                     height: 200,
                     color: Colors.grey[300],
-                    child: const Icon(Icons.medication, size: 80, color: Colors.grey),
+                    child: const Icon(
+                      Icons.medication,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
                   );
                 },
               ),
@@ -178,7 +183,11 @@ class MedicineOfferCard extends StatelessWidget {
                 // اسم الصيدلية
                 Row(
                   children: [
-                    const Icon(Icons.local_pharmacy, size: 18, color: Colors.grey),
+                    const Icon(
+                      Icons.local_pharmacy,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -199,14 +208,21 @@ class MedicineOfferCard extends StatelessWidget {
                   children: [
                     // السعر
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF57CC99).withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.attach_money, size: 20, color: Color(0xFF57CC99)),
+                          const Icon(
+                            Icons.attach_money,
+                            size: 20,
+                            color: Color(0xFF57CC99),
+                          ),
                           Text(
                             '${offer.price} جنيه',
                             style: const TextStyle(
@@ -222,14 +238,21 @@ class MedicineOfferCard extends StatelessWidget {
 
                     // الكمية المتاحة
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.orange.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.inventory_2, size: 18, color: Colors.orange),
+                          const Icon(
+                            Icons.inventory_2,
+                            size: 18,
+                            color: Colors.orange,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'متوفر: ${offer.quantity}',
@@ -265,8 +288,9 @@ class MedicineOfferCard extends StatelessWidget {
                     // زر واتساب
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _openWhatsApp(context, offer.pharmacyId),
-                        icon:  Icon(MdiIcons.whatsapp, size: 20),
+                        onPressed: () =>
+                            _openWhatsApp(context, offer.pharmacyId),
+                        icon: Icon(MdiIcons.whatsapp, size: 20),
                         label: const Text('واتساب'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF25D366),
@@ -283,7 +307,8 @@ class MedicineOfferCard extends StatelessWidget {
                     // زر اتصال
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _makePhoneCall(context, offer.pharmacyId),
+                        onPressed: () =>
+                            _makePhoneCall(context, offer.pharmacyId),
                         icon: const Icon(Icons.phone, size: 20),
                         label: const Text('اتصال'),
                         style: ElevatedButton.styleFrom(

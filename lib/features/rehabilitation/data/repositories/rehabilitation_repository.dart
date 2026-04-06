@@ -13,9 +13,11 @@ class RehabilitationRepository {
         .where('isActive', isEqualTo: true)
         .orderBy('rating', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Get pending centers for approval
@@ -25,9 +27,11 @@ class RehabilitationRepository {
         .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Get all centers (for admin)
@@ -36,9 +40,11 @@ class RehabilitationRepository {
         .collection(_collection)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Get centers by service type
@@ -50,13 +56,17 @@ class RehabilitationRepository {
         .where('serviceTypes', arrayContains: serviceType)
         .orderBy('rating', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Get centers by governorate
-  Stream<List<RehabilitationCenterModel>> getCentersByGovernorate(String governorate) {
+  Stream<List<RehabilitationCenterModel>> getCentersByGovernorate(
+    String governorate,
+  ) {
     return _firestore
         .collection(_collection)
         .where('isApproved', isEqualTo: true)
@@ -64,15 +74,20 @@ class RehabilitationRepository {
         .where('governorate', isEqualTo: governorate)
         .orderBy('rating', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => RehabilitationCenterModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Add new center
   Future<void> addCenter(RehabilitationCenterModel center) async {
     try {
-      await _firestore.collection(_collection).doc(center.id).set(center.toMap());
+      await _firestore
+          .collection(_collection)
+          .doc(center.id)
+          .set(center.toMap());
     } catch (e) {
       throw Exception('فشل في إضافة المركز: $e');
     }
@@ -141,7 +156,11 @@ class RehabilitationRepository {
   }
 
   // Update rating
-  Future<void> updateRating(String centerId, double newRating, int reviewCount) async {
+  Future<void> updateRating(
+    String centerId,
+    double newRating,
+    int reviewCount,
+  ) async {
     try {
       await _firestore.collection(_collection).doc(centerId).update({
         'rating': newRating,

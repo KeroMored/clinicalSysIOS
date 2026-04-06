@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class RehabilitationVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -13,7 +14,8 @@ class RehabilitationVideoPlayer extends StatefulWidget {
   });
 
   @override
-  State<RehabilitationVideoPlayer> createState() => _RehabilitationVideoPlayerState();
+  State<RehabilitationVideoPlayer> createState() =>
+      _RehabilitationVideoPlayerState();
 }
 
 class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
@@ -44,7 +46,8 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
       _videoPlayerController.addListener(() {
         if (_videoPlayerController.value.hasError && mounted) {
           setState(() {
-            _errorMessage = 'خطأ في تشغيل الفيديو: ${_videoPlayerController.value.errorDescription}';
+            _errorMessage =
+                'خطأ في تشغيل الفيديو: ${_videoPlayerController.value.errorDescription}';
           });
         }
       });
@@ -68,11 +71,7 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
         ),
         placeholder: Container(
           color: Colors.black,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: Colors.purple,
-            ),
-          ),
+          child: const Center(child: AppLoadingIndicator(color: Colors.purple)),
         ),
         errorBuilder: (context, errorMessage) {
           return Center(
@@ -81,11 +80,7 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.red,
-                    size: 60,
-                  ),
+                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
                   const SizedBox(height: 16),
                   const Text(
                     'حدث خطأ في تشغيل الفيديو',
@@ -142,10 +137,7 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(
-          widget.title,
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(widget.title, style: const TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Center(
@@ -169,7 +161,10 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
                     const SizedBox(height: 8),
                     Text(
                       _errorMessage!,
-                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
@@ -205,20 +200,18 @@ class _RehabilitationVideoPlayerState extends State<RehabilitationVideoPlayer> {
                 ),
               )
             : _isInitialized && _chewieController != null
-                ? Chewie(controller: _chewieController!)
-                : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        color: Colors.purple,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'جاري تحميل الفيديو...',
-                        style: TextStyle(color: Colors.white70, fontSize: 16),
-                      ),
-                    ],
+            ? Chewie(controller: _chewieController!)
+            : const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppLoadingIndicator(color: Colors.purple),
+                  SizedBox(height: 16),
+                  Text(
+                    'جاري تحميل الفيديو...',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
+                ],
+              ),
       ),
     );
   }

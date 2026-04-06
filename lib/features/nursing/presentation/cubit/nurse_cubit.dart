@@ -7,8 +7,8 @@ class NurseCubit extends Cubit<NurseState> {
   final FirebaseFirestore _firestore;
 
   NurseCubit({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        super(NurseInitial());
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      super(NurseInitial());
 
   // Load all approved nurses
   Future<void> loadApprovedNurses() async {
@@ -210,10 +210,7 @@ class NurseCubit extends Cubit<NurseState> {
   // Update nurse
   Future<void> updateNurse(NurseModel nurse) async {
     try {
-      await _firestore
-          .collection('nurses')
-          .doc(nurse.id)
-          .update(nurse.toMap());
+      await _firestore.collection('nurses').doc(nurse.id).update(nurse.toMap());
     } catch (e) {
       throw Exception('فشل في تحديث البيانات: $e');
     }

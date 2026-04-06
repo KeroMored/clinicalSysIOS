@@ -23,15 +23,16 @@ class MedicalVisitModel {
 
   factory MedicalVisitModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     // دعم الصيغة القديمة (prescriptionImageUrl) والجديدة (prescriptionImageUrls)
     List<String> imageUrls = [];
     if (data['prescriptionImageUrls'] != null) {
       imageUrls = List<String>.from(data['prescriptionImageUrls']);
-    } else if (data['prescriptionImageUrl'] != null && data['prescriptionImageUrl'] != '') {
+    } else if (data['prescriptionImageUrl'] != null &&
+        data['prescriptionImageUrl'] != '') {
       imageUrls = [data['prescriptionImageUrl'] as String];
     }
-    
+
     return MedicalVisitModel(
       id: doc.id,
       patientId: data['patientId'] ?? '',
@@ -73,11 +74,13 @@ class MedicalVisitModel {
       visitDate: visitDate ?? this.visitDate,
       diagnosis: diagnosis ?? this.diagnosis,
       medications: medications ?? this.medications,
-      prescriptionImageUrls: prescriptionImageUrls ?? this.prescriptionImageUrls,
+      prescriptionImageUrls:
+          prescriptionImageUrls ?? this.prescriptionImageUrls,
       createdAt: createdAt ?? this.createdAt,
     );
   }
-  
+
   // للتوافق مع الكود القديم
-  String? get prescriptionImageUrl => prescriptionImageUrls.isNotEmpty ? prescriptionImageUrls.first : null;
+  String? get prescriptionImageUrl =>
+      prescriptionImageUrls.isNotEmpty ? prescriptionImageUrls.first : null;
 }

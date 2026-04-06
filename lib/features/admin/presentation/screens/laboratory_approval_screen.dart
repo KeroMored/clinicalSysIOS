@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
 import '../../../laboratory/data/models/laboratory_model.dart';
 import 'laboratory_detail_approval_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class LaboratoryApprovalScreen extends StatefulWidget {
   const LaboratoryApprovalScreen({super.key});
 
   @override
-  State<LaboratoryApprovalScreen> createState() => _LaboratoryApprovalScreenState();
+  State<LaboratoryApprovalScreen> createState() =>
+      _LaboratoryApprovalScreenState();
 }
 
 class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
@@ -28,89 +32,90 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
     } else if (_selectedFilter == 'pending') {
       context.read<AdminCubit>().loadPendingLaboratoryRequests();
     } else {
-      context.read<AdminCubit>().loadLaboratoryRequestsByStatus(_selectedFilter);
+      context.read<AdminCubit>().loadLaboratoryRequestsByStatus(
+        _selectedFilter,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الموافقة على المعامل'),
-        centerTitle: true,
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+      appBar: GradientAppBar(
+        title: 'الموافقة على المعامل',
+        gradient: AppTheme.laboratoryGradient,
       ),
-      body: Column(
-        children: [
-          // Filter Tabs
-          Container(
-            color: Colors.green[50],
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildFilterTab('الكل', 'all'),
-                ),
-                Expanded(
-                  child: _buildFilterTab('قيد الانتظار', 'pending'),
-                ),
-                Expanded(
-                  child: _buildFilterTab('مقبولة', 'approved'),
-                ),
-                Expanded(
-                  child: _buildFilterTab('مرفوضة', 'rejected'),
-                ),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
           ),
-          
-          // Laboratory List
-          Expanded(
-            child: BlocBuilder<AdminCubit, AdminState>(
-              builder: (context, state) {
-                if (state is AdminLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                
-                if (state is LaboratoryRequestsLoaded) {
-                  if (state.laboratories.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.science_outlined,
-                            size: 80,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'لا توجد طلبات',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[600],
+        ),
+        child: Column(
+          children: [
+            // Filter Tabs
+            Container(
+              color: Colors.green[50],
+              child: Row(
+                children: [
+                  Expanded(child: _buildFilterTab('الكل', 'all')),
+                  Expanded(child: _buildFilterTab('قيد الانتظار', 'pending')),
+                  Expanded(child: _buildFilterTab('مقبولة', 'approved')),
+                  Expanded(child: _buildFilterTab('مرفوضة', 'rejected')),
+                ],
+              ),
+            ),
+
+            // Laboratory List
+            Expanded(
+              child: BlocBuilder<AdminCubit, AdminState>(
+                builder: (context, state) {
+                  if (state is AdminLoading) {
+                    return const Center(child: AppLoadingIndicator());
+                  }
+
+                  if (state is LaboratoryRequestsLoaded) {
+                    if (state.laboratories.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.science_outlined,
+                              size: 80,
+                              color: Colors.grey[400],
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'لا توجد طلبات',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: state.laboratories.length,
+                      itemBuilder: (context, index) {
+                        final lab = state.laboratories[index];
+                        return _buildLaboratoryCard(lab);
+                      },
                     );
                   }
-      
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: state.laboratories.length,
-                    itemBuilder: (context, index) {
-                      final lab = state.laboratories[index];
-                      return _buildLaboratoryCard(lab);
-                    },
-                  );
-                }
-      
-                return const Center(child: Text('حدث خطأ'));
-              },
+
+                  return const Center(child: Text('حدث خطأ'));
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -170,17 +175,14 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => LaboratoryDetailApprovalScreen(
-                laboratory: lab,
-              ),
+              builder: (context) =>
+                  LaboratoryDetailApprovalScreen(laboratory: lab),
             ),
           );
         },
@@ -193,7 +195,9 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: statusColor.withOpacity(0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
               ),
               child: Row(
                 children: [
@@ -226,7 +230,7 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
                           ),
                   ),
                   const SizedBox(width: 12),
-                  
+
                   // Lab name and date
                   Expanded(
                     child: Column(
@@ -250,10 +254,13 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Status badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor,
                       borderRadius: BorderRadius.circular(20),
@@ -287,7 +294,7 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
                   _buildDetailRow(Icons.person, 'المالك', lab.ownerName),
                   _buildDetailRow(Icons.phone, 'هاتف المالك', lab.ownerPhone),
                   _buildDetailRow(Icons.location_on, 'العنوان', lab.address),
-                  
+
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -303,8 +310,9 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
                         const Icon(Icons.home, size: 18, color: Colors.blue),
                     ],
                   ),
-                  
-                  if (lab.status == 'rejected' && lab.rejectionReason != null) ...[
+
+                  if (lab.status == 'rejected' &&
+                      lab.rejectionReason != null) ...[
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -327,7 +335,7 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
                       ),
                     ),
                   ],
-                  
+
                   const SizedBox(height: 12),
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -360,13 +368,8 @@ class _LaboratoryApprovalScreenState extends State<LaboratoryApprovalScreen> {
         children: [
           Icon(icon, size: 18, color: Colors.grey[600]),
           const SizedBox(width: 8),
-          Text(
-            '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Expanded(
-            child: Text(value),
-          ),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(value)),
         ],
       ),
     );

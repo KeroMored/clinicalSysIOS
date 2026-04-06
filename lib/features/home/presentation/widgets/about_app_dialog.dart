@@ -7,9 +7,7 @@ class AboutAppDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
         children: [
           Container(
@@ -49,10 +47,7 @@ class AboutAppDialog extends StatelessWidget {
             SizedBox(height: 16),
             Text(
               '📍 خدماتنا تشمل:',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
             Text('• العيادات الطبية المتخصصة', style: TextStyle(fontSize: 14)),

@@ -4,15 +4,18 @@ import '../cubit/radiology_cubit.dart';
 import '../cubit/radiology_state.dart';
 import '../../data/models/radiology_model.dart';
 import '../widgets/widgets.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class RadiologyApprovalListScreen extends StatefulWidget {
   const RadiologyApprovalListScreen({super.key});
 
   @override
-  State<RadiologyApprovalListScreen> createState() => _RadiologyApprovalListScreenState();
+  State<RadiologyApprovalListScreen> createState() =>
+      _RadiologyApprovalListScreenState();
 }
 
-class _RadiologyApprovalListScreenState extends State<RadiologyApprovalListScreen> {
+class _RadiologyApprovalListScreenState
+    extends State<RadiologyApprovalListScreen> {
   String _selectedFilter = 'all'; // all, pending, approved
 
   @override
@@ -39,10 +42,7 @@ class _RadiologyApprovalListScreenState extends State<RadiologyApprovalListScree
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadCenters,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadCenters),
         ],
       ),
       body: Column(
@@ -61,7 +61,7 @@ class _RadiologyApprovalListScreenState extends State<RadiologyApprovalListScree
               builder: (context, state) {
                 if (state is RadiologyLoading) {
                   return const Center(
-                    child: CircularProgressIndicator(color: Colors.teal),
+                    child: AppLoadingIndicator(color: Colors.teal),
                   );
                 }
 
@@ -70,11 +70,18 @@ class _RadiologyApprovalListScreenState extends State<RadiologyApprovalListScree
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
+                        Icon(
+                          Icons.error_outline,
+                          size: 60,
+                          color: Colors.red.shade300,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           state.message,
-                          style: const TextStyle(fontSize: 16, color: Colors.red),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.red,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -104,11 +111,18 @@ class _RadiologyApprovalListScreenState extends State<RadiologyApprovalListScree
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle_outline, size: 80, color: Colors.green.shade300),
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 80,
+                          color: Colors.green.shade300,
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'لا توجد مراكز',
-                          style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ],
                     ),

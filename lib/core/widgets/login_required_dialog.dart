@@ -4,7 +4,10 @@ import '../theme/app_theme.dart';
 
 /// عرض dialog يخبر المستخدم بضرورة تسجيل الدخول
 class LoginRequiredDialog {
-  static Future<void> show(BuildContext context, {String? customMessage}) async {
+  static Future<void> show(
+    BuildContext context, {
+    String? customMessage,
+  }) async {
     return showDialog(
       context: context,
       barrierDismissible: true,
@@ -60,7 +63,8 @@ class LoginRequiredDialog {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        customMessage ?? 'نظام مواعيد الأدوية يساعدك على:\n• تذكر مواعيد أدويتك 💊\n• تنبيهات في الوقت المحدد ⏰\n• متابعة العلاج بانتظام 📋',
+                        customMessage ??
+                            'نظام مواعيد الأدوية يساعدك على:\n• تذكر مواعيد أدويتك 💊\n• تنبيهات في الوقت المحدد ⏰\n• متابعة العلاج بانتظام 📋',
                         style: const TextStyle(
                           fontSize: 15,
                           height: 1.6,
@@ -100,18 +104,11 @@ class LoginRequiredDialog {
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.grey.shade300,
-                  width: 1.5,
-                ),
+                border: Border.all(color: Colors.grey.shade300, width: 1.5),
               ),
               child: TextButton.icon(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(
-                  Icons.close,
-                  color: Colors.grey,
-                  size: 20,
-                ),
+                icon: const Icon(Icons.close, color: Colors.grey, size: 20),
                 label: const Text(
                   'إلغاء',
                   style: TextStyle(
@@ -121,7 +118,10 @@ class LoginRequiredDialog {
                   ),
                 ),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -155,11 +155,7 @@ class LoginRequiredDialog {
                     );
                   }
                 },
-                icon: const Icon(
-                  Icons.login,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                icon: const Icon(Icons.login, color: Colors.white, size: 20),
                 label: const Text(
                   'تسجيل الدخول',
                   style: TextStyle(
@@ -169,7 +165,10 @@ class LoginRequiredDialog {
                   ),
                 ),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),

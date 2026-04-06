@@ -93,15 +93,17 @@ class AdditionsScreen extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 // Pharmacy Card
-                  _buildServiceCard(
-                    context,
-                    icon: Icons.medication_rounded,
-                    title: 'إضافة صيدلية',
-                    subtitle: 'أضف صيدلية جديدة',
-                    color: const Color(0xFF06B6D4),
+                _buildServiceCard(
+                  context,
+                  icon: Icons.medication_rounded,
+                  title: 'إضافة صيدلية',
+                  subtitle: 'أضف صيدلية جديدة',
+                  color: const Color(0xFF06B6D4),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddPharmacyScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AddPharmacyScreen(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -115,7 +117,9 @@ class AdditionsScreen extends StatelessWidget {
                   color: const Color(0xFF10B981),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddLaboratoryScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AddLaboratoryScreen(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -129,7 +133,9 @@ class AdditionsScreen extends StatelessWidget {
                   color: const Color(0xFFEF4444),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddRadiologyScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AddRadiologyScreen(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -168,7 +174,9 @@ class AdditionsScreen extends StatelessWidget {
                   color: const Color(0xFF3B82F6),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddDeliveryScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AddDeliveryScreen(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -193,7 +201,9 @@ class AdditionsScreen extends StatelessWidget {
                   color: const Color(0xFFA855F7),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AddRehabilitationCenterScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AddRehabilitationCenterScreen(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -251,11 +261,7 @@ class AdditionsScreen extends StatelessWidget {
                 color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: color,
-              ),
+              child: Icon(icon, size: 28, color: color),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -282,11 +288,7 @@ class AdditionsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 18,
-              color: color,
-            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 18, color: color),
           ],
         ),
       ),

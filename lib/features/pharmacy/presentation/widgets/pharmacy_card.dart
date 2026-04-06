@@ -1,35 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../data/models/pharmacy_model.dart';
 import '../../../../core/utils/pharmacy_hours_helper.dart';
+import '../../../../core/services/location_service.dart';
 
 class PharmacyCard extends StatelessWidget {
   final PharmacyModel pharmacy;
   final VoidCallback onTap;
+  final Position? userLocation;
 
   const PharmacyCard({
     super.key,
     required this.pharmacy,
     required this.onTap,
+    this.userLocation,
   });
+
+  String _formatDistance() {
+    if (userLocation == null) {
+      return '-- كم';
+    }
+
+    final distance = LocationService.calculateDistance(
+      userLocation!.latitude,
+      userLocation!.longitude,
+      pharmacy.latitude,
+      pharmacy.longitude,
+    );
+
+    if (distance < 1) {
+      return '${(distance * 1000).toStringAsFixed(0)} م';
+    }
+
+    return '${distance.toStringAsFixed(1)} كم';
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Calculate if pharmacy is actually open based on hours
     final isActuallyOpen = PharmacyHoursHelper.isPharmacyOpen(
       workingHours: pharmacy.workingHours,
       holidays: pharmacy.holidays,
     );
+
+    final insuranceText = pharmacy.hasInsurance
+        ? '${pharmacy.insuranceCompanies.length} شركات متعاقدة'
+        : '';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -37,40 +64,88 @@ class PharmacyCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF2FB),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFF2563EB),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            (pharmacy.averageRating > 0
+                                    ? pharmacy.averageRating
+                                    : 0.0)
+                                .toStringAsFixed(1),
+                            style: const TextStyle(
+                              color: Color(0xFF2563EB),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isActuallyOpen
+                            ? const Color(0xFFDDF7EC)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isActuallyOpen ? 'مفتوح الآن' : 'مغلق الآن',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isActuallyOpen
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Pharmacy Logo
                     Container(
-                      width: 56,
-                      height: 56,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF06B6D4),
-                            Color(0xFF0891B2),
-                          ],
+                          colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
                         ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF06B6D4).withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(8),
                         child: SvgPicture.asset(
                           'assets/images/pharmacy.svg',
                           colorFilter: const ColorFilter.mode(
@@ -80,250 +155,131 @@ class PharmacyCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    // Pharmacy Info
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Name
                           Text(
                             pharmacy.name,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
                               color: Color(0xFF0F172A),
-                              fontSize: 16,
-                              height: 1.3,
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 6),
-                          // Open/Closed Status
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isActuallyOpen
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.1)
-                                  : const Color(0xFF94A3B8).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: isActuallyOpen
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFF94A3B8),
-                                width: 1,
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_rounded,
+                                size: 15,
+                                color: Color(0xFF94A3B8),
                               ),
-                            ),
-                            child: Text(
-                              isActuallyOpen ? 'مفتوح الآن' : 'مغلق',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: isActuallyOpen
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFF94A3B8),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Address - سطرين كاملين
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      size: 16,
-                      color: Color(0xFF64748B),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        pharmacy.address,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF64748B),
-                          height: 1.4,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Divider
-                Container(
-                  height: 1,
-                  color: const Color(0xFFE2E8F0),
-                ),
-                const SizedBox(height: 12),
-                // Info Badges Row
-                Row(
-                  children: [
-                    // Rating Badge
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              color: Color(0xFFF59E0B),
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              pharmacy.averageRating > 0
-                                  ? pharmacy.averageRating.toStringAsFixed(1)
-                                  : '0.0',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF92400E),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Likes Badge
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.favorite_rounded,
-                              color: Color(0xFFEF4444),
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${pharmacy.totalLikes}',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF991B1B),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (pharmacy.hasHomeDelivery) ...[
-                      const SizedBox(width: 8),
-                      // Delivery Badge
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.delivery_dining_rounded,
-                                size: 16,
-                                color: Color(0xFF15803D),
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'توصيل',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF15803D),
-                                  fontWeight: FontWeight.w700,
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '${pharmacy.address} - ${pharmacy.center}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                // Insurance Badge (if available)
-                if (pharmacy.hasInsurance && pharmacy.insuranceCompanies.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xFFFEF3E2),
-                          const Color(0xFFFDE7C8),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFFD97706).withValues(alpha: 0.3),
-                        width: 1,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.near_me_rounded,
+                      size: 14,
+                      color: Color(0xFF0EA5A4),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDistance(),
+                      style: const TextStyle(
+                        color: Color(0xFF0EA5A4),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.health_and_safety,
-                          color: const Color(0xFFD97706),
-                          size: 18,
+                    const SizedBox(width: 10),
+                    pharmacy.hasInsurance
+                        ? const Icon(
+                            Icons.verified_user_rounded,
+                            size: 14,
+                            color: Color(0xFF06B6D4),
+                          )
+                        : Container(),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        insuranceText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'متعاقد مع شركات التأمين',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF92400E),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (pharmacy.hasHomeDelivery) ...[
+                  const SizedBox(height: 8),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'خدمة التوصيل متاحة',
+                      style: TextStyle(
+                        color: Color(0xFF15803D),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isActuallyOpen ? onTap : null,
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      disabledBackgroundColor: const Color(0xFFE2E8F0),
+                      backgroundColor: const Color(0xFF0B8293),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                    ),
+                    child: Text(
+                      isActuallyOpen ? 'عرض الصيدلية' : 'مغلق الآن',
+                      style: TextStyle(
+                        color: isActuallyOpen
+                            ? Colors.white
+                            : const Color(0xFF94A3B8),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

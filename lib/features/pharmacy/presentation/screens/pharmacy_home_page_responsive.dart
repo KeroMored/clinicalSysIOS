@@ -123,35 +123,30 @@ class PharmacyHomePageResponsive extends StatelessWidget {
   /// شبكة الخدمات
   Widget _buildServicesGrid(BuildContext context, {required int columns}) {
     final authState = context.watch<AuthCubit>().state;
-    final isPharmacyOwner = authState is Authenticated && authState.user.isPharmacyOwner;
+    final isPharmacyOwner =
+        authState is Authenticated && authState.user.isPharmacyOwner;
 
     final services = [
       _ServiceItem(
         icon: Icons.local_pharmacy_rounded,
         title: 'جميع الصيدليات',
         description: 'تصفح الصيدليات القريبة منك',
-        onTap: () => Navigator.push(
-          context,
-          _createRoute(const ThePharmaciesScreen()),
-        ),
+        onTap: () =>
+            Navigator.push(context, _createRoute(const ThePharmaciesScreen())),
       ),
       _ServiceItem(
         icon: Icons.local_offer_rounded,
         title: 'العروض والخصومات',
         description: 'اكتشف أحدث العروض',
-        onTap: () => Navigator.push(
-          context,
-          _createRoute(const AllOffersScreen()),
-        ),
+        onTap: () =>
+            Navigator.push(context, _createRoute(const AllOffersScreen())),
       ),
       _ServiceItem(
         icon: Icons.delivery_dining_rounded,
         title: 'الديليفري المتاحين',
         description: 'خدمات التوصيل السريع',
-        onTap: () => Navigator.push(
-          context,
-          _createRoute(const DeliveryListScreen()),
-        ),
+        onTap: () =>
+            Navigator.push(context, _createRoute(const DeliveryListScreen())),
       ),
       if (!isPharmacyOwner) ...[
         _ServiceItem(
@@ -169,10 +164,12 @@ class PharmacyHomePageResponsive extends StatelessWidget {
           description: 'عرض طلبات الأدوية الخاصة بي',
           onTap: () => Navigator.push(
             context,
-            _createRoute(BlocProvider.value(
-              value: context.read<AuthCubit>(),
-              child: const MyMedicineRequestsScreen(),
-            )),
+            _createRoute(
+              BlocProvider.value(
+                value: context.read<AuthCubit>(),
+                child: const MyMedicineRequestsScreen(),
+              ),
+            ),
           ),
         ),
       ],
@@ -183,10 +180,12 @@ class PharmacyHomePageResponsive extends StatelessWidget {
           description: 'طلبات الأدوية من المستخدمين',
           onTap: () => Navigator.push(
             context,
-            _createRoute(BlocProvider.value(
-              value: context.read<AuthCubit>(),
-              child: const MedicineRequestsListScreen(),
-            )),
+            _createRoute(
+              BlocProvider.value(
+                value: context.read<AuthCubit>(),
+                child: const MedicineRequestsListScreen(),
+              ),
+            ),
           ),
         ),
       ],
@@ -247,7 +246,11 @@ class PharmacyHomePageResponsive extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: AppTheme.pharmacyGradient,
                   borderRadius: BorderRadius.circular(
-                    context.responsiveValue(mobile: 12.0, tablet: 14.0, desktop: 16.0),
+                    context.responsiveValue(
+                      mobile: 12.0,
+                      tablet: 14.0,
+                      desktop: 16.0,
+                    ),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -263,9 +266,9 @@ class PharmacyHomePageResponsive extends StatelessWidget {
                   size: context.iconSize(mobile: 28, tablet: 32, desktop: 36),
                 ),
               ),
-              
+
               SizedBox(height: context.hp(2)),
-              
+
               // العنوان
               Text(
                 service.title,
@@ -277,9 +280,9 @@ class PharmacyHomePageResponsive extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               SizedBox(height: context.hp(0.5)),
-              
+
               // الوصف
               Text(
                 service.description,
@@ -290,9 +293,9 @@ class PharmacyHomePageResponsive extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               const Spacer(),
-              
+
               // سهم للتفاعل
               Align(
                 alignment: Alignment.centerLeft,
@@ -317,17 +320,18 @@ class PharmacyHomePageResponsive extends StatelessWidget {
         const begin = Offset(0.0, 0.05);
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
         var offsetAnimation = animation.drive(tween);
-        var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(parent: animation, curve: Curves.easeOut),
-        );
+        var fadeAnimation = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
         return FadeTransition(
           opacity: fadeAnimation,
-          child: SlideTransition(
-            position: offsetAnimation,
-            child: child,
-          ),
+          child: SlideTransition(position: offsetAnimation, child: child),
         );
       },
       transitionDuration: const Duration(milliseconds: 400),

@@ -10,10 +10,7 @@ import '../cubit/admin_state.dart';
 class PharmacyRequestDetailsScreen extends StatelessWidget {
   final PharmacyRequestModel request;
 
-  const PharmacyRequestDetailsScreen({
-    super.key,
-    required this.request,
-  });
+  const PharmacyRequestDetailsScreen({super.key, required this.request});
 
   @override
   Widget build(BuildContext context) {
@@ -100,31 +97,56 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
 
                     // Owner Information Section
                     _buildSectionTitle('معلومات المالك'),
+                    _buildInfoRow(Icons.person, 'الاسم', request.ownerName),
                     _buildInfoRow(
-                        Icons.person, 'الاسم', request.ownerName),
-                    _buildInfoRow(
-                        Icons.phone, 'رقم الهاتف', request.ownerPhone),
+                      Icons.phone,
+                      'رقم الهاتف',
+                      request.ownerPhone,
+                    ),
                     const SizedBox(height: 24),
 
                     // Pharmacy Information
                     _buildSectionTitle('معلومات الصيدلية'),
                     _buildInfoRow(
-                        Icons.location_on, 'العنوان', request.address),
-                    _buildInfoRow(Icons.phone, 'هاتف الصيدلية', request.phone),
+                      Icons.location_on,
+                      'العنوان',
+                      request.address,
+                    ),
                     _buildInfoRow(
-                        MdiIcons.whatsapp, 'واتساب', request.whatsapp),
+                      Icons.phone,
+                      'هاتف الصيدلية',
+                      request.phones.isNotEmpty
+                          ? request.phones.join(' - ')
+                          : 'لا يوجد',
+                    ),
+                    _buildInfoRow(
+                      MdiIcons.whatsapp,
+                      'واتساب',
+                      request.whatsapp,
+                    ),
                     const SizedBox(height: 16),
-                    
+
                     // Description
-                    _buildInfoRow(Icons.description, 'عن الصيدلية', 
-                        request.description?.isNotEmpty == true ? request.description! : 'لا يوجد'),
+                    _buildInfoRow(
+                      Icons.description,
+                      'عن الصيدلية',
+                      request.description?.isNotEmpty == true
+                          ? request.description!
+                          : 'لا يوجد',
+                    ),
                     const SizedBox(height: 16),
 
                     // Working Hours
-                    _buildInfoRow(Icons.access_time, 'مواعيد العمل',
-                        request.workingHours),
                     _buildInfoRow(
-                        Icons.event_busy, 'الإجازات', request.holidays),
+                      Icons.access_time,
+                      'مواعيد العمل',
+                      request.workingHours,
+                    ),
+                    _buildInfoRow(
+                      Icons.event_busy,
+                      'الإجازات',
+                      request.holidays,
+                    ),
                     const SizedBox(height: 24),
 
                     // Delivery Information
@@ -136,8 +158,11 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
                     ),
                     if (request.hasHomeDelivery) ...[
                       if (request.deliveryFee != null)
-                        _buildInfoRow(Icons.monetization_on, 'رسوم التوصيل',
-                            '${request.deliveryFee} جنيه'),
+                        _buildInfoRow(
+                          Icons.monetization_on,
+                          'رسوم التوصيل',
+                          '${request.deliveryFee} جنيه',
+                        ),
                       if (request.minimumOrderForDelivery != null)
                         _buildInfoRow(
                           Icons.shopping_cart,
@@ -154,11 +179,13 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: request.services
-                            .map((service) => Chip(
-                                  label: Text(service),
-                                  backgroundColor: Colors.blue.withOpacity(0.1),
-                                  labelStyle: const TextStyle(color: Colors.blue),
-                                ))
+                            .map(
+                              (service) => Chip(
+                                label: Text(service),
+                                backgroundColor: Colors.blue.withOpacity(0.1),
+                                labelStyle: const TextStyle(color: Colors.blue),
+                              ),
+                            )
                             .toList(),
                       ),
                       const SizedBox(height: 24),
@@ -166,13 +193,22 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
 
                     // Location
                     _buildSectionTitle('الموقع'),
-                    _buildInfoRow(Icons.location_on, 'خط العرض',
-                        request.latitude.toString()),
-                    _buildInfoRow(Icons.location_on, 'خط الطول',
-                        request.longitude.toString()),
+                    _buildInfoRow(
+                      Icons.location_on,
+                      'خط العرض',
+                      request.latitude.toString(),
+                    ),
+                    _buildInfoRow(
+                      Icons.location_on,
+                      'خط الطول',
+                      request.longitude.toString(),
+                    ),
                     ElevatedButton.icon(
                       onPressed: () => _openMap(
-                          context, request.latitude, request.longitude),
+                        context,
+                        request.latitude,
+                        request.longitude,
+                      ),
                       icon: const Icon(Icons.map),
                       label: const Text('عرض على الخريطة'),
                       style: ElevatedButton.styleFrom(
@@ -187,12 +223,16 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
                     _buildInfoRow(
                       Icons.access_time,
                       'تاريخ الطلب',
-                      DateFormat('yyyy-MM-dd hh:mm a')
-                          .format(request.requestDate),
+                      DateFormat(
+                        'yyyy-MM-dd hh:mm a',
+                      ).format(request.requestDate),
                     ),
                     if (request.rejectionReason != null)
-                      _buildInfoRow(Icons.cancel, 'سبب الرفض',
-                          request.rejectionReason!),
+                      _buildInfoRow(
+                        Icons.cancel,
+                        'سبب الرفض',
+                        request.rejectionReason!,
+                      ),
                     const SizedBox(height: 32),
 
                     // Action Buttons - Show based on current status
@@ -242,10 +282,7 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 16),
-                ),
+                Text(value, style: const TextStyle(fontSize: 16)),
               ],
             ),
           ),
@@ -327,7 +364,7 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        
+
         // Set to Pending Button - show for approved and rejected
         if (request.status != 'pending') ...[
           SizedBox(
@@ -345,7 +382,7 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        
+
         // Reject Button - show for pending and approved
         if (request.status != 'rejected') ...[
           SizedBox(
@@ -429,9 +466,10 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
                 return;
               }
               Navigator.pop(dialogContext);
-              context
-                  .read<AdminCubit>()
-                  .rejectRequest(request.id, reasonController.text.trim());
+              context.read<AdminCubit>().rejectRequest(
+                request.id,
+                reasonController.text.trim(),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -449,7 +487,9 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('تعيين كـ في الانتظار'),
-        content: Text('هل أنت متأكد من تغيير حالة صيدلية "${request.name}" إلى انتظار؟'),
+        content: Text(
+          'هل أنت متأكد من تغيير حالة صيدلية "${request.name}" إلى انتظار؟',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -472,16 +512,20 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
   }
 
   Future<void> _openMap(
-      BuildContext context, double latitude, double longitude) async {
+    BuildContext context,
+    double latitude,
+    double longitude,
+  ) async {
     final Uri googleMapsUri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude');
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
     if (await canLaunchUrl(googleMapsUri)) {
       await launchUrl(googleMapsUri, mode: LaunchMode.externalApplication);
     } else {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا يمكن فتح الخريطة')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('لا يمكن فتح الخريطة')));
       }
     }
   }

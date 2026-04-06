@@ -12,22 +12,28 @@ class ClinicRepository {
         .where('isActive', isEqualTo: true)
         .where('status', isEqualTo: 'approved')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ClinicModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => ClinicModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // Get clinics by department (approved only)
-  Stream<List<ClinicModel>> getClinicsByDepartment(ClinicDepartment department) {
+  Stream<List<ClinicModel>> getClinicsByDepartment(
+    ClinicDepartment department,
+  ) {
     return _firestore
         .collection('clinics')
         .where('department', isEqualTo: department.englishName)
         .where('isActive', isEqualTo: true)
         .where('status', isEqualTo: 'approved')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ClinicModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => ClinicModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // Get clinic by ID
@@ -38,12 +44,17 @@ class ClinicRepository {
 
   // Add new clinic (Admin only)
   Future<String> addClinic(ClinicModel clinic) async {
-    final docRef = await _firestore.collection('clinics').add(clinic.toFirestore());
+    final docRef = await _firestore
+        .collection('clinics')
+        .add(clinic.toFirestore());
     return docRef.id;
   }
 
   // Update clinic
-  Future<void> updateClinic(String clinicId, Map<String, dynamic> updates) async {
+  Future<void> updateClinic(
+    String clinicId,
+    Map<String, dynamic> updates,
+  ) async {
     await _firestore.collection('clinics').doc(clinicId).update(updates);
   }
 

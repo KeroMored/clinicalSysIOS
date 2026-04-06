@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// Modern gradient button matching the design theme
 class ModernGradientButton extends StatelessWidget {
@@ -45,7 +46,7 @@ class ModernGradientButton extends StatelessWidget {
               ? const SizedBox(
                   width: 24,
                   height: 24,
-                  child: CircularProgressIndicator(
+                  child: AppLoadingIndicator(
                     color: Colors.white,
                     strokeWidth: 2,
                   ),
@@ -55,11 +56,7 @@ class ModernGradientButton extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (icon != null) ...[
-                      Icon(
-                        icon,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      Icon(icon, color: Colors.white, size: 20),
                       const SizedBox(width: 8),
                     ],
                     Text(
@@ -109,10 +106,7 @@ class ModernOutlinedButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: borderColor,
-            width: 2,
-          ),
+          border: Border.all(color: borderColor, width: 2),
         ),
         child: Center(
           child: Row(
@@ -120,11 +114,7 @@ class ModernOutlinedButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(
-                  icon,
-                  color: textColor,
-                  size: 20,
-                ),
+                Icon(icon, color: textColor, size: 20),
                 const SizedBox(width: 8),
               ],
               Text(
@@ -176,11 +166,7 @@ class ModernIconButton extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: size * 0.5,
-        ),
+        child: Icon(icon, color: Colors.white, size: size * 0.5),
       ),
     );
   }
@@ -219,11 +205,7 @@ class ModernFAB extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: Icon(icon, color: Colors.white, size: 28),
       ),
     );
   }

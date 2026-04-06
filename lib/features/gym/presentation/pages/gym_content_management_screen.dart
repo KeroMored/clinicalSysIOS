@@ -3,15 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import '../../../../core/theme/app_theme.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class GymContentModel {
   final String id;
   final String gymId;
-  final String type; // 'offer', 'image', 'video', 'youtube'
+  final String type; // 'offer', 'image'
   final String title;
   final String? description;
-  final String? mediaUrl; // Image or video URL
-  final String? youtubeUrl;
+  final String? mediaUrl; // Image URL
   final DateTime createdAt;
 
   GymContentModel({
@@ -21,7 +22,6 @@ class GymContentModel {
     required this.title,
     this.description,
     this.mediaUrl,
-    this.youtubeUrl,
     required this.createdAt,
   });
 
@@ -33,7 +33,6 @@ class GymContentModel {
       'title': title,
       'description': description,
       'mediaUrl': mediaUrl,
-      'youtubeUrl': youtubeUrl,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -46,7 +45,6 @@ class GymContentModel {
       title: map['title'] ?? '',
       description: map['description'],
       mediaUrl: map['mediaUrl'],
-      youtubeUrl: map['youtubeUrl'],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
     );
   }
@@ -55,10 +53,7 @@ class GymContentModel {
 class GymContentManagementScreen extends StatefulWidget {
   final String gymId;
 
-  const GymContentManagementScreen({
-    super.key,
-    required this.gymId,
-  });
+  const GymContentManagementScreen({super.key, required this.gymId});
 
   @override
   State<GymContentManagementScreen> createState() =>
@@ -70,17 +65,55 @@ class _GymContentManagementScreenState
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _youtubeUrlController = TextEditingController();
 
   String _selectedType = 'offer';
   File? _selectedMedia;
   bool _isUploading = false;
 
+  Future<void> _sendContentNotification({
+    required String title,
+    String? description,
+    required String type,
+  }) async {
+    try {
+      final gymDoc = await FirebaseFirestore.instance
+          .collection('gyms')
+          .doc(widget.gymId)
+          .get();
+
+      if (!gymDoc.exists) return;
+
+      final gymName = (gymDoc.data()?['name'] ?? 'جيم جديد').toString();
+
+      final notificationTitle = type == 'offer'
+          ? 'عرض جديد من $gymName'
+          : 'محتوى جديد من $gymName';
+
+      final notificationMessage =
+          description != null && description.trim().isNotEmpty
+          ? '$title\n$description'
+          : title;
+
+      await FirebaseFirestore.instance.collection('gym_notifications').add({
+        'gymId': widget.gymId,
+        'gymName': gymName,
+        'title': notificationTitle,
+        'message': notificationMessage,
+        'contentType': type,
+        'createdAt': FieldValue.serverTimestamp(),
+        'topic': 'all_users',
+        'sent': false,
+      });
+    } catch (e) {
+      // Notification failure should not block content publishing.
+      debugPrint('Failed to queue gym notification: $e');
+    }
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _youtubeUrlController.dispose();
     super.dispose();
   }
 
@@ -90,7 +123,7 @@ class _GymContentManagementScreenState
     if (image != null) {
       final file = File(image.path);
       final fileSize = await file.length();
-      
+
       // Check file size (100MB = 104857600 bytes)
       if (fileSize > 104857600) {
         if (mounted) {
@@ -103,33 +136,7 @@ class _GymContentManagementScreenState
         }
         return;
       }
-      
-      setState(() {
-        _selectedMedia = file;
-      });
-    }
-  }
 
-  Future<void> _pickVideo() async {
-    final picker = ImagePicker();
-    final video = await picker.pickVideo(source: ImageSource.gallery);
-    if (video != null) {
-      final file = File(video.path);
-      final fileSize = await file.length();
-      
-      // Check file size (100MB = 104857600 bytes)
-      if (fileSize > 104857600) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('حجم الفيديو يجب أن لا يتجاوز 100 ميجابايت'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-      
       setState(() {
         _selectedMedia = file;
       });
@@ -138,9 +145,10 @@ class _GymContentManagementScreenState
 
   Future<String?> _uploadMedia(File media, String type) async {
     try {
-      final extension = type == 'image' ? 'jpg' : 'mp4';
+      final extension = 'jpg';
       final ref = FirebaseStorage.instance.ref().child(
-          'gyms/${widget.gymId}/content/${DateTime.now().millisecondsSinceEpoch}.$extension');
+        'gyms/${widget.gymId}/content/${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
       await ref.putFile(media);
       return await ref.getDownloadURL();
     } catch (e) {
@@ -152,23 +160,9 @@ class _GymContentManagementScreenState
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedType == 'image' && _selectedMedia == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى اختيار صورة')),
-      );
-      return;
-    }
-
-    if (_selectedType == 'video' && _selectedMedia == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى اختيار فيديو')),
-      );
-      return;
-    }
-
-    if (_selectedType == 'youtube' && _youtubeUrlController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال رابط يوتيوب')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى اختيار صورة')));
       return;
     }
 
@@ -189,9 +183,6 @@ class _GymContentManagementScreenState
             ? null
             : _descriptionController.text.trim(),
         mediaUrl: mediaUrl,
-        youtubeUrl: _selectedType == 'youtube' 
-            ? _youtubeUrlController.text.trim()
-            : null,
         createdAt: DateTime.now(),
       );
 
@@ -200,11 +191,18 @@ class _GymContentManagementScreenState
           .doc(content.id)
           .set(content.toMap());
 
+      await _sendContentNotification(
+        title: content.title,
+        description: content.description,
+        type: content.type,
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('تم إضافة المحتوى بنجاح'),
-              backgroundColor: Colors.green),
+            content: Text('تم إضافة المحتوى بنجاح'),
+            backgroundColor: Colors.green,
+          ),
         );
         _clearForm();
       }
@@ -222,7 +220,6 @@ class _GymContentManagementScreenState
   void _clearForm() {
     _titleController.clear();
     _descriptionController.clear();
-    _youtubeUrlController.clear();
     setState(() {
       _selectedMedia = null;
     });
@@ -253,7 +250,7 @@ class _GymContentManagementScreenState
           .collection('gym_content')
           .doc(contentId)
           .delete();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -270,8 +267,19 @@ class _GymContentManagementScreenState
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('إدارة المحتوى والعروض'),
-        backgroundColor: const Color(0xFFFF6B6B),
+        title: const Text(
+          'المحتوى والعروض',
+          style: TextStyle(color: Colors.white),
+        ),
+        centerTitle: true,
+        backgroundColor: AppTheme.primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -286,13 +294,10 @@ class _GymContentManagementScreenState
                 children: [
                   const Text(
                     'إضافة محتوى جديد',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Type Selection
                   DropdownButtonFormField<String>(
                     value: _selectedType,
@@ -302,9 +307,7 @@ class _GymContentManagementScreenState
                     ),
                     items: const [
                       DropdownMenuItem(value: 'offer', child: Text('عرض')),
-                      DropdownMenuItem(value: 'image', child: Text('صورة')),
-                      DropdownMenuItem(value: 'video', child: Text('فيديو')),
-                      DropdownMenuItem(value: 'youtube', child: Text('فيديو يوتيوب')),
+                      DropdownMenuItem(value: 'image', child: Text('عرض+ صورة')),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -314,7 +317,7 @@ class _GymContentManagementScreenState
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Title
                   TextFormField(
                     controller: _titleController,
@@ -326,7 +329,7 @@ class _GymContentManagementScreenState
                         value?.isEmpty ?? true ? 'حقل مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Description
                   TextFormField(
                     controller: _descriptionController,
@@ -337,8 +340,8 @@ class _GymContentManagementScreenState
                     maxLines: 3,
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Image/Video Upload
+
+                  // Image Upload
                   if (_selectedType == 'image')
                     Column(
                       children: [
@@ -350,46 +353,15 @@ class _GymContentManagementScreenState
                         if (_selectedMedia != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
-                            child: Text('تم اختيار: ${_selectedMedia!.path.split('/').last}'),
+                            child: Text(
+                              'تم اختيار: ${_selectedMedia!.path.split('/').last}',
+                            ),
                           ),
                       ],
                     ),
-                  
-                  if (_selectedType == 'video')
-                    Column(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _pickVideo,
-                          icon: const Icon(Icons.video_library),
-                          label: const Text('اختيار فيديو (حد أقصى 100MB)'),
-                        ),
-                        if (_selectedMedia != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Text('تم اختيار: ${_selectedMedia!.path.split('/').last}'),
-                          ),
-                      ],
-                    ),
-                  
-                  // YouTube URL
-                  if (_selectedType == 'youtube')
-                    TextFormField(
-                      controller: _youtubeUrlController,
-                      decoration: const InputDecoration(
-                        labelText: 'رابط فيديو اليوتيوب',
-                        border: OutlineInputBorder(),
-                        hintText: 'https://www.youtube.com/watch?v=...',
-                      ),
-                      validator: (value) {
-                        if (_selectedType == 'youtube' && (value?.isEmpty ?? true)) {
-                          return 'حقل مطلوب';
-                        }
-                        return null;
-                      },
-                    ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Submit Button
                   SizedBox(
                     width: double.infinity,
@@ -397,31 +369,31 @@ class _GymContentManagementScreenState
                       onPressed: _isUploading ? null : _addContent,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: const Color(0xFFFF6B6B),
+                        backgroundColor: AppTheme.primaryColor,
                       ),
                       child: _isUploading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('إضافة المحتوى',style: TextStyle(color: Colors.white),),
+                          ? const AppLoadingIndicator(color: Colors.white)
+                          : const Text(
+                              'إضافة المحتوى',
+                              style: TextStyle(color: Colors.white),
+                            ),
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 32),
             const Divider(height: 1, thickness: 2),
             const SizedBox(height: 16),
-            
+
             // Content List Header
             const Text(
               'المحتوى المضاف',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            
+
             // Content List
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -438,13 +410,17 @@ class _GymContentManagementScreenState
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(),
+                      child: AppLoadingIndicator(),
                     ),
                   );
                 }
 
                 final contents = snapshot.data!.docs
-                    .map((doc) => GymContentModel.fromMap(doc.data() as Map<String, dynamic>))
+                    .map(
+                      (doc) => GymContentModel.fromMap(
+                        doc.data() as Map<String, dynamic>,
+                      ),
+                    )
                     .toList();
 
                 if (contents.isEmpty) {
@@ -465,11 +441,9 @@ class _GymContentManagementScreenState
                           content.type == 'offer'
                               ? Icons.local_offer
                               : content.type == 'image'
-                                  ? Icons.image
-                                  : content.type == 'video'
-                                      ? Icons.video_library
-                                      : Icons.play_circle,
-                          color: const Color(0xFFFF6B6B),
+                              ? Icons.image
+                              : Icons.image,
+                          color: AppTheme.primaryColor,
                         ),
                         title: Text(content.title),
                         subtitle: Text(

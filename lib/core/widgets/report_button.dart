@@ -29,11 +29,7 @@ class ReportButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.flag_outlined,
-              color: Colors.grey[600],
-              size: iconSize,
-            ),
+            Icon(Icons.flag_outlined, color: Colors.grey[600], size: iconSize),
             if (showLabel) ...[
               const SizedBox(width: 6),
               Text(
@@ -56,9 +52,9 @@ class ReportButton extends StatelessWidget {
       context,
       message: 'يجب تسجيل الدخول للإبلاغ عن المكان',
     );
-    
+
     if (!isAuthenticated) return;
-    
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -85,19 +81,12 @@ class ReportButton extends StatelessWidget {
             ),
             title: Row(
               children: [
-                Icon(
-                  Icons.flag,
-                  color: Colors.red[700],
-                  size: 28,
-                ),
+                Icon(Icons.flag, color: Colors.red[700], size: 28),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text(
                     'إبلاغ عن مشكلة',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                   ),
                 ),
               ],
@@ -109,18 +98,12 @@ class ReportButton extends StatelessWidget {
                 children: [
                   Text(
                     'الخدمة: $serviceName',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     'نوع المشكلة',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -152,10 +135,7 @@ class ReportButton extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'تفاصيل المشكلة',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -212,7 +192,9 @@ class ReportButton extends StatelessWidget {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('تم إرسال البلاغ بنجاح. شكراً لمساعدتنا'),
+                              content: Text(
+                                'تم إرسال البلاغ بنجاح. شكراً لمساعدتنا',
+                              ),
                               backgroundColor: Colors.green,
                             ),
                           );

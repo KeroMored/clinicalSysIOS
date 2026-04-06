@@ -26,9 +26,14 @@ class PlaceInfoCardWidget extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: _getTypeColor(place.placeType).withValues(alpha: 0.1),
+                    color: _getTypeColor(
+                      place.placeType,
+                    ).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -56,23 +61,40 @@ class PlaceInfoCardWidget extends StatelessWidget {
             ),
             const Divider(height: 24),
 
-            DetailInfoRow(icon: Icons.person, label: 'صاحب المكان', value: place.ownerName),
-            DetailInfoRow(icon: Icons.phone, label: 'رقم الهاتف', value: place.phone),
+            DetailInfoRow(
+              icon: Icons.person,
+              label: 'صاحب المكان',
+              value: place.ownerName,
+            ),
+            DetailInfoRow(
+              icon: Icons.phone,
+              label: 'رقم الهاتف',
+              value: place.phone,
+            ),
             if (place.email != null && place.email!.isNotEmpty)
-              DetailInfoRow(icon: Icons.email, label: 'البريد الإلكتروني', value: place.email!),
+              DetailInfoRow(
+                icon: Icons.email,
+                label: 'البريد الإلكتروني',
+                value: place.email!,
+              ),
             if (place.address != null && place.address!.isNotEmpty)
-              DetailInfoRow(icon: Icons.location_on, label: 'العنوان', value: place.address!),
+              DetailInfoRow(
+                icon: Icons.location_on,
+                label: 'العنوان',
+                value: place.address!,
+              ),
             if (place.governorate != null || place.city != null)
               DetailInfoRow(
                 icon: Icons.map,
                 label: 'المنطقة',
-                value: [place.governorate, place.city]
-                    .where((e) => e != null && e.isNotEmpty)
-                    .join(' - '),
+                value: [
+                  place.governorate,
+                  place.city,
+                ].where((e) => e != null && e.isNotEmpty).join(' - '),
               ),
-            
+
             const Divider(height: 24),
-            
+
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -130,10 +152,7 @@ class PlaceInfoCardWidget extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             status,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),

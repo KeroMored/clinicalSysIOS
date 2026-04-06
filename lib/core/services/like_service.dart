@@ -22,7 +22,10 @@ class LikeService {
 
       if (existingLike.docs.isNotEmpty) {
         // Unlike - remove the like
-        await _firestore.collection('likes').doc(existingLike.docs.first.id).delete();
+        await _firestore
+            .collection('likes')
+            .doc(existingLike.docs.first.id)
+            .delete();
         await _updateServiceLikes(serviceId, serviceType, -1);
         return false; // unliked
       } else {
@@ -83,16 +86,16 @@ class LikeService {
     try {
       String collection = _getCollectionName(serviceType);
       final docRef = _firestore.collection(collection).doc(serviceId);
-      
+
       await _firestore.runTransaction((transaction) async {
         final doc = await transaction.get(docRef);
         if (doc.exists) {
           // Use likesCount for delivery, totalLikes for others
-          final fieldName = serviceType == 'delivery' ? 'likesCount' : 'totalLikes';
+          final fieldName = serviceType == 'delivery'
+              ? 'likesCount'
+              : 'totalLikes';
           final currentLikes = doc.data()?[fieldName] ?? 0;
-          transaction.update(docRef, {
-            fieldName: currentLikes + increment,
-          });
+          transaction.update(docRef, {fieldName: currentLikes + increment});
         }
       });
     } catch (e) {
@@ -141,12 +144,10 @@ class LikeService {
   Stream<int> getLikesCountStream(String serviceId, String serviceType) {
     String collection = _getCollectionName(serviceType);
     final fieldName = serviceType == 'delivery' ? 'likesCount' : 'totalLikes';
-    
-    return _firestore
-        .collection(collection)
-        .doc(serviceId)
-        .snapshots()
-        .map((doc) {
+
+    return _firestore.collection(collection).doc(serviceId).snapshots().map((
+      doc,
+    ) {
       if (doc.exists) {
         return (doc.data()?[fieldName] ?? 0) as int;
       }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import 'center_content_model.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../widgets/widgets.dart';
@@ -42,7 +44,8 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.8) {
       if (!_isLoadingMore && _hasMore) {
         _loadMoreContents();
       }
@@ -58,7 +61,7 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
     });
 
     await _loadMoreContents();
-    
+
     setState(() {
       _initialLoading = false;
     });
@@ -94,7 +97,10 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
       }
 
       final newContents = snapshot.docs
-          .map((doc) => CenterContentModel.fromMap(doc.data() as Map<String, dynamic>))
+          .map(
+            (doc) =>
+                CenterContentModel.fromMap(doc.data() as Map<String, dynamic>),
+          )
           .toList();
 
       setState(() {
@@ -109,7 +115,10 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في تحميل المحتوى: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('خطأ في تحميل المحتوى: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -118,18 +127,15 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
   Future<void> _launchYouTube(BuildContext context, String url) async {
     final videoId = YoutubePlayer.convertUrlToId(url);
     if (videoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رابط فيديو غير صحيح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('رابط فيديو غير صحيح')));
       return;
     }
 
     final controller = YoutubePlayerController(
       initialVideoId: videoId,
-      flags: const YoutubePlayerFlags(
-        autoPlay: true,
-        mute: false,
-      ),
+      flags: const YoutubePlayerFlags(autoPlay: true, mute: false),
     );
 
     await Navigator.push(
@@ -148,19 +154,13 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
               progressIndicatorColor: Colors.red,
             ),
             builder: (context, player) {
-              return Column(
-                children: [
-                  player,
-                  const SizedBox(height: 16),
-                
-                ],
-              );
+              return Column(children: [player, const SizedBox(height: 16)]);
             },
           ),
         ),
       ),
     );
-    
+
     controller.dispose();
   }
 
@@ -168,10 +168,8 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RehabilitationVideoPlayer(
-          videoUrl: videoUrl,
-          title: title,
-        ),
+        builder: (context) =>
+            RehabilitationVideoPlayer(videoUrl: videoUrl, title: title),
       ),
     );
   }
@@ -179,49 +177,62 @@ class _CenterWorksScreenState extends State<CenterWorksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: GradientAppBar(
+        title: 'أعمال ${widget.centerName}',
+        gradient: AppTheme.rehabilitationGradient,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('أعمال ${widget.centerName}',style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
       ),
-      body: _initialLoading
-          ? Center(
-              child: SpinKitPulsingGrid(
-                color: Colors.purple,
-                size: 50,
-              ),
-            )
-          : _contents.isEmpty
-              ? const WorksEmptyState()
-              : RefreshIndicator(
-                  onRefresh: _loadInitialContents,
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _contents.length + (_hasMore ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _contents.length) {
-                        return const WorksLoadingIndicator();
-                      }
-
-                      final content = _contents[index];
-                      return WorksContentCard(
-                        content: content,
-                        onYouTubeTap: content.type == 'youtube' && content.videoUrl != null
-                            ? () => _launchYouTube(context, content.videoUrl!)
-                            : null,
-                        onVideoTap: content.type == 'video' && content.videoUrl != null
-                            ? () => _playUploadedVideo(context, content.videoUrl!, content.title)
-                            : null,
-                      );
-                    },
-                  ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+          ),
+        ),
+        child: _initialLoading
+            ? Center(
+                child: SpinKitPulsingGrid(
+                  color: AppTheme.primaryColor,
+                  size: 50,
                 ),
+              )
+            : _contents.isEmpty
+            ? const WorksEmptyState()
+            : RefreshIndicator(
+                onRefresh: _loadInitialContents,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _contents.length + (_hasMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _contents.length) {
+                      return const WorksLoadingIndicator();
+                    }
+
+                    final content = _contents[index];
+                    return WorksContentCard(
+                      content: content,
+                      onYouTubeTap:
+                          content.type == 'youtube' && content.videoUrl != null
+                          ? () => _launchYouTube(context, content.videoUrl!)
+                          : null,
+                      onVideoTap:
+                          content.type == 'video' && content.videoUrl != null
+                          ? () => _playUploadedVideo(
+                              context,
+                              content.videoUrl!,
+                              content.title,
+                            )
+                          : null,
+                    );
+                  },
+                ),
+              ),
+      ),
     );
   }
 }
-

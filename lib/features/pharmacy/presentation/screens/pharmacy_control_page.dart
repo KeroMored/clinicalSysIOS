@@ -5,8 +5,10 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/pharmacy_model.dart';
 import 'edit_pharmacy_screen.dart';
 import 'add_offer_screen.dart';
+import 'add_near_expire_item_screen.dart';
 import 'pharmacy_details_screen.dart';
 import 'pharmacy_offers_list_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PharmacyControlPage extends StatefulWidget {
   const PharmacyControlPage({super.key});
@@ -18,15 +20,19 @@ class PharmacyControlPage extends StatefulWidget {
 class _PharmacyControlPageState extends State<PharmacyControlPage> {
   PharmacyModel? _pharmacy;
   bool _isLoading = true;
-  
-  // Theme colors - matching edit_pharmacy_screen
-  static const Color _primaryColor = Color(0xFF0891B2);
-  static const Color _secondaryColor = Color(0xFF06B6D4);
-  static const Color _accentColor = Color(0xFF0E7490);
-  static const Color _backgroundColor = Color(0xFFF8FAFC);
+
+  // Theme colors aligned with the refreshed app style
+  static const Color _primaryColor = Color(0xFF0B8293);
+  static const Color _secondaryColor = Color(0xFF179AAC);
+  static const Color _backgroundColor = Color(0xFFF3F8FB);
   static const Color _cardColor = Colors.white;
   static const Color _textPrimary = Color(0xFF0F172A);
   static const Color _textSecondary = Color(0xFF64748B);
+  static const LinearGradient _primaryGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [Color(0xFF0B8293), Color(0xFF179AAC)],
+  );
 
   @override
   void initState() {
@@ -37,7 +43,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
   Future<void> _loadPharmacyData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    
+
     final authState = context.read<AuthCubit>().state;
     if (authState is Authenticated && authState.user.pharmacyId != null) {
       try {
@@ -45,19 +51,19 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
             .collection('pharmacies')
             .doc(authState.user.pharmacyId)
             .get();
-        
+
         if (doc.exists) {
           // Add the document ID to the data before parsing
           final data = doc.data()!;
           data['id'] = doc.id; // ⭐ Important: Add ID from document
-          
+
           if (mounted) {
             setState(() {
               _pharmacy = PharmacyModel.fromJson(data);
               _isLoading = false;
             });
           }
-          
+
           print('✅ تم تحميل بيانات الصيدلية - ID: ${doc.id}');
         } else {
           if (mounted) {
@@ -73,7 +79,9 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                 ),
                 backgroundColor: Colors.red.shade600,
                 behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             );
           }
@@ -92,7 +100,9 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
               ),
               backgroundColor: Colors.red.shade600,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
@@ -128,7 +138,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                           ),
                         ],
                       ),
-                      child: const CircularProgressIndicator(
+                      child: const AppLoadingIndicator(
                         color: _primaryColor,
                         strokeWidth: 3,
                       ),
@@ -138,7 +148,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                       'جاري تحميل بيانات الصيدلية...',
                       style: TextStyle(
                         color: _textSecondary,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -146,39 +156,52 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                 ),
               )
             : _pharmacy == null
-                ? _buildEmptyState()
-                : RefreshIndicator(
-                    onRefresh: _loadPharmacyData,
-                    color: _primaryColor,
-                    child: CustomScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      slivers: [
-                        // Premium App Bar
-                        _buildAppBar(),
-                        
-                        // Content
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Pharmacy Info Card
-                                _buildPharmacyInfoCard(),
-                                const SizedBox(height: 24),
-                                
-                                // Action Buttons
-                                _buildActionButtons(),
-                                const SizedBox(height: 24),
-                                
-                                // Quick Stats
-                              ],
+            ? _buildEmptyState()
+            : RefreshIndicator(
+                onRefresh: _loadPharmacyData,
+                color: _primaryColor,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // App Bar
+                    _buildAppBar(),
+
+                    // Content
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              'بيانات الصيدلية',
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 10),
+                            _buildPharmacyInfoCard(),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'إجراءات الإدارة',
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildActionButtons(),
+                            const SizedBox(height: 24),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -211,18 +234,15 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
           const Text(
             'لم يتم العثور على بيانات الصيدلية',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: _textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'تأكد من ربط حسابك بصيدلية',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            'من فضلك أعد تشغيل التطبيق',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -231,127 +251,44 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
 
   Widget _buildAppBar() {
     return SliverAppBar(
-      expandedHeight: 160,
       floating: false,
       pinned: true,
+      toolbarHeight: 62,
       elevation: 0,
-      backgroundColor: _primaryColor,
-      leading: Container(
-        margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
+      scrolledUnderElevation: 0,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: Color(0xFF0F172A),
+          size: 18,
         ),
-        child: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: const Text(
+        'إدارة الصيدلية',
+        style: TextStyle(
+          color: _textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
         ),
       ),
+      centerTitle: true,
       actions: [
-        Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
+        IconButton(
+          icon: const Icon(
+            Icons.refresh_rounded,
+            color: Color(0xFF0F172A),
+            size: 20,
           ),
-          child: IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _loadPharmacyData,
-            tooltip: 'تحديث',
-          ),
+          onPressed: _loadPharmacyData,
+          tooltip: 'تحديث',
         ),
       ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [_primaryColor, _secondaryColor],
-            ),
-          ),
-          child: Stack(
-            children: [
-              // Decorative circles
-              Positioned(
-                top: -40,
-                right: -40,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 20,
-                left: -30,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
-                  ),
-                ),
-              ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 80, 20, 20),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: const Icon(
-                            Icons.local_pharmacy_rounded,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'إدارة صيدليتي',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _pharmacy?.name ?? '',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, color: Color(0xFFE5E7EB)),
       ),
     );
   }
@@ -360,17 +297,18 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
     return Container(
       decoration: BoxDecoration(
         color: _cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFDDE7EF)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: _primaryColor.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -400,8 +338,8 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                     const Text(
                       'معلومات الصيدلية',
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                         color: _textPrimary,
                       ),
                     ),
@@ -409,7 +347,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                 ),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: _primaryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: IconButton(
@@ -417,9 +355,8 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                       final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => EditPharmacyScreen(
-                            pharmacy: _pharmacy!,
-                          ),
+                          builder: (context) =>
+                              EditPharmacyScreen(pharmacy: _pharmacy!),
                         ),
                       );
                       if (result == true) {
@@ -427,14 +364,14 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                       }
                     },
                     icon: const Icon(Icons.edit_rounded, size: 22),
-                    color: Colors.blue,
+                    color: _primaryColor,
                     tooltip: 'تعديل البيانات',
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Pharmacy Name
             _buildInfoRow(
               icon: Icons.local_pharmacy_rounded,
@@ -443,7 +380,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
               color: _primaryColor,
             ),
             const SizedBox(height: 18),
-            
+
             // Address
             _buildInfoRow(
               icon: Icons.location_on_rounded,
@@ -452,24 +389,28 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
               color: const Color(0xFFEF4444),
             ),
             const SizedBox(height: 18),
-            
+
             // Phone
             _buildInfoRow(
               icon: Icons.phone_rounded,
               label: 'رقم الهاتف',
-              value: _pharmacy!.phones.isNotEmpty ? _pharmacy!.phones.join(', ') : 'غير متوفر',
+              value: _pharmacy!.phones.isNotEmpty
+                  ? _pharmacy!.phones.join(', ')
+                  : 'غير متوفر',
               color: const Color(0xFF3B82F6),
             ),
             const SizedBox(height: 18),
-            
+
             // Owner Email
             _buildInfoRow(
               icon: Icons.email_rounded,
               label: 'البريد الإلكتروني',
-              value: _pharmacy!.authEmails.isNotEmpty ? _pharmacy!.authEmails.first : 'غير متوفر',
+              value: _pharmacy!.authEmails.isNotEmpty
+                  ? _pharmacy!.authEmails.first
+                  : 'غير متوفر',
               color: const Color(0xFF8B5CF6),
             ),
-            
+
             // Working Hours
             if (_pharmacy!.workingHours.isNotEmpty) ...[
               const SizedBox(height: 18),
@@ -480,28 +421,27 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                 color: const Color(0xFFF59E0B),
               ),
             ],
-            
+
             const SizedBox(height: 24),
-            
+
             // View Details Button
             InkWell(
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PharmacyDetailsScreen(
-                      pharmacyId: _pharmacy!.id,
-                    ),
+                    builder: (context) =>
+                        PharmacyDetailsScreen(pharmacyId: _pharmacy!.id),
                   ),
                 );
               },
               borderRadius: BorderRadius.circular(14),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: _primaryColor.withOpacity(0.3),
-                    width: 2,
+                    width: 1.4,
                   ),
                   borderRadius: BorderRadius.circular(14),
                   color: _primaryColor.withOpacity(0.05),
@@ -509,14 +449,18 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.visibility_rounded, color: _primaryColor, size: 22),
+                    Icon(
+                      Icons.visibility_rounded,
+                      color: _primaryColor,
+                      size: 22,
+                    ),
                     SizedBox(width: 10),
                     Text(
                       'عرض صفحة الصيدلية',
                       style: TextStyle(
                         color: _primaryColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -554,7 +498,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   color: _textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
@@ -563,7 +507,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: _textPrimary,
                 ),
@@ -578,146 +522,195 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Add Offer Button
-        Container(
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [_primaryColor, _secondaryColor],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _primaryColor.withOpacity(0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
+        _buildActionTile(
+          icon: Icons.add_circle_outline_rounded,
+          title: 'إضافة عرض جديد',
+          subtitle: 'إنشاء عرض جديد لعملائك',
+          iconColor: Colors.white,
+          titleColor: Colors.white,
+          subtitleColor: Colors.white70,
+          gradient: _primaryGradient,
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddOfferScreen(pharmacy: _pharmacy!),
               ),
-            ],
-          ),
-          child: ElevatedButton(
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddOfferScreen(
-                    pharmacy: _pharmacy!,
+            );
+            if (result == true && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.white),
+                      SizedBox(width: 12),
+                      Text('تم إضافة العرض بنجاح'),
+                    ],
+                  ),
+                  backgroundColor: _primaryColor,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               );
-              if (result == true) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.white),
-                          SizedBox(width: 12),
-                          Text('تم إضافة العرض بنجاح'),
-                        ],
-                      ),
-                      backgroundColor: _primaryColor,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add_circle_rounded, color: Colors.white, size: 26),
-                SizedBox(width: 12),
-                Text(
-                  'إضافة عرض جديد',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            }
+          },
+        ),
+        const SizedBox(height: 10),
+        _buildActionTile(
+          icon: Icons.local_offer_outlined,
+          title: 'عرض جميع العروض',
+          subtitle: 'إدارة العروض المنشورة',
+          iconColor: _primaryColor,
+          titleColor: _textPrimary,
+          subtitleColor: _textSecondary,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BlocProvider.value(
+                  value: context.read<AuthCubit>(),
+                  child: PharmacyOffersListScreen(
+                    pharmacyId: _pharmacy!.id,
+                    pharmacyName: _pharmacy!.name,
                   ),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        _buildActionTile(
+          icon: Icons.warning_amber_rounded,
+          title: 'إضافة منتج قرب ينتهي',
+          subtitle: 'شارك المنتجات القريبة من الانتهاء',
+          iconColor: const Color(0xFFD97706),
+          titleColor: _textPrimary,
+          subtitleColor: _textSecondary,
+          onTap: () async {
+            final authState = context.read<AuthCubit>().state;
+            if (authState is! Authenticated || _pharmacy == null) return;
+
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddNearExpireItemScreen(
+                  pharmacy: _pharmacy!,
+                  userId: authState.user.uid,
+                ),
+              ),
+            );
+
+            if (result == true && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.white),
+                      SizedBox(width: 12),
+                      Text('تم إضافة منتج قرب ينتهي بنجاح'),
+                    ],
+                  ),
+                  backgroundColor: _primaryColor,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    required Color titleColor,
+    required Color subtitleColor,
+    required VoidCallback onTap,
+    Gradient? gradient,
+  }) {
+    final hasGradient = gradient != null;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        color: hasGradient ? null : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: hasGradient
+            ? null
+            : Border.all(color: const Color(0xFFDBE5EE), width: 1.1),
+        boxShadow: [
+          BoxShadow(
+            color: hasGradient
+                ? _primaryColor.withOpacity(0.22)
+                : _primaryColor.withOpacity(0.08),
+            blurRadius: hasGradient ? 14 : 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: hasGradient
+                        ? Colors.white.withOpacity(0.2)
+                        : iconColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: titleColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: subtitleColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: hasGradient
+                      ? Colors.white.withOpacity(0.95)
+                      : const Color(0xFF94A3B8),
                 ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        
-        // View My Offers Button
-        Container(
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: _cardColor,
-            border: Border.all(
-              color: _primaryColor.withOpacity(0.3),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider.value(
-                      value: context.read<AuthCubit>(),
-                      child: PharmacyOffersListScreen(
-                        pharmacyId: _pharmacy!.id,
-                        pharmacyName: _pharmacy!.name,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.local_offer_rounded,
-                        color: _primaryColor,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    const Text(
-                      'عرض جميع العروض',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -737,10 +730,7 @@ class _PharmacyControlPageState extends State<PharmacyControlPage> {
           colors: gradientColors,
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 1.5,
-        ),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
       ),
       child: Column(
         children: [

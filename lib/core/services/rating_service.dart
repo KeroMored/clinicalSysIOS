@@ -69,23 +69,33 @@ class RatingService {
 
   /// Update service average rating
   Future<void> _updateServiceRating(
-      String serviceId, String serviceType) async {
+    String serviceId,
+    String serviceType,
+  ) async {
     try {
       print('🔄 Updating rating for $serviceType: $serviceId');
       final ratings = await getServiceRatings(serviceId);
       print('📊 Found ${ratings.length} ratings');
-      
+
       if (ratings.isEmpty) {
         print('⚠️ No ratings found, setting to 0');
         await _updateServiceDocument(serviceType, serviceId, 0.0, 0);
         return;
       }
 
-      final totalStars = ratings.fold<int>(0, (sum, rating) => sum + rating.rating);
+      final totalStars = ratings.fold<int>(
+        0,
+        (sum, rating) => sum + rating.rating,
+      );
       final average = totalStars / ratings.length;
       print('⭐ Average rating: $average (from $totalStars stars)');
 
-      await _updateServiceDocument(serviceType, serviceId, average, ratings.length);
+      await _updateServiceDocument(
+        serviceType,
+        serviceId,
+        average,
+        ratings.length,
+      );
       print('✅ Rating updated successfully!');
     } catch (e) {
       print('❌ Error updating service rating: $e');
@@ -100,13 +110,15 @@ class RatingService {
     int totalRatings,
   ) async {
     String collection = _getCollectionName(serviceType);
-    print('📝 Updating $collection/$serviceId with avgRating=$averageRating, total=$totalRatings');
-    
+    print(
+      '📝 Updating $collection/$serviceId with avgRating=$averageRating, total=$totalRatings',
+    );
+
     // Use transaction to safely update only rating fields without affecting likes
     await _firestore.runTransaction((transaction) async {
       final docRef = _firestore.collection(collection).doc(serviceId);
       final doc = await transaction.get(docRef);
-      
+
       if (doc.exists) {
         transaction.update(docRef, {
           'averageRating': averageRating,
@@ -139,7 +151,11 @@ class RatingService {
   }
 
   /// Delete rating
-  Future<void> deleteRating(String ratingId, String serviceId, String serviceType) async {
+  Future<void> deleteRating(
+    String ratingId,
+    String serviceId,
+    String serviceType,
+  ) async {
     try {
       await _firestore.collection('ratings').doc(ratingId).delete();
       await _updateServiceRating(serviceId, serviceType);

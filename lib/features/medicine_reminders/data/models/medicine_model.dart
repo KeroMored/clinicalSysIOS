@@ -1,11 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum RepeatType {
-  daily,
-  weekly,
-  monthly,
-  specificDays,
-}
+enum RepeatType { daily, weekly, monthly, specificDays }
 
 extension RepeatTypeExtension on RepeatType {
   String get arabicName {
@@ -90,7 +85,8 @@ class MedicineModel {
       if (map['medicineNames'] != null) {
         // New format - list of names
         names = List<String>.from(map['medicineNames']);
-      } else if (map['medicineName'] != null && map['medicineName'].toString().isNotEmpty) {
+      } else if (map['medicineName'] != null &&
+          map['medicineName'].toString().isNotEmpty) {
         // Legacy format - single name
         names = [map['medicineName'].toString()];
       }
@@ -99,7 +95,7 @@ class MedicineModel {
       // If any error, keep empty list
       names = [];
     }
-    
+
     return MedicineModel(
       id: id,
       userId: map['userId'] ?? '',
@@ -109,11 +105,11 @@ class MedicineModel {
         (e) => e.englishName == map['repeatType'],
         orElse: () => RepeatType.daily,
       ),
-      reminderTimes: map['reminderTimes'] != null 
-          ? List<String>.from(map['reminderTimes']) 
+      reminderTimes: map['reminderTimes'] != null
+          ? List<String>.from(map['reminderTimes'])
           : [],
-      specificDays: map['specificDays'] != null 
-          ? List<int>.from(map['specificDays']) 
+      specificDays: map['specificDays'] != null
+          ? List<int>.from(map['specificDays'])
           : null,
       monthlyDay: map['monthlyDay'],
       isActive: map['isActive'] ?? true,
@@ -153,19 +149,19 @@ class MedicineModel {
 
   // Display name (join all medicine names or use default)
   String get displayName {
-    if (medicineNames.isEmpty) return 'دواء بدون اسم';
+    if (medicineNames.isEmpty) return 'الدواء';
     if (medicineNames.length == 1) return medicineNames.first;
     return medicineNames.join(' + ');
   }
 
   // Check if has valid data
-  bool get hasValidData => 
+  bool get hasValidData =>
       medicineNames.isNotEmpty || (imageUrl?.isNotEmpty ?? false);
 
   // Get next reminder time
   DateTime? getNextReminderTime() {
     if (reminderTimes.isEmpty) return null;
-    
+
     final now = DateTime.now();
     DateTime? nextReminder;
 
@@ -174,9 +170,9 @@ class MedicineModel {
         final parts = timeStr.split(':');
         final hour = int.parse(parts[0]);
         final minute = int.parse(parts[1]);
-        
+
         var reminderDate = DateTime(now.year, now.month, now.day, hour, minute);
-        
+
         // If time passed today, schedule for next occurrence
         if (reminderDate.isBefore(now)) {
           switch (repeatType) {

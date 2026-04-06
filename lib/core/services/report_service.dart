@@ -44,7 +44,9 @@ class ReportService {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) => ReportModel.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => ReportModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -59,7 +61,9 @@ class ReportService {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) => ReportModel.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => ReportModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -74,7 +78,9 @@ class ReportService {
           .limit(100) // limit to avoid too much data
           .get();
 
-      return snapshot.docs.map((doc) => ReportModel.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => ReportModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -89,7 +95,9 @@ class ReportService {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) => ReportModel.fromFirestore(doc)).toList();
+      return snapshot.docs
+          .map((doc) => ReportModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -140,14 +148,18 @@ class ReportService {
   /// Stream reports for real-time updates (admin)
   Stream<List<ReportModel>> streamReports({String? status}) {
     try {
-      Query query = _firestore.collection('reports').orderBy('createdAt', descending: true);
+      Query query = _firestore
+          .collection('reports')
+          .orderBy('createdAt', descending: true);
 
       if (status != null && status.isNotEmpty) {
         query = query.where('status', isEqualTo: status);
       }
 
       return query.limit(100).snapshots().map((snapshot) {
-        return snapshot.docs.map((doc) => ReportModel.fromFirestore(doc)).toList();
+        return snapshot.docs
+            .map((doc) => ReportModel.fromFirestore(doc))
+            .toList();
       });
     } catch (e) {
       return Stream.value([]);

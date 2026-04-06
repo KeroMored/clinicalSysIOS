@@ -10,10 +10,7 @@ import '../widgets/widgets.dart';
 class CenterContentManagementScreen extends StatefulWidget {
   final String centerId;
 
-  const CenterContentManagementScreen({
-    super.key,
-    required this.centerId,
-  });
+  const CenterContentManagementScreen({super.key, required this.centerId});
 
   @override
   State<CenterContentManagementScreen> createState() =>
@@ -53,7 +50,8 @@ class _CenterContentManagementScreenState
   Future<String?> _uploadImage(File image) async {
     try {
       final ref = FirebaseStorage.instance.ref().child(
-          'rehabilitation/content/${widget.centerId}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        'rehabilitation/content/${widget.centerId}/${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       await ref.putFile(image);
       return await ref.getDownloadURL();
     } catch (e) {
@@ -64,7 +62,8 @@ class _CenterContentManagementScreenState
   Future<String?> _uploadVideo(File video) async {
     try {
       final ref = FirebaseStorage.instance.ref().child(
-          'rehabilitation/content/${widget.centerId}/${DateTime.now().millisecondsSinceEpoch}.mp4');
+        'rehabilitation/content/${widget.centerId}/${DateTime.now().millisecondsSinceEpoch}.mp4',
+      );
       await ref.putFile(video);
       return await ref.getDownloadURL();
     } catch (e) {
@@ -78,7 +77,7 @@ class _CenterContentManagementScreenState
     if (video != null) {
       final file = File(video.path);
       final fileSize = await file.length();
-      
+
       // Check file size (100MB = 104857600 bytes)
       if (fileSize > 104857600) {
         if (mounted) {
@@ -91,7 +90,7 @@ class _CenterContentManagementScreenState
         }
         return;
       }
-      
+
       setState(() {
         _selectedVideo = file;
       });
@@ -102,23 +101,23 @@ class _CenterContentManagementScreenState
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedType == 'image' && _selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى اختيار صورة')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى اختيار صورة')));
       return;
     }
 
     if (_selectedType == 'video' && _selectedVideo == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى اختيار فيديو')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى اختيار فيديو')));
       return;
     }
 
     if (_selectedType == 'youtube' && _videoUrlController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال رابط يوتيوب')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى إدخال رابط يوتيوب')));
       return;
     }
 
@@ -127,7 +126,7 @@ class _CenterContentManagementScreenState
     try {
       String? imageUrl;
       String? videoUrl;
-      
+
       if (_selectedImage != null) {
         imageUrl = await _uploadImage(_selectedImage!);
       }
@@ -159,8 +158,9 @@ class _CenterContentManagementScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('تم إضافة المحتوى بنجاح'),
-              backgroundColor: Colors.green),
+            content: Text('تم إضافة المحتوى بنجاح'),
+            backgroundColor: Colors.green,
+          ),
         );
         _clearForm();
       }
@@ -254,18 +254,15 @@ class _CenterContentManagementScreenState
   void _showVideoPlayer(BuildContext context, String videoUrl) {
     final videoId = YoutubePlayer.convertUrlToId(videoUrl);
     if (videoId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رابط فيديو غير صحيح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('رابط فيديو غير صحيح')));
       return;
     }
 
     final controller = YoutubePlayerController(
       initialVideoId: videoId,
-      flags: const YoutubePlayerFlags(
-        autoPlay: true,
-        mute: false,
-      ),
+      flags: const YoutubePlayerFlags(autoPlay: true, mute: false),
     );
 
     showDialog(
@@ -299,7 +296,10 @@ class _CenterContentManagementScreenState
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('إدارة المحتوى والعروض',style: TextStyle(color: Colors.white),),
+        title: const Text(
+          'إدارة المحتوى والعروض',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),

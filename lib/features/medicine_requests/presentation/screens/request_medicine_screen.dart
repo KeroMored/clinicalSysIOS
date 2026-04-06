@@ -7,7 +7,9 @@ import 'medicine_request_contact_info_screen.dart';
 // Simple model to hold one medicine entry in the UI
 class _MedicineEntry {
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController quantityController = TextEditingController(text: '1');
+  final TextEditingController quantityController = TextEditingController(
+    text: '1',
+  );
   String? type;
   String? unit;
   File? image;
@@ -38,10 +40,13 @@ class RequestMedicineScreen extends StatefulWidget {
 }
 
 class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
+  static const Color _brandColor = Color(0xFF0E7787);
+  static const Color _brandColorDark = Color(0xFF0B6572);
+
   final _formKey = GlobalKey<FormState>();
   // Support multiple medicines in one request
   final List<_MedicineEntry> _medicines = [];
-  
+
   final List<String> _medicineTypes = [
     'روشتة',
     'أقراص',
@@ -52,9 +57,9 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     'مرهم/كريم',
     'قطرة',
     'بخاخ',
-    'ألبان',
+    'ألبان للأطفال',
   ];
-  
+
   final Map<String, List<String>> _unitsByType = {
     'أقراص': ['علب', 'شرائط'],
     'كبسولات': ['علب', 'شرائط'],
@@ -108,26 +113,43 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     });
   }
 
+  void _increaseQuantity(int index) {
+    final current =
+        int.tryParse(_medicines[index].quantityController.text.trim()) ?? 1;
+    setState(() {
+      _medicines[index].quantityController.text = (current + 1).toString();
+    });
+  }
+
+  void _decreaseQuantity(int index) {
+    final current =
+        int.tryParse(_medicines[index].quantityController.text.trim()) ?? 1;
+    if (current <= 1) return;
+    setState(() {
+      _medicines[index].quantityController.text = (current - 1).toString();
+    });
+  }
+
   String? _validateMedicine(_MedicineEntry entry) {
     // Check if user selected input mode
     if (entry.inputMode == 'none') {
       return 'يجب اختيار طريقة إضافة الدواء (تصوير أو كتابة)';
     }
-    
+
     // If text mode, check name is not empty
     if (entry.inputMode == 'text') {
       if (entry.nameController.text.trim().isEmpty) {
         return 'يجب كتابة اسم الدواء';
       }
     }
-    
+
     // If image mode, check image is selected
     if (entry.inputMode == 'image') {
       if (entry.image == null) {
         return 'يجب تصوير الدواء';
       }
     }
-    
+
     return null;
   }
 
@@ -135,9 +157,10 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     // Check authentication first
     final isAuthenticated = await AuthHelpers.requireAuth(
       context,
-      message: 'يجب تسجيل الدخول لنشر طلب الدواء.\nهذا يساعدنا في التواصل معك بشكل أفضل.',
+      message:
+          'يجب تسجيل الدخول لنشر طلب الدواء.\nهذا يساعدنا في التواصل معك بشكل أفضل.',
     );
-    
+
     if (!isAuthenticated || !mounted) return;
 
     // Validate all medicines
@@ -153,7 +176,7 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
         return;
       }
     }
-    
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -168,9 +191,8 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MedicineRequestContactInfoScreen(
-          medicinesData: medicinesData,
-        ),
+        builder: (context) =>
+            MedicineRequestContactInfoScreen(medicinesData: medicinesData),
       ),
     );
   }
@@ -180,25 +202,31 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFFAFBFC),
+        backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
           title: const Text(
             'طلب دواء',
             style: TextStyle(
               color: Color(0xFF0F172A),
-              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          centerTitle: true,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(
-              height: 1,
-              color: const Color(0xFFE2E8F0),
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: _brandColor,
+              size: 20,
             ),
+            onPressed: () => Navigator.maybePop(context),
+          ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(1),
+            child: Divider(height: 1, color: Color(0xFFE5E7EB)),
           ),
         ),
         body: SingleChildScrollView(
@@ -213,36 +241,69 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [_brandColor, _brandColorDark],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                            child: const Icon(
+                              Icons.medication_liquid_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'الخطوة 1 من 2',
+                              style: TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'بيانات الدواء',
+                              style: TextStyle(
+                                color: Color(0xFF0369A1),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'املأ البيانات وسنقوم بإرسال طلبك للصيدليات المتاحة',
-                          style: TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'املأ البيانات وسنقوم بإرسال طلبك للصيدليات المتاحة',
+                        style: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -273,9 +334,9 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                           icon: const Icon(Icons.edit),
                           label: const Text('كتابة اسم الدواء'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF06B6D4),
+                            backgroundColor: _brandColor,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -289,9 +350,9 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                           icon: const Icon(Icons.camera_alt),
                           label: const Text('تصوير الدواء'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E3A5F),
+                            backgroundColor: _brandColorDark,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -310,7 +371,10 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                     decoration: InputDecoration(
                       labelText: 'اسم الدواء',
                       hintText: 'أدخل اسم الدواء المطلوب',
-                      prefixIcon: const Icon(Icons.medication, color: Color(0xFF06B6D4)),
+                      prefixIcon: const Icon(
+                        Icons.medication,
+                        color: Color(0xFF0E7787),
+                      ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () {
@@ -332,7 +396,10 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF0E7787),
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -340,11 +407,15 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                 ],
 
                 // Image Mode
-                if (_medicines[0].inputMode == 'image' && _medicines[0].image != null) ...[
+                if (_medicines[0].inputMode == 'image' &&
+                    _medicines[0].image != null) ...[
                   Container(
                     height: 200,
                     decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                      border: Border.all(
+                        color: const Color(0xFFE2E8F0),
+                        width: 2,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.white,
                     ),
@@ -367,7 +438,11 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                               CircleAvatar(
                                 backgroundColor: Colors.red,
                                 child: IconButton(
-                                  icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       _medicines[0].image = null;
@@ -378,9 +453,13 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                               ),
                               const SizedBox(width: 8),
                               CircleAvatar(
-                                backgroundColor: const Color(0xFF06B6D4),
+                                backgroundColor: const Color(0xFF0E7787),
                                 child: IconButton(
-                                  icon: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                                  icon: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                                   onPressed: () => _pickImageForEntry(0),
                                 ),
                               ),
@@ -399,7 +478,10 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                   decoration: InputDecoration(
                     labelText: 'نوع الدواء *',
                     hintText: 'اختر نوع الدواء',
-                    prefixIcon: const Icon(Icons.medical_services, color: Color(0xFF06B6D4)),
+                    prefixIcon: const Icon(
+                      Icons.medical_services,
+                      color: Color(0xFF0E7787),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -412,14 +494,14 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0E7787),
+                        width: 2,
+                      ),
                     ),
                   ),
                   items: _medicineTypes.map((type) {
-                    return DropdownMenuItem(
-                      value: type,
-                      child: Text(type),
-                    );
+                    return DropdownMenuItem(value: type, child: Text(type));
                   }).toList(),
                   onChanged: (value) {
                     setState(() {
@@ -433,7 +515,8 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                     });
                   },
                   validator: (value) {
-                    if (_medicines[0].type == null || _medicines[0].type!.isEmpty) {
+                    if (_medicines[0].type == null ||
+                        _medicines[0].type!.isEmpty) {
                       return 'نوع الدواء مطلوب';
                     }
                     return null;
@@ -442,13 +525,17 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                 const SizedBox(height: 16),
 
                 // Quantity Unit Dropdown (only if type is selected AND has units)
-                if (_medicines[0].type != null && _unitsByType.containsKey(_medicines[0].type))
+                if (_medicines[0].type != null &&
+                    _unitsByType.containsKey(_medicines[0].type))
                   DropdownButtonFormField<String>(
                     value: _medicines[0].unit,
                     decoration: InputDecoration(
                       labelText: 'الوحدة *',
                       hintText: 'اختر الوحدة',
-                      prefixIcon: const Icon(Icons.category, color: Color(0xFF06B6D4)),
+                      prefixIcon: const Icon(
+                        Icons.category,
+                        color: Color(0xFF0E7787),
+                      ),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
@@ -461,14 +548,14 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF0E7787),
+                          width: 2,
+                        ),
                       ),
                     ),
                     items: _unitsByType[_medicines[0].type]!.map((unit) {
-                      return DropdownMenuItem(
-                        value: unit,
-                        child: Text(unit),
-                      );
+                      return DropdownMenuItem(value: unit, child: Text(unit));
                     }).toList(),
                     onChanged: (value) {
                       setState(() {
@@ -476,24 +563,73 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                       });
                     },
                     validator: (value) {
-                      if (_medicines[0].unit == null || _medicines[0].unit!.isEmpty) {
+                      if (_medicines[0].unit == null ||
+                          _medicines[0].unit!.isEmpty) {
                         return 'الوحدة مطلوبة';
                       }
                       return null;
                     },
                   ),
-                if (_medicines[0].type != null && _unitsByType.containsKey(_medicines[0].type))
+                if (_medicines[0].type != null &&
+                    _unitsByType.containsKey(_medicines[0].type))
                   const SizedBox(height: 16),
 
                 // Quantity field (hide if type is "روشتة")
                 if (_medicines[0].type != 'روشتة')
                   TextFormField(
                     controller: _medicines[0].quantityController,
-                    keyboardType: TextInputType.number,
+                    readOnly: true,
+                    showCursor: false,
                     decoration: InputDecoration(
                       labelText: 'الكمية *',
-                      hintText: 'أدخل الكمية المطلوبة',
-                      prefixIcon: const Icon(Icons.shopping_cart, color: Color(0xFF06B6D4)),
+                      hintText: 'استخدم الأسهم لتعديل الكمية',
+                      prefixIcon: const Icon(
+                        Icons.shopping_cart,
+                        color: Color(0xFF0E7787),
+                      ),
+                      suffixIcon: Container(
+                        width: 44,
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            InkWell(
+                              onTap: () => _increaseQuantity(0),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 2),
+                                child: Icon(
+                                  Icons.keyboard_arrow_up_rounded,
+                                  size: 18,
+                                  color: Color(0xFF0E7787),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 20,
+                              height: 1,
+                              color: const Color(0xFFCBD5E1),
+                            ),
+                            InkWell(
+                              onTap: () => _decreaseQuantity(0),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 2),
+                                child: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: Color(0xFF0E7787),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
@@ -506,7 +642,10 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF0E7787),
+                          width: 2,
+                        ),
                       ),
                     ),
                     validator: (value) {
@@ -520,8 +659,7 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                       return null;
                     },
                   ),
-                if (_medicines[0].type != 'روشتة')
-                  const SizedBox(height: 12),
+                if (_medicines[0].type != 'روشتة') const SizedBox(height: 12),
 
                 // Extra medicine entries (if any)
                 for (int ei = 1; ei < _medicines.length; ei++) ...[
@@ -546,11 +684,20 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                         children: [
                           Row(
                             children: [
-                              Text('دواء ${ei + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text(
+                                'دواء ${ei + 1}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               const Spacer(),
                               IconButton(
-                                icon: const Icon(Icons.delete_forever, color: Colors.red),
-                                onPressed: () => setState(() => _removeMedicineEntry(ei)),
+                                icon: const Icon(
+                                  Icons.delete_forever,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () =>
+                                    setState(() => _removeMedicineEntry(ei)),
                               ),
                             ],
                           ),
@@ -576,28 +723,32 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                                         _medicines[ei].inputMode = 'text';
                                       });
                                     },
-                                    icon: const Icon(Icons.edit, size: 18),
+                                    icon: const Icon(Icons.edit),
                                     label: const Text('كتابة اسم الدواء'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF06B6D4),
+                                      backgroundColor: _brandColor,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 Expanded(
                                   child: ElevatedButton.icon(
                                     onPressed: () => _pickImageForEntry(ei),
-                                    icon: const Icon(Icons.camera_alt, size: 18),
+                                    icon: const Icon(Icons.camera_alt),
                                     label: const Text('تصوير الدواء'),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF1E3A5F),
+                                      backgroundColor: _brandColorDark,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -616,9 +767,15 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                               decoration: InputDecoration(
                                 labelText: 'اسم الدواء',
                                 hintText: 'أدخل اسم الدواء المطلوب',
-                                prefixIcon: const Icon(Icons.medication, color: Color(0xFF06B6D4)),
+                                prefixIcon: const Icon(
+                                  Icons.medication,
+                                  color: Color(0xFF0E7787),
+                                ),
                                 suffixIcon: IconButton(
-                                  icon: const Icon(Icons.close, color: Colors.red),
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.red,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       _medicines[ei].nameController.clear();
@@ -630,15 +787,22 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                                 fillColor: Colors.white,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF0E7787),
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                             ),
@@ -646,11 +810,15 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                           ],
 
                           // Image Mode
-                          if (_medicines[ei].inputMode == 'image' && _medicines[ei].image != null) ...[
+                          if (_medicines[ei].inputMode == 'image' &&
+                              _medicines[ei].image != null) ...[
                             Container(
                               height: 150,
                               decoration: BoxDecoration(
-                                border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                  width: 2,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                                 color: Colors.white,
                               ),
@@ -673,21 +841,33 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                                         CircleAvatar(
                                           backgroundColor: Colors.red,
                                           child: IconButton(
-                                            icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                                            icon: const Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
                                             onPressed: () {
                                               setState(() {
                                                 _medicines[ei].image = null;
-                                                _medicines[ei].inputMode = 'none';
+                                                _medicines[ei].inputMode =
+                                                    'none';
                                               });
                                             },
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         CircleAvatar(
-                                          backgroundColor: const Color(0xFF06B6D4),
+                                          backgroundColor: const Color(
+                                            0xFF0E7787,
+                                          ),
                                           child: IconButton(
-                                            icon: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                                            onPressed: () => _pickImageForEntry(ei),
+                                            icon: const Icon(
+                                              Icons.camera_alt,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                            onPressed: () =>
+                                                _pickImageForEntry(ei),
                                           ),
                                         ),
                                       ],
@@ -704,83 +884,185 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                             value: _medicines[ei].type,
                             decoration: InputDecoration(
                               labelText: 'نوع الدواء *',
-                              prefixIcon: const Icon(Icons.medical_services, color: Color(0xFF06B6D4)),
+                              prefixIcon: const Icon(
+                                Icons.medical_services,
+                                color: Color(0xFF0E7787),
+                              ),
                               filled: true,
                               fillColor: Colors.white,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE2E8F0),
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFFE2E8F0),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF0E7787),
+                                  width: 2,
+                                ),
                               ),
                             ),
-                            items: _medicineTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                            onChanged: (v) => setState(() => _medicines[ei].type = v),
-                            validator: (v) => (v == null || v.isEmpty) ? 'نوع الدواء مطلوب' : null,
+                            items: _medicineTypes
+                                .map(
+                                  (t) => DropdownMenuItem(
+                                    value: t,
+                                    child: Text(t),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) =>
+                                setState(() => _medicines[ei].type = v),
+                            validator: (v) => (v == null || v.isEmpty)
+                                ? 'نوع الدواء مطلوب'
+                                : null,
                           ),
                           const SizedBox(height: 8),
-                          if (_medicines[ei].type != null && _unitsByType.containsKey(_medicines[ei].type))
+                          if (_medicines[ei].type != null &&
+                              _unitsByType.containsKey(_medicines[ei].type))
                             DropdownButtonFormField<String>(
                               value: _medicines[ei].unit,
                               decoration: InputDecoration(
                                 labelText: 'الوحدة *',
-                                prefixIcon: const Icon(Icons.category, color: Color(0xFF06B6D4)),
+                                prefixIcon: const Icon(
+                                  Icons.category,
+                                  color: Color(0xFF0E7787),
+                                ),
                                 filled: true,
                                 fillColor: Colors.white,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF0E7787),
+                                    width: 2,
+                                  ),
                                 ),
                               ),
-                              items: _unitsByType[_medicines[ei].type]!.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                              onChanged: (v) => setState(() => _medicines[ei].unit = v),
-                              validator: (v) => (v == null || v.isEmpty) ? 'الوحدة مطلوبة' : null,
+                              items: _unitsByType[_medicines[ei].type]!
+                                  .map(
+                                    (u) => DropdownMenuItem(
+                                      value: u,
+                                      child: Text(u),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (v) =>
+                                  setState(() => _medicines[ei].unit = v),
+                              validator: (v) => (v == null || v.isEmpty)
+                                  ? 'الوحدة مطلوبة'
+                                  : null,
                             ),
-                          if (_medicines[ei].type != null && _unitsByType.containsKey(_medicines[ei].type))
+                          if (_medicines[ei].type != null &&
+                              _unitsByType.containsKey(_medicines[ei].type))
                             const SizedBox(height: 8),
 
                           // Quantity field (hide if type is "روشتة")
                           if (_medicines[ei].type != 'روشتة')
                             TextFormField(
                               controller: _medicines[ei].quantityController,
-                              keyboardType: TextInputType.number,
+                              readOnly: true,
+                              showCursor: false,
                               decoration: InputDecoration(
                                 labelText: 'الكمية *',
-                                hintText: 'أدخل الكمية المطلوبة',
-                                prefixIcon: const Icon(Icons.shopping_cart, color: Color(0xFF06B6D4)),
+                                hintText: 'استخدم الأسهم لتعديل الكمية',
+                                prefixIcon: const Icon(
+                                  Icons.shopping_cart,
+                                  color: Color(0xFF0E7787),
+                                ),
+                                suffixIcon: Container(
+                                  width: 44,
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                    horizontal: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      InkWell(
+                                        onTap: () => _increaseQuantity(ei),
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 2,
+                                          ),
+                                          child: Icon(
+                                            Icons.keyboard_arrow_up_rounded,
+                                            size: 18,
+                                            color: Color(0xFF0E7787),
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 20,
+                                        height: 1,
+                                        color: const Color(0xFFCBD5E1),
+                                      ),
+                                      InkWell(
+                                        onTap: () => _decreaseQuantity(ei),
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 2,
+                                          ),
+                                          child: Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            size: 18,
+                                            color: Color(0xFF0E7787),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 filled: true,
                                 fillColor: Colors.white,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFF0E7787),
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'الكمية مطلوبة';
+                                if (v == null || v.trim().isEmpty)
+                                  return 'الكمية مطلوبة';
                                 final q = int.tryParse(v.trim());
-                                if (q == null || q < 1) return 'الكمية يجب أن تكون رقم صحيح أكبر من 0';
+                                if (q == null || q < 1)
+                                  return 'الكمية يجب أن تكون رقم صحيح أكبر من 0';
                                 return null;
                               },
                             ),
@@ -795,6 +1077,11 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                   onPressed: () => setState(() => _addMedicineEntry()),
                   icon: const Icon(Icons.add),
                   label: const Text('إضافة دواء آخر'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _brandColor,
+                    side: const BorderSide(color: Color(0xFFCFE5EA)),
+                    backgroundColor: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 32),
 
@@ -803,12 +1090,12 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                        colors: [Color(0xFF0E7787), Color(0xFF0B6572)],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF06B6D4).withOpacity(0.3),
+                          color: const Color(0xFF0E7787).withOpacity(0.3),
                           blurRadius: 12,
                           offset: const Offset(0, 6),
                         ),
@@ -819,7 +1106,10 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                       icon: const Icon(Icons.arrow_back),
                       label: const Text(
                         'التالي',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
@@ -828,6 +1118,7 @@ class _RequestMedicineScreenState extends State<RequestMedicineScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),

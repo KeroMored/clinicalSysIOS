@@ -6,10 +6,7 @@ import '../cubit/radiology_cubit.dart';
 class RadiologyApprovalButtons extends StatelessWidget {
   final RadiologyModel radiology;
 
-  const RadiologyApprovalButtons({
-    super.key,
-    required this.radiology,
-  });
+  const RadiologyApprovalButtons({super.key, required this.radiology});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +18,11 @@ class RadiologyApprovalButtons extends StatelessWidget {
           children: [
             const Text(
               'إجراءات الموافقة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
             ),
             const Divider(),
             Row(
@@ -90,9 +91,11 @@ class RadiologyApprovalButtons extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 context.read<RadiologyCubit>().approveRadiologyCenter(
-                      radiology.id,
-                      notes: notesController.text.isEmpty ? null : notesController.text,
-                    );
+                  radiology.id,
+                  notes: notesController.text.isEmpty
+                      ? null
+                      : notesController.text,
+                );
                 Navigator.pop(dialogContext);
               },
               style: ElevatedButton.styleFrom(
@@ -144,9 +147,9 @@ class RadiologyApprovalButtons extends StatelessWidget {
                   return;
                 }
                 context.read<RadiologyCubit>().rejectRadiologyCenter(
-                      radiology.id,
-                      notesController.text,
-                    );
+                  radiology.id,
+                  notesController.text,
+                );
                 Navigator.pop(dialogContext);
               },
               style: ElevatedButton.styleFrom(

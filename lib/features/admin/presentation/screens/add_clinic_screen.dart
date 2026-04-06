@@ -9,6 +9,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import '../../../clinic/data/models/clinic_model.dart';
 import '../../../clinic/data/models/clinic_department.dart';
 import '../../../clinic/data/repositories/clinic_repository.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddClinicScreen extends StatefulWidget {
   const AddClinicScreen({super.key});
@@ -20,34 +21,39 @@ class AddClinicScreen extends StatefulWidget {
 class _AddClinicScreenState extends State<AddClinicScreen> {
   final _formKey = GlobalKey<FormState>();
   final _clinicRepo = ClinicRepository();
-  
+
   // Controllers
   final _doctorNameController = TextEditingController();
-  final _specializationController = TextEditingController();
+  final List<TextEditingController> _servicesControllers = [
+    TextEditingController(),
+  ]; // خدمات العيادة كنقاط
   final _aboutController = TextEditingController();
   final _consultationFeeController = TextEditingController();
-  final List<TextEditingController> _phoneControllers = [TextEditingController()]; // أرقام متعددة
+  final List<TextEditingController> _phoneControllers = [
+    TextEditingController(),
+  ]; // أرقام متعددة
   final _whatsappController = TextEditingController();
   final _addressController = TextEditingController();
-  
+
   // Doctor Account Controllers
-  final List<TextEditingController> _doctorEmailControllers = [TextEditingController()]; // تغيير إلى List
+  final List<TextEditingController> _doctorEmailControllers = [
+    TextEditingController(),
+  ]; // تغيير إلى List
   final List<TextEditingController> _secretaryEmailControllers = [];
   final _doctorPhoneController = TextEditingController();
-  
+
   ClinicDepartment? _selectedDepartment;
-  File? _clinicImage;
   File? _doctorImage;
   bool _isSubmitting = false;
   bool _hasNursery = false;
   bool _onlineBookingEnabled = false;
-  
+
   // Location
   double _latitude = 0.0;
   double _longitude = 0.0;
   bool _isLoadingLocation = false;
   String _locationStatus = '';
-  
+
   // Working Hours
   final Map<String, TimeOfDay?> _workingHoursFrom = {};
   final Map<String, TimeOfDay?> _workingHoursTo = {};
@@ -57,7 +63,15 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
   void initState() {
     super.initState();
     // Initialize working hours with default values (all days OPEN by default)
-    final days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    final days = [
+      'saturday',
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+    ];
     for (var day in days) {
       _workingHoursFrom[day] = const TimeOfDay(hour: 9, minute: 0);
       _workingHoursTo[day] = const TimeOfDay(hour: 17, minute: 0);
@@ -68,7 +82,9 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
   @override
   void dispose() {
     _doctorNameController.dispose();
-    _specializationController.dispose();
+    for (var controller in _servicesControllers) {
+      controller.dispose();
+    }
     _aboutController.dispose();
     _consultationFeeController.dispose();
     for (var controller in _phoneControllers) {
@@ -91,7 +107,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
     if (_selectedDepartment == null) {
       return 'اختر التخصص أولاً';
     }
-    
+
     switch (_selectedDepartment!) {
       case ClinicDepartment.pediatrics:
         return 'مثل: حديثي الولادة، تطعيمات، تغذية أطفال';
@@ -120,14 +136,14 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
       case ClinicDepartment.physiotherapy:
         return 'مثل: علاج طبيعي، تأهيل حركي، آلام مفاصل';
       case ClinicDepartment.other:
-        return 'حدد التخصص الدقيق';
+        return 'حدد خدمات العيادة';
     }
   }
 
-  Future<void> _pickImage(bool isClinicImage) async {
+  Future<void> _pickImage() async {
     try {
       final picker = ImagePicker();
-      
+
       // Show dialog to choose between camera and gallery
       final ImageSource? source = await showDialog<ImageSource>(
         context: context,
@@ -150,9 +166,9 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
           ),
         ),
       );
-      
+
       if (source == null) return;
-      
+
       final image = await picker.pickImage(
         source: source,
         maxWidth: 1024,
@@ -162,11 +178,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
 
       if (image != null) {
         setState(() {
-          if (isClinicImage) {
-            _clinicImage = File(image.path);
-          } else {
-            _doctorImage = File(image.path);
-          }
+          _doctorImage = File(image.path);
         });
       }
     } catch (e) {
@@ -341,9 +353,9 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
     }
 
     if (_selectedDepartment == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اختر التخصص')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('اختر التخصص')));
       return;
     }
 
@@ -352,16 +364,8 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
     });
 
     try {
-      // Upload images
-      String? clinicImageUrl;
+      // Upload doctor image
       String? doctorImageUrl;
-
-      if (_clinicImage != null) {
-        clinicImageUrl = await _uploadImage(
-          _clinicImage!,
-          'clinics/${DateTime.now().millisecondsSinceEpoch}_clinic.jpg',
-        );
-      }
 
       if (_doctorImage != null) {
         doctorImageUrl = await _uploadImage(
@@ -382,7 +386,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
       _workingHoursFrom.forEach((day, from) {
         final to = _workingHoursTo[day];
         final isClosed = _isClosedDays[day] ?? false;
-        
+
         if (from != null && to != null) {
           workingHours[day] = WorkingHours(
             from: _formatTimeOfDay(from),
@@ -420,14 +424,17 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
         id: '',
         doctorName: _doctorNameController.text.trim(),
         department: _selectedDepartment!,
-        specialization: _specializationController.text.trim(),
+        specialization: _servicesControllers
+            .map((c) => c.text.trim())
+            .where((text) => text.isNotEmpty)
+            .toList(),
         about: _aboutController.text.trim(),
-        consultationFee: _consultationFeeController.text.trim().isEmpty 
-            ? 0.0 
+        consultationFee: _consultationFeeController.text.trim().isEmpty
+            ? 0.0
             : double.parse(_consultationFeeController.text.trim()),
         phones: phones,
-        whatsapp: _whatsappController.text.trim().isEmpty 
-            ? null 
+        whatsapp: _whatsappController.text.trim().isEmpty
+            ? null
             : _whatsappController.text.trim(),
         address: _addressController.text.trim(),
         latitude: _latitude,
@@ -440,7 +447,6 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
         holidays: [],
         hasNursery: _hasNursery,
         onlineBookingEnabled: _onlineBookingEnabled,
-        clinicImageUrl: clinicImageUrl,
         doctorImageUrl: doctorImageUrl,
         ownerId: doctorUserId, // Link clinic to doctor
         createdAt: DateTime.now(),
@@ -461,10 +467,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -488,10 +491,10 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
           ),
           title: const Text(
             'إضافة عيادة جديدة',
-            style: TextStyle(fontWeight: FontWeight.bold , color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
           centerTitle: true,
-          backgroundColor: Colors.teal,
+          backgroundColor: const Color(0xFF06B6D4),
           foregroundColor: Colors.white,
           elevation: 0,
         ),
@@ -518,12 +521,12 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.teal.withOpacity(0.1),
+                                color: const Color(0xFF06B6D4).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
                                 Icons.person_outline,
-                                color: Colors.teal,
+                                color: Color(0xFF06B6D4),
                                 size: 24,
                               ),
                             ),
@@ -533,7 +536,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.teal,
+                                color: Color(0xFF06B6D4),
                               ),
                             ),
                           ],
@@ -542,218 +545,354 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         const Divider(),
                         const SizedBox(height: 12),
                         TextFormField(
-                  controller: _doctorNameController,
-                  decoration: InputDecoration(
-                    labelText: 'اسم الدكتور *',
-                    prefixIcon: const Icon(Icons.person, color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.teal, width: 2),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'اسم الدكتور مطلوب';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Department Dropdown
-                DropdownButtonFormField<ClinicDepartment>(
-                  value: _selectedDepartment,
-                  decoration: InputDecoration(
-                    labelText: 'التخصص *',
-                    prefixIcon: const Icon(Icons.medical_services, color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.teal, width: 2),
-                    ),
-                  ),
-                  items: ClinicDepartment.values
-                      .where((dept) => dept != ClinicDepartment.other)
-                      .map((dept) {
-                    return DropdownMenuItem(
-                      value: dept,
-                      child: Text(dept.arabicName),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedDepartment = value;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return 'التخصص مطلوب';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Specialization
-                TextFormField(
-                  controller: _specializationController,
-                  decoration: InputDecoration(
-                    labelText: 'التخصص الدقيق *',
-                    hintText: _getSpecializationHint(),
-                    prefixIcon: const Icon(Icons.local_hospital, color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.teal, width: 2),
-                    ),
-                    helperText: 'يساعد المرضى في العثور على التخصص المناسب',
-                    helperStyle: const TextStyle(fontSize: 12),
-                  ),
-                  maxLines: 2,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'التخصص الدقيق مطلوب';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Nursery availability (only for pediatrics)
-                if (_selectedDepartment == ClinicDepartment.pediatrics) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.teal.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.child_care, color: Colors.teal, size: 20),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'يوجد حضانة بالعيادة؟',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.teal,
+                          controller: _doctorNameController,
+                          decoration: InputDecoration(
+                            labelText: 'اسم الدكتور *',
+                            prefixIcon: const Icon(
+                              Icons.person,
+                              color: Color(0xFF06B6D4),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF06B6D4),
+                                width: 2,
                               ),
                             ),
-                          ],
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'اسم الدكتور مطلوب';
+                            }
+                            return null;
+                          },
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: RadioListTile<bool>(
-                                title: const Text('نعم'),
-                                value: true,
-                                groupValue: _hasNursery,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _hasNursery = value ?? false;
-                                  });
-                                },
-                                activeColor: Colors.teal,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                            Expanded(
-                              child: RadioListTile<bool>(
-                                title: const Text('لا'),
-                                value: false,
-                                groupValue: _hasNursery,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _hasNursery = value ?? false;
-                                  });
-                                },
-                                activeColor: Colors.teal,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                        const SizedBox(height: 16),
 
-                // Online Booking Enabled
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.teal.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_month, color: Colors.teal, size: 20),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'متاح الحجز أونلاين؟',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.teal,
+                        // Department Dropdown
+                        DropdownButtonFormField<ClinicDepartment>(
+                          value: _selectedDepartment,
+                          decoration: InputDecoration(
+                            labelText: 'التخصص *',
+                            prefixIcon: const Icon(
+                              Icons.medical_services,
+                              color: Color(0xFF06B6D4),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF06B6D4),
+                                width: 2,
+                              ),
                             ),
                           ),
+                          items: ClinicDepartment.values
+                              .where((dept) => dept != ClinicDepartment.other)
+                              .map((dept) {
+                                return DropdownMenuItem(
+                                  value: dept,
+                                  child: Text(dept.arabicName),
+                                );
+                              })
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedDepartment = value;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return 'التخصص مطلوب';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Clinic Services as Bullet Points
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF06B6D4).withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF06B6D4).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.medical_services_rounded,
+                                    color: const Color(0xFF06B6D4),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'خدمات العيادة *',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF06B6D4),
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _servicesControllers.add(
+                                          TextEditingController(),
+                                        );
+                                      });
+                                    },
+                                    icon: const Icon(Icons.add, size: 18),
+                                    label: const Text('إضافة خدمة'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF06B6D4),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      textStyle: const TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'أضف خدمات العيادة كنقاط منفصلة (${_getSpecializationHint()})',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ..._servicesControllers.asMap().entries.map((
+                                entry,
+                              ) {
+                                int index = entry.key;
+                                TextEditingController controller = entry.value;
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.circle,
+                                        size: 8,
+                                        color: Color(0xFF06B6D4),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: controller,
+                                          decoration: InputDecoration(
+                                            hintText: 'اكتب خدمة...',
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: const BorderSide(
+                                                color: Color(0xFF06B6D4),
+                                              ),
+                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 12,
+                                                ),
+                                          ),
+                                          validator: (value) {
+                                            if (index == 0 &&
+                                                (value == null ||
+                                                    value.trim().isEmpty)) {
+                                              return 'يجب إضافة خدمة واحدة على الأقل';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      if (_servicesControllers.length > 1)
+                                        IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              controller.dispose();
+                                              _servicesControllers.removeAt(
+                                                index,
+                                              );
+                                            });
+                                          },
+                                          icon: const Icon(
+                                            Icons.close,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Nursery availability (only for pediatrics)
+                        if (_selectedDepartment ==
+                            ClinicDepartment.pediatrics) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF06B6D4).withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFF06B6D4).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.child_care,
+                                      color: const Color(0xFF06B6D4),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'يوجد حضانة بالعيادة؟',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF06B6D4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: RadioListTile<bool>(
+                                        title: const Text('نعم'),
+                                        value: true,
+                                        groupValue: _hasNursery,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _hasNursery = value ?? false;
+                                          });
+                                        },
+                                        activeColor: const Color(0xFF06B6D4),
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: RadioListTile<bool>(
+                                        title: const Text('لا'),
+                                        value: false,
+                                        groupValue: _hasNursery,
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _hasNursery = value ?? false;
+                                          });
+                                        },
+                                        activeColor: const Color(0xFF06B6D4),
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<bool>(
-                              title: const Text('نعم'),
-                              value: true,
-                              groupValue: _onlineBookingEnabled,
-                              onChanged: (value) {
-                                setState(() {
-                                  _onlineBookingEnabled = value ?? false;
-                                });
-                              },
-                              activeColor: Colors.teal,
-                              contentPadding: EdgeInsets.zero,
+
+                        // Online Booking Enabled
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF06B6D4).withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFF06B6D4).withOpacity(0.3),
                             ),
                           ),
-                          Expanded(
-                            child: RadioListTile<bool>(
-                              title: const Text('لا'),
-                              value: false,
-                              groupValue: _onlineBookingEnabled,
-                              onChanged: (value) {
-                                setState(() {
-                                  _onlineBookingEnabled = value ?? false;
-                                });
-                              },
-                              activeColor: Colors.teal,
-                              contentPadding: EdgeInsets.zero,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_month,
+                                    color: const Color(0xFF06B6D4),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'متاح الحجز أونلاين؟',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF06B6D4),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: RadioListTile<bool>(
+                                      title: const Text('نعم'),
+                                      value: true,
+                                      groupValue: _onlineBookingEnabled,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _onlineBookingEnabled =
+                                              value ?? false;
+                                        });
+                                      },
+                                      activeColor: const Color(0xFF06B6D4),
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: RadioListTile<bool>(
+                                      title: const Text('لا'),
+                                      value: false,
+                                      groupValue: _onlineBookingEnabled,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _onlineBookingEnabled =
+                                              value ?? false;
+                                        });
+                                      },
+                                      activeColor: const Color(0xFF06B6D4),
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                        ),
                       ],
                     ),
                   ),
@@ -776,12 +915,12 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.teal.withOpacity(0.1),
+                                color: const Color(0xFF06B6D4).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
                                 Icons.info_outline,
-                                color: Colors.teal,
+                                color: Color(0xFF06B6D4),
                                 size: 24,
                               ),
                             ),
@@ -791,7 +930,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.teal,
+                                color: Color(0xFF06B6D4),
                               ),
                             ),
                           ],
@@ -800,146 +939,188 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         const Divider(),
                         const SizedBox(height: 12),
                         TextFormField(
-                  controller: _aboutController,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    labelText: 'نبذة عن الدكتور',
-                    hintText: 'المؤهلات والخبرات',
-                    prefixIcon: const Icon(Icons.description, color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.teal, width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Consultation Fee
-                TextFormField(
-                  controller: _consultationFeeController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'سعر الكشف (جنيه) - اختياري',
-                    hintText: 'اترك فارغاً إذا لم يتم تحديده',
-                    prefixIcon: const Icon(Icons.payments, color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.teal, width: 2),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value != null && value.trim().isNotEmpty) {
-                      if (double.tryParse(value.trim()) == null) {
-                        return 'أدخل رقم صحيح';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Phone Numbers Section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'أرقام التليفون',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Tooltip(
-                          message: 'يمكنك إضافة أكثر من رقم تليفون للعيادة',
-                          child: Icon(Icons.info_outline, size: 18, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ...List.generate(_phoneControllers.length, (index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _phoneControllers[index],
-                                keyboardType: TextInputType.phone,
-                                decoration: InputDecoration(
-                                  labelText: index == 0 ? 'رقم التليفون الأساسي *' : 'رقم تليفون ${index + 1}',
-                                  prefixIcon: const Icon(Icons.phone, color: Colors.teal),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Colors.teal, width: 2),
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (index == 0 && (value == null || value.trim().isEmpty)) {
-                                    return 'رقم التليفون الأساسي مطلوب';
-                                  }
-                                  return null;
-                                },
+                          controller: _aboutController,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            labelText: 'نبذة عن الدكتور',
+                            hintText: 'المؤهلات والخبرات',
+                            prefixIcon: const Icon(
+                              Icons.description,
+                              color: Color(0xFF06B6D4),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF06B6D4),
+                                width: 2,
                               ),
                             ),
-                            if (index > 0)
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    _phoneControllers[index].dispose();
-                                    _phoneControllers.removeAt(index);
-                                  });
-                                },
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Consultation Fee
+                        TextFormField(
+                          controller: _consultationFeeController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'سعر الكشف (جنيه) - اختياري',
+                            hintText: 'اترك فارغاً إذا لم يتم تحديده',
+                            prefixIcon: const Icon(
+                              Icons.payments,
+                              color: Color(0xFF06B6D4),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF06B6D4),
+                                width: 2,
                               ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value != null && value.trim().isNotEmpty) {
+                              if (double.tryParse(value.trim()) == null) {
+                                return 'أدخل رقم صحيح';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Phone Numbers Section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'أرقام التليفون',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF06B6D4),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Tooltip(
+                                  message:
+                                      'يمكنك إضافة أكثر من رقم تليفون للعيادة',
+                                  child: Icon(
+                                    Icons.info_outline,
+                                    size: 18,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ...List.generate(_phoneControllers.length, (index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _phoneControllers[index],
+                                        keyboardType: TextInputType.phone,
+                                        decoration: InputDecoration(
+                                          labelText: index == 0
+                                              ? 'رقم التليفون الأساسي *'
+                                              : 'رقم تليفون ${index + 1}',
+                                          prefixIcon: const Icon(
+                                            Icons.phone,
+                                            color: Color(0xFF06B6D4),
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFF06B6D4),
+                                              width: 2,
+                                            ),
+                                          ),
+                                        ),
+                                        validator: (value) {
+                                          if (index == 0 &&
+                                              (value == null ||
+                                                  value.trim().isEmpty)) {
+                                            return 'رقم التليفون الأساسي مطلوب';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ),
+                                    if (index > 0)
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _phoneControllers[index].dispose();
+                                            _phoneControllers.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            TextButton.icon(
+                              icon: const Icon(Icons.add_circle_outline),
+                              label: const Text('إضافة رقم تليفون آخر'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF06B6D4),
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _phoneControllers.add(
+                                    TextEditingController(),
+                                  );
+                                });
+                              },
+                            ),
                           ],
                         ),
-                      );
-                    }),
-                    TextButton.icon(
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: const Text('إضافة رقم تليفون آخر'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.teal,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _phoneControllers.add(TextEditingController());
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                // WhatsApp
-                TextFormField(
-                  controller: _whatsappController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: 'رقم واتساب (اختياري)',
-                    prefixIcon:  Icon(MdiIcons.whatsapp, color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.teal, width: 2),
-                    ),
-                  ),
-                ),
+                        // WhatsApp
+                        TextFormField(
+                          controller: _whatsappController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            labelText: 'رقم واتساب (اختياري)',
+                            prefixIcon: Icon(
+                              MdiIcons.whatsapp,
+                              color: const Color(0xFF06B6D4),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF06B6D4),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -962,12 +1143,12 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.teal.withOpacity(0.1),
+                                color: const Color(0xFF06B6D4).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
                                 Icons.account_circle_outlined,
-                                color: Colors.teal,
+                                color: Color(0xFF06B6D4),
                                 size: 24,
                               ),
                             ),
@@ -977,7 +1158,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.teal,
+                                color: Color(0xFF06B6D4),
                               ),
                             ),
                           ],
@@ -988,266 +1169,323 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
 
                         // Doctor Phone
                         TextFormField(
-                  controller: _doctorPhoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: InputDecoration(
-                    labelText: 'رقم تليفون الدكتور *',
-                    prefixIcon: const Icon(Icons.phone_android, color: Colors.teal),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.teal, width: 2),
-                    ),
-                    helperText: 'رقم الدكتور الشخصي (لن يظهر للمرضى)',
-                    helperStyle: const TextStyle(fontSize: 12),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'رقم تليفون الدكتور مطلوب';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // إيميل الدكتور (الإيميل الرئيسي)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
+                          controller: _doctorPhoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            labelText: 'رقم تليفون الدكتور *',
+                            prefixIcon: const Icon(
+                              Icons.phone_android,
+                              color: Color(0xFF06B6D4),
+                            ),
+                            border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'إيميلات الدكاترة (صلاحيات كاملة)',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'الصلاحيات: متابعة المرضى، إدارة الحجوزات، تعديل بيانات العيادة',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...List.generate(_doctorEmailControllers.length, (index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _doctorEmailControllers[index],
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: InputDecoration(
-                                    labelText: index == 0 
-                                        ? 'إيميل الدكتور الأساسي *' 
-                                        : 'إيميل دكتور إضافي ${index + 1}',
-                                    hintText: 'doctor@example.com',
-                                    prefixIcon: const Icon(Icons.email, color: Colors.blue),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(color: Colors.blue, width: 2),
-                                    ),
-                                    fillColor: Colors.white,
-                                    filled: true,
-                                  ),
-                                  validator: (value) {
-                                    if (index == 0) {
-                                      // الإيميل الأول إجباري
-                                      if (value == null || value.trim().isEmpty) {
-                                        return 'يجب إدخال إيميل الدكتور الأساسي';
-                                      }
-                                    }
-                                    // التحقق من صحة الإيميل إذا لم يكن فارغاً
-                                    if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
-                                      return 'إيميل غير صحيح';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              if (index > 0) // زر الحذف فقط للإيميلات الإضافية
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () {
-                                    setState(() {
-                                      _doctorEmailControllers[index].dispose();
-                                      _doctorEmailControllers.removeAt(index);
-                                    });
-                                  },
-                                ),
-                            ],
-                          ),
-                        );
-                      }),
-                      TextButton.icon(
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('إضافة إيميل دكتور إضافي'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.blue,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _doctorEmailControllers.add(TextEditingController());
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // إيميلات السكرتيرة (اختياري)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.green,
+                            focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.people,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'إيميلات السكرتيرة (صلاحيات محدودة - اختياري)',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
+                              borderSide: const BorderSide(
+                                color: Color(0xFF06B6D4),
+                                width: 2,
                               ),
                             ),
+                            helperText: 'رقم الدكتور الشخصي (لن يظهر للمرضى)',
+                            helperStyle: const TextStyle(fontSize: 12),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'الصلاحيات: إدارة الحجوزات فقط (بدون متابعة المرضى) + المصادقة والنوتفيكيشنز',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'رقم تليفون الدكتور مطلوب';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_secretaryEmailControllers.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Text(
-                              'لم يتم إضافة سكرتيرة بعد',
-                              style: TextStyle(color: Colors.grey),
+                        const SizedBox(height: 20),
+
+                        // إيميل الدكتور (الإيميل الرئيسي)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.blue.withOpacity(0.3),
                             ),
                           ),
-                        ),
-                      ...List.generate(_secretaryEmailControllers.length, (index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _secretaryEmailControllers[index],
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: InputDecoration(
-                                    labelText: 'إيميل سكرتيرة ${index + 1}',
-                                    hintText: 'secretary@example.com',
-                                    prefixIcon: const Icon(Icons.person_outline, color: Colors.green),
-                                    border: OutlineInputBorder(
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(color: Colors.green, width: 2),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                      size: 20,
                                     ),
-                                    fillColor: Colors.white,
-                                    filled: true,
                                   ),
-                                  validator: (value) {
-                                    if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
-                                      return 'إيميل غير صحيح';
-                                    }
-                                    return null;
-                                  },
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'إيميلات الدكاترة (صلاحيات كاملة)',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'الصلاحيات: متابعة المرضى، إدارة الحجوزات، تعديل بيانات العيادة',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
+                              const SizedBox(height: 12),
+                              ...List.generate(_doctorEmailControllers.length, (
+                                index,
+                              ) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller:
+                                              _doctorEmailControllers[index],
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          decoration: InputDecoration(
+                                            labelText: index == 0
+                                                ? 'إيميل الدكتور الأساسي *'
+                                                : 'إيميل دكتور إضافي ${index + 1}',
+                                            hintText: 'doctor@example.com',
+                                            prefixIcon: const Icon(
+                                              Icons.email,
+                                              color: Colors.blue,
+                                            ),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              borderSide: const BorderSide(
+                                                color: Colors.blue,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            fillColor: Colors.white,
+                                            filled: true,
+                                          ),
+                                          validator: (value) {
+                                            if (index == 0) {
+                                              // الإيميل الأول إجباري
+                                              if (value == null ||
+                                                  value.trim().isEmpty) {
+                                                return 'يجب إدخال إيميل الدكتور الأساسي';
+                                              }
+                                            }
+                                            // التحقق من صحة الإيميل إذا لم يكن فارغاً
+                                            if (value != null &&
+                                                value.trim().isNotEmpty &&
+                                                !value.contains('@')) {
+                                              return 'إيميل غير صحيح';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      if (index >
+                                          0) // زر الحذف فقط للإيميلات الإضافية
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              _doctorEmailControllers[index]
+                                                  .dispose();
+                                              _doctorEmailControllers.removeAt(
+                                                index,
+                                              );
+                                            });
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              TextButton.icon(
+                                icon: const Icon(Icons.add_circle_outline),
+                                label: const Text('إضافة إيميل دكتور إضافي'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.blue,
+                                ),
                                 onPressed: () {
                                   setState(() {
-                                    _secretaryEmailControllers[index].dispose();
-                                    _secretaryEmailControllers.removeAt(index);
+                                    _doctorEmailControllers.add(
+                                      TextEditingController(),
+                                    );
                                   });
                                 },
                               ),
                             ],
                           ),
-                        );
-                      }),
-                      TextButton.icon(
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('إضافة إيميل سكرتيرة'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.green,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _secretaryEmailControllers.add(TextEditingController());
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                        const SizedBox(height: 20),
+
+                        // إيميلات السكرتيرة (اختياري)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.green.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.people,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Expanded(
+                                    child: Text(
+                                      'إيميلات السكرتيرة (صلاحيات محدودة - اختياري)',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'الصلاحيات: إدارة الحجوزات فقط (بدون متابعة المرضى) + المصادقة والنوتفيكيشنز',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_secretaryEmailControllers.isEmpty)
+                                const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    child: Text(
+                                      'لم يتم إضافة سكرتيرة بعد',
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                                  ),
+                                ),
+                              ...List.generate(
+                                _secretaryEmailControllers.length,
+                                (index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller:
+                                                _secretaryEmailControllers[index],
+                                            keyboardType:
+                                                TextInputType.emailAddress,
+                                            decoration: InputDecoration(
+                                              labelText:
+                                                  'إيميل سكرتيرة ${index + 1}',
+                                              hintText: 'secretary@example.com',
+                                              prefixIcon: const Icon(
+                                                Icons.person_outline,
+                                                color: Colors.green,
+                                              ),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: const BorderSide(
+                                                  color: Colors.green,
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                            validator: (value) {
+                                              if (value != null &&
+                                                  value.trim().isNotEmpty &&
+                                                  !value.contains('@')) {
+                                                return 'إيميل غير صحيح';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              _secretaryEmailControllers[index]
+                                                  .dispose();
+                                              _secretaryEmailControllers
+                                                  .removeAt(index);
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                              TextButton.icon(
+                                icon: const Icon(Icons.add_circle_outline),
+                                label: const Text('إضافة إيميل سكرتيرة'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.green,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _secretaryEmailControllers.add(
+                                      TextEditingController(),
+                                    );
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1258,9 +1496,11 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.1),
+                    color: const Color(0xFF06B6D4).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                    border: Border.all(
+                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -1271,7 +1511,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.teal.withOpacity(0.2),
+                              color: const Color(0xFF06B6D4).withOpacity(0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -1279,7 +1519,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         ),
                         child: const Icon(
                           Icons.location_on,
-                          color: Colors.teal,
+                          color: Color(0xFF06B6D4),
                           size: 28,
                         ),
                       ),
@@ -1289,7 +1529,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal,
+                          color: Color(0xFF06B6D4),
                         ),
                       ),
                     ],
@@ -1305,14 +1545,23 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                     filled: true,
                     fillColor: Colors.grey.withOpacity(0.1),
                     labelText: 'العنوان *',
-                    prefixIcon: const Icon(Icons.location_on, color: Colors.teal),
+                    prefixIcon: const Icon(
+                      Icons.location_on,
+                      color: Color(0xFF06B6D4),
+                    ),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                      borderSide: const BorderSide(
+                        color: Colors.grey,
+                        width: 1,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.grey, width: 2),
+                      borderSide: const BorderSide(
+                        color: Colors.grey,
+                        width: 2,
+                      ),
                     ),
                   ),
                   validator: (value) {
@@ -1338,7 +1587,11 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green.shade700,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'تم تحديد الموقع',
@@ -1371,9 +1624,11 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
+                            child: AppLoadingIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Icon(Icons.touch_app, size: 22),
@@ -1381,15 +1636,15 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                       _isLoadingLocation
                           ? 'جاري تحديد الموقع...'
                           : (_latitude != 0.0 && _longitude != 0.0)
-                              ? 'تحديث الموقع'
-                              : 'تحديد الموقع التلقائي',
+                          ? 'تحديث الموقع'
+                          : 'تحديد الموقع التلقائي',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: const Color(0xFF06B6D4),
                       foregroundColor: Colors.white,
                       elevation: 2,
                       shape: RoundedRectangleBorder(
@@ -1403,7 +1658,11 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Row(
                       children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 16),
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.red.shade600,
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'تحديد الموقع إجباري',
@@ -1436,45 +1695,38 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.08),
+                    color: const Color(0xFF06B6D4).withOpacity(0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                    border: Border.all(
+                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.photo_library, color: Colors.teal, size: 24),
+                      const Icon(
+                        Icons.photo_library,
+                        color: Color(0xFF06B6D4),
+                        size: 24,
+                      ),
                       const SizedBox(width: 12),
                       const Text(
                         'الصور',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal,
+                          color: Color(0xFF06B6D4),
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
-                
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildImagePicker(
-                        'صورة العيادة',
-                        _clinicImage,
-                        () => _pickImage(true),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildImagePicker(
-                        'صورة الدكتور',
-                        _doctorImage,
-                        () => _pickImage(false),
-                      ),
-                    ),
-                  ],
+
+                // Doctor Image Only
+                _buildImagePicker(
+                  'صورة الدكتور',
+                  _doctorImage,
+                  () => _pickImage(),
                 ),
                 const SizedBox(height: 24),
 
@@ -1482,20 +1734,26 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.08),
+                    color: const Color(0xFF06B6D4).withOpacity(0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.teal.withOpacity(0.3)),
+                    border: Border.all(
+                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.access_time, color: Colors.teal, size: 24),
+                      const Icon(
+                        Icons.access_time,
+                        color: Color(0xFF06B6D4),
+                        size: 24,
+                      ),
                       const SizedBox(width: 12),
                       const Text(
                         'مواعيد العمل',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal,
+                          color: Color(0xFF06B6D4),
                         ),
                       ),
                     ],
@@ -1509,10 +1767,10 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: Colors.teal,
+                    color: const Color(0xFF06B6D4),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.teal.withOpacity(0.4),
+                        color: const Color(0xFF06B6D4).withOpacity(0.4),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -1524,9 +1782,11 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(
+                            child: AppLoadingIndicator(
                               strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Icon(Icons.check_circle, size: 24),
@@ -1562,10 +1822,12 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
       child: Container(
         height: 160,
         decoration: BoxDecoration(
-          color: image == null ? Colors.teal.withOpacity(0.1) : Colors.white,
+          color: image == null
+              ? const Color(0xFF06B6D4).withOpacity(0.1)
+              : Colors.white,
           border: Border.all(
             color: image == null
-                ? Colors.teal.withOpacity(0.4)
+                ? const Color(0xFF06B6D4).withOpacity(0.4)
                 : Colors.grey[300]!,
             width: 2,
           ),
@@ -1598,7 +1860,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         child: const Icon(
                           Icons.edit,
                           size: 18,
-                          color: Colors.teal,
+                          color: Color(0xFF06B6D4),
                         ),
                       ),
                     ),
@@ -1611,20 +1873,20 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(0.15),
+                      color: const Color(0xFF06B6D4).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.add_a_photo,
                       size: 36,
-                      color: Colors.teal,
+                      color: Color(0xFF06B6D4),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     label,
                     style: const TextStyle(
-                      color: Colors.teal,
+                      color: Color(0xFF06B6D4),
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1632,10 +1894,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'اضغط للاختيار',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                 ],
               ),
@@ -1656,9 +1915,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1673,12 +1930,12 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
               decoration: BoxDecoration(
                 color: isClosed
                     ? Colors.red.withOpacity(0.05)
-                    : Colors.teal.withOpacity(0.05),
+                    : const Color(0xFF06B6D4).withOpacity(0.05),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isClosed
                       ? Colors.red.withOpacity(0.2)
-                      : Colors.teal.withOpacity(0.2),
+                      : const Color(0xFF06B6D4).withOpacity(0.2),
                 ),
               ),
               child: Column(
@@ -1691,13 +1948,15 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         decoration: BoxDecoration(
                           color: isClosed
                               ? Colors.red.withOpacity(0.1)
-                              : Colors.teal.withOpacity(0.1),
+                              : const Color(0xFF06B6D4).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           isClosed ? Icons.event_busy : Icons.event_available,
                           size: 18,
-                          color: isClosed ? Colors.red : Colors.teal,
+                          color: isClosed
+                              ? Colors.red
+                              : const Color(0xFF06B6D4),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1711,18 +1970,23 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: isClosed
                               ? Colors.red.withOpacity(0.15)
-                              : Colors.teal.withOpacity(0.15),
+                              : const Color(0xFF06B6D4).withOpacity(0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           isClosed ? 'إجازة' : 'متاح',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isClosed ? Colors.red : Colors.teal,
+                            color: isClosed
+                                ? Colors.red
+                                : const Color(0xFF06B6D4),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1735,7 +1999,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             _isClosedDays[day] = !value;
                           });
                         },
-                        activeColor: Colors.teal,
+                        activeColor: const Color(0xFF06B6D4),
                       ),
                     ],
                   ),
@@ -1750,7 +2014,8 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             onPressed: () async {
                               final time = await showTimePicker(
                                 context: context,
-                                initialTime: _workingHoursFrom[day] ?? 
+                                initialTime:
+                                    _workingHoursFrom[day] ??
                                     const TimeOfDay(hour: 9, minute: 0),
                               );
                               if (time != null) {
@@ -1762,16 +2027,24 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             icon: const Icon(Icons.access_time, size: 18),
                             label: Text(
                               'من: ${_formatTimeOfDay(_workingHoursFrom[day] ?? const TimeOfDay(hour: 9, minute: 0))}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF59E0B).withOpacity(0.1),
+                              backgroundColor: const Color(
+                                0xFFF59E0B,
+                              ).withOpacity(0.1),
                               foregroundColor: const Color(0xFFF59E0B),
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+                                side: BorderSide(
+                                  color: const Color(
+                                    0xFFF59E0B,
+                                  ).withOpacity(0.3),
+                                ),
                               ),
                             ),
                           ),
@@ -1782,7 +2055,8 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             onPressed: () async {
                               final time = await showTimePicker(
                                 context: context,
-                                initialTime: _workingHoursTo[day] ?? 
+                                initialTime:
+                                    _workingHoursTo[day] ??
                                     const TimeOfDay(hour: 17, minute: 0),
                               );
                               if (time != null) {
@@ -1794,16 +2068,24 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                             icon: const Icon(Icons.access_time, size: 18),
                             label: Text(
                               'إلى: ${_formatTimeOfDay(_workingHoursTo[day] ?? const TimeOfDay(hour: 17, minute: 0))}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFF59E0B).withOpacity(0.1),
+                              backgroundColor: const Color(
+                                0xFFF59E0B,
+                              ).withOpacity(0.1),
                               foregroundColor: const Color(0xFFF59E0B),
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+                                side: BorderSide(
+                                  color: const Color(
+                                    0xFFF59E0B,
+                                  ).withOpacity(0.3),
+                                ),
                               ),
                             ),
                           ),

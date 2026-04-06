@@ -66,6 +66,8 @@
 		<string>نحتاج إلى الوصول إلى جهات الاتصال لتسهيل التواصل مع الأطباء والصيدليات</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>نحتاج إلى الميكروفون للمكالمات الصوتية</string>
+		<key>NSMotionUsageDescription</key>
+		<string>نحتاج للوصول إلى بيانات الحركة لحساب خطواتك اليومية</string>
 		<key>NSCalendarsUsageDescription</key>
 		<string>نحتاج إلى الوصول إلى التقويم لجدولة المواعيد</string>
 		<key>NSRemindersUsageDescription</key>

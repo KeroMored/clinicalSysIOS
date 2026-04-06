@@ -60,17 +60,14 @@ class TimePickerWidget extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'يمكنك إضافة أكثر من موعد لنفس الدواء (مثلاً: 9 صباحاً، 2 ظهراً، 9 مساءً)',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[700],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          
+
           if (selectedTimes.isNotEmpty)
             Container(
               padding: const EdgeInsets.all(12),
@@ -97,22 +94,32 @@ class TimePickerWidget extends StatelessWidget {
                       ),
                     ),
                     backgroundColor: const Color(0xFF06B6D4).withOpacity(0.1),
-                    deleteIcon: const Icon(Icons.close, size: 18, color: Color(0xFF06B6D4)),
+                    deleteIcon: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Color(0xFF06B6D4),
+                    ),
                     onDeleted: () {
                       final newTimes = List<String>.from(selectedTimes);
                       newTimes.remove(time);
                       onTimesChanged(newTimes);
                     },
-                    side: const BorderSide(color: Color(0xFF06B6D4), width: 1.5),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    side: const BorderSide(
+                      color: Color(0xFF06B6D4),
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
                   );
                 }).toList(),
               ),
             ),
-          
+
           // Add Time Button
           Container(
-                        width: double.infinity,
+            width: double.infinity,
 
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -141,10 +148,7 @@ class TimePickerWidget extends StatelessWidget {
               icon: const Icon(Icons.add_circle, size: 24),
               label: const Text(
                 'إضافة المواعيد',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -209,7 +213,7 @@ class TimePickerWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   // Time Pickers
                   Expanded(
                     child: Row(
@@ -240,12 +244,15 @@ class TimePickerWidget extends StatelessWidget {
                             }),
                           ),
                         ),
-                        
+
                         const Text(
                           ':',
-                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        
+
                         // Minute Picker
                         Expanded(
                           child: CupertinoPicker(
@@ -272,9 +279,9 @@ class TimePickerWidget extends StatelessWidget {
                             }),
                           ),
                         ),
-                        
+
                         const SizedBox(width: 16),
-                        
+
                         // AM/PM Picker
                         SizedBox(
                           width: 80,
@@ -313,7 +320,7 @@ class TimePickerWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   // Buttons
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -337,26 +344,33 @@ class TimePickerWidget extends StatelessWidget {
                               int hour24 = selectedHour;
                               if (selectedPeriod == 'م' && selectedHour != 12) {
                                 hour24 += 12;
-                              } else if (selectedPeriod == 'ص' && selectedHour == 12) {
+                              } else if (selectedPeriod == 'ص' &&
+                                  selectedHour == 12) {
                                 hour24 = 0;
                               }
-                              
-                              final timeString = '${hour24.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}';
-                              
+
+                              final timeString =
+                                  '${hour24.toString().padLeft(2, '0')}:${selectedMinute.toString().padLeft(2, '0')}';
+
                               if (!selectedTimes.contains(timeString)) {
-                                final newTimes = List<String>.from(selectedTimes);
+                                final newTimes = List<String>.from(
+                                  selectedTimes,
+                                );
                                 newTimes.add(timeString);
                                 newTimes.sort();
                                 onTimesChanged(newTimes);
                               }
-                              
+
                               Navigator.pop(context);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF06B6D4),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            child: const Text('إضافة',style: TextStyle(color: Colors.white),),
+                            child: const Text(
+                              'إضافة',
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
                         ),
                       ],
@@ -375,7 +389,7 @@ class TimePickerWidget extends StatelessWidget {
     final parts = time24.split(':');
     int hour = int.parse(parts[0]);
     final minute = parts[1];
-    
+
     String period = 'ص';
     if (hour >= 12) {
       period = 'م';
@@ -383,7 +397,7 @@ class TimePickerWidget extends StatelessWidget {
     } else if (hour == 0) {
       hour = 12;
     }
-    
+
     return '${hour.toString()}:$minute $period';
   }
 }

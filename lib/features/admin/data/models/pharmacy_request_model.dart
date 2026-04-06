@@ -4,7 +4,7 @@ class PharmacyRequestModel {
   final String id;
   final String name;
   final String address;
-  final String phone;
+  final List<String> phones;
   final String whatsapp;
   final double latitude;
   final double longitude;
@@ -18,23 +18,23 @@ class PharmacyRequestModel {
   final String status; // 'pending', 'approved', 'rejected'
   final DateTime requestDate;
   final String? rejectionReason;
-  
+
   // معلومات مقدم الطلب
   final String ownerName;
   final String ownerPhone;
   final String ownerEmail; // البريد الإلكتروني للمصادقة
-  
+
   // Insurance
   final bool hasInsurance;
   final List<String> insuranceCompanies;
-  
+
   final String? description;
 
   PharmacyRequestModel({
     required this.id,
     required this.name,
     required this.address,
-    required this.phone,
+    required this.phones,
     required this.whatsapp,
     required this.latitude,
     required this.longitude,
@@ -61,12 +61,14 @@ class PharmacyRequestModel {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       address: json['address'] ?? '',
-      phone: json['phone'] ?? '',
+      phones: json['phones'] != null
+          ? List<String>.from(json['phones'])
+          : (json['phone'] != null ? [json['phone']] : []),
       whatsapp: json['whatsapp'] ?? '',
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       workingHours: json['workingHours'] ?? '',
-      holidays: json['holidays'] ?? '',
+      holidays: json['holidays'] ?? 'متاح طوال الأسبوع',
       images: List<String>.from(json['images'] ?? []),
       hasHomeDelivery: json['hasHomeDelivery'] ?? false,
       deliveryFee: json['deliveryFee']?.toDouble(),
@@ -93,7 +95,7 @@ class PharmacyRequestModel {
       'id': id,
       'name': name,
       'address': address,
-      'phone': phone,
+      'phones': phones,
       'whatsapp': whatsapp,
       'latitude': latitude,
       'longitude': longitude,
@@ -120,7 +122,7 @@ class PharmacyRequestModel {
     String? id,
     String? name,
     String? address,
-    String? phone,
+    List<String>? phones,
     String? whatsapp,
     double? latitude,
     double? longitude,
@@ -145,7 +147,7 @@ class PharmacyRequestModel {
       id: id ?? this.id,
       name: name ?? this.name,
       address: address ?? this.address,
-      phone: phone ?? this.phone,
+      phones: phones ?? this.phones,
       whatsapp: whatsapp ?? this.whatsapp,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,

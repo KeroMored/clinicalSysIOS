@@ -6,6 +6,7 @@ import '../../../../core/widgets/gradient_button.dart';
 import '../../data/models/gym_model.dart';
 import '../cubit/gym_cubit.dart';
 import '../cubit/gym_state.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class GymApprovalListScreen extends StatefulWidget {
   const GymApprovalListScreen({super.key});
@@ -57,9 +58,7 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
         builder: (context, state) {
           if (state is GymLoading) {
             return Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.gymGradient.colors[0],
-              ),
+              child: AppLoadingIndicator(color: AppTheme.gymGradient.colors[0]),
             );
           }
 
@@ -88,10 +87,7 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
                     child: Text(
                       state.message,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                     ),
                   ),
                 ],
@@ -123,10 +119,7 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'جميع الجيمات تمت الموافقة عليها',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -252,7 +245,9 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
                           color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF3B82F6,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: const Row(
@@ -286,7 +281,9 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
                           color: const Color(0xFFEC4899).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFFEC4899).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFFEC4899,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: const Row(
@@ -340,10 +337,7 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
                     const SizedBox(width: 6),
                     Text(
                       gym.phone,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                     const Spacer(),
                     Icon(
@@ -354,10 +348,7 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
                     const SizedBox(width: 6),
                     Text(
                       gym.ownerName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                   ],
                 ),

@@ -50,27 +50,31 @@ class RehabilitationCubit extends Cubit<RehabilitationState> {
   // Get centers by type
   void getCentersByType(String serviceType) {
     emit(RehabilitationLoading());
-    _repository.getCentersByType(serviceType).listen(
-      (centers) {
-        emit(RehabilitationLoaded(centers));
-      },
-      onError: (error) {
-        emit(RehabilitationError('فشل في تحميل المراكز: $error'));
-      },
-    );
+    _repository
+        .getCentersByType(serviceType)
+        .listen(
+          (centers) {
+            emit(RehabilitationLoaded(centers));
+          },
+          onError: (error) {
+            emit(RehabilitationError('فشل في تحميل المراكز: $error'));
+          },
+        );
   }
 
   // Get centers by governorate
   void getCentersByGovernorate(String governorate) {
     emit(RehabilitationLoading());
-    _repository.getCentersByGovernorate(governorate).listen(
-      (centers) {
-        emit(RehabilitationLoaded(centers));
-      },
-      onError: (error) {
-        emit(RehabilitationError('فشل في تحميل المراكز: $error'));
-      },
-    );
+    _repository
+        .getCentersByGovernorate(governorate)
+        .listen(
+          (centers) {
+            emit(RehabilitationLoaded(centers));
+          },
+          onError: (error) {
+            emit(RehabilitationError('فشل في تحميل المراكز: $error'));
+          },
+        );
   }
 
   // Add center

@@ -6,11 +6,7 @@ class NurseCard extends StatelessWidget {
   final NurseModel nurse;
   final VoidCallback onTap;
 
-  const NurseCard({
-    super.key,
-    required this.nurse,
-    required this.onTap,
-  });
+  const NurseCard({super.key, required this.nurse, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +43,8 @@ class NurseCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.nursingGradient.colors[0].withValues(alpha: 0.25),
+                            color: AppTheme.nursingGradient.colors[0]
+                                .withValues(alpha: 0.25),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -84,12 +81,13 @@ class NurseCard extends StatelessWidget {
                           // Name
                           Text(
                             nurse.nurseName,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.darkColor,
-                              fontSize: 16,
-                              height: 1.3,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkColor,
+                                  fontSize: 16,
+                                  height: 1.3,
+                                ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -129,10 +127,7 @@ class NurseCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 // Divider
-                Container(
-                  height: 1,
-                  color: Colors.grey[200],
-                ),
+                Container(height: 1, color: Colors.grey[200]),
                 const SizedBox(height: 12),
                 // Bottom Info Row
                 Row(
@@ -148,7 +143,9 @@ class NurseCard extends StatelessWidget {
                           color: const Color(0xFF10B981).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -188,7 +185,9 @@ class NurseCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF667EEA).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFF667EEA,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -219,7 +218,9 @@ class NurseCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppTheme.nursingGradient.colors[0].withValues(alpha: 0.1),
+                        color: AppTheme.nursingGradient.colors[0].withValues(
+                          alpha: 0.1,
+                        ),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(

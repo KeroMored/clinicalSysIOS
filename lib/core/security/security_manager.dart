@@ -45,7 +45,7 @@ class SecurityManager {
   Future<SecurityCheckResult> performSecurityCheck() async {
     try {
       print('🔍 Performing security check...');
-      
+
       final result = await _securityCheck.performSecurityCheck();
       _lastSecurityCheck = result;
       _lastCheckTime = DateTime.now();
@@ -67,9 +67,7 @@ class SecurityManager {
   }
 
   /// التحقق من أمان الجهاز قبل الاستمرار
-  Future<bool> validateDeviceSecurity({
-    bool allowInDebug = true,
-  }) async {
+  Future<bool> validateDeviceSecurity({bool allowInDebug = true}) async {
     // في وضع Debug، نسمح بالتشغيل
     if (kDebugMode && allowInDebug) {
       print('🐛 Running in debug mode - security checks relaxed');
@@ -90,7 +88,7 @@ class SecurityManager {
   Future<bool> checkSecureConnection() async {
     try {
       final connectivityResult = await _connectivity.checkConnectivity();
-      
+
       // التحقق من وجود اتصال
       if (connectivityResult.contains(ConnectivityResult.none)) {
         print('⚠️ No internet connection');
@@ -230,25 +228,28 @@ class SecurityManager {
     if (details != null) {
       print('   Details: $details');
     }
-    
+
     // يمكن إرسال هذه الأحداث إلى Firebase Analytics أو Crashlytics
   }
 
   /// التحقق من صلاحية الجلسة
   bool validateSession(DateTime? sessionStartTime, {int maxHours = 24}) {
     if (sessionStartTime == null) return false;
-    
+
     final now = DateTime.now();
     final difference = now.difference(sessionStartTime);
-    
+
     if (difference.inHours > maxHours) {
-      logSecurityEvent('Session expired', details: {
-        'started': sessionStartTime.toIso8601String(),
-        'duration_hours': difference.inHours,
-      });
+      logSecurityEvent(
+        'Session expired',
+        details: {
+          'started': sessionStartTime.toIso8601String(),
+          'duration_hours': difference.inHours,
+        },
+      );
       return false;
     }
-    
+
     return true;
   }
 
@@ -276,11 +277,11 @@ class SecurityManager {
   Future<bool> shouldAutoLock({int inactivityMinutes = 5}) async {
     final lockTimestamp = await readSecureData('lock_timestamp');
     if (lockTimestamp == null) return false;
-    
+
     try {
       final lockTime = DateTime.parse(lockTimestamp);
       final difference = DateTime.now().difference(lockTime);
-      
+
       return difference.inMinutes >= inactivityMinutes;
     } catch (e) {
       return false;

@@ -6,10 +6,7 @@ import '../../data/models/gym_model.dart';
 class GymReviewsButton extends StatelessWidget {
   final GymModel gym;
 
-  const GymReviewsButton({
-    super.key,
-    required this.gym,
-  });
+  const GymReviewsButton({super.key, required this.gym});
 
   @override
   Widget build(BuildContext context) {
@@ -49,10 +46,7 @@ class GymReviewsButton extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFBBF24),
-                      Color(0xFFF59E0B),
-                    ],
+                    colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
                   ),
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
@@ -70,7 +64,7 @@ class GymReviewsButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Text Info
               Expanded(
                 child: Column(
@@ -93,8 +87,8 @@ class GymReviewsButton extends StatelessWidget {
                               index < gym.averageRating.floor()
                                   ? Icons.star_rounded
                                   : (index < gym.averageRating
-                                      ? Icons.star_half_rounded
-                                      : Icons.star_outline_rounded),
+                                        ? Icons.star_half_rounded
+                                        : Icons.star_outline_rounded),
                               color: const Color(0xFFFBBF24),
                               size: 16,
                             );
@@ -113,7 +107,7 @@ class GymReviewsButton extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Arrow Icon
               Icon(
                 Icons.arrow_forward_ios_rounded,

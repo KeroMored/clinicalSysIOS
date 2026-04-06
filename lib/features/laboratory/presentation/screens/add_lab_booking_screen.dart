@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/laboratory_model.dart';
 import '../../data/models/lab_booking_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// شاشة إضافة حجز من المعمل نفسه (للموظفين)
 class AddLabBookingScreen extends StatefulWidget {
@@ -20,7 +23,7 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   final _customTestController = TextEditingController();
-  
+
   String? _selectedTest;
   String _serviceType = 'lab'; // القيمة الافتراضية: في المعمل
   bool _isSubmitting = false;
@@ -40,14 +43,15 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
             .collection('users')
             .doc(user.uid)
             .get();
-        
+
         if (userDoc.exists && mounted) {
           final userData = userDoc.data();
           if (userData != null) {
             if (userData['displayName'] != null) {
               _nameController.text = userData['displayName'];
             }
-            if (userData['phoneNumber'] != null && userData['phoneNumber'].toString().isNotEmpty) {
+            if (userData['phoneNumber'] != null &&
+                userData['phoneNumber'].toString().isNotEmpty) {
               _phoneController.text = userData['phoneNumber'];
             }
           }
@@ -75,7 +79,10 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
     final snapshot = await FirebaseFirestore.instance
         .collection('lab_bookings')
         .where('laboratoryId', isEqualTo: widget.laboratory.id)
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where(
+          'createdAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+        )
         .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
         .get();
 
@@ -122,10 +129,10 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
 
     try {
       final bookingNumber = await _getNextBookingNumber();
-      final testType = _isCustomTest 
-          ? _customTestController.text.trim() 
+      final selectedTestType = _isCustomTest
+          ? _customTestController.text.trim()
           : _selectedTest!;
-      
+
       final booking = LabBookingModel(
         id: '',
         patientName: _nameController.text.trim(),
@@ -135,9 +142,11 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
         bookingNumber: bookingNumber,
         status: LabBookingStatus.pending,
         createdAt: DateTime.now(),
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
         isOnlineBooking: false, // حجز من المعمل
-        testType: testType,
+        testTypes: [selectedTestType],
         serviceType: _serviceType,
       );
 
@@ -153,24 +162,26 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
               .collection('users')
               .doc(user.uid)
               .get();
-          
+
           if (userDoc.exists) {
             final userData = userDoc.data();
             final phoneNumber = _phoneController.text.trim();
             final userName = _nameController.text.trim();
-            
+
             final updates = <String, dynamic>{};
-            
-            if (phoneNumber.isNotEmpty && 
-                (userData?['phoneNumber'] == null || userData!['phoneNumber'].toString() != phoneNumber)) {
+
+            if (phoneNumber.isNotEmpty &&
+                (userData?['phoneNumber'] == null ||
+                    userData!['phoneNumber'].toString() != phoneNumber)) {
               updates['phoneNumber'] = phoneNumber;
             }
-            
-            if (userName.isNotEmpty && 
-                (userData?['displayName'] == null || userData!['displayName'].toString() != userName)) {
+
+            if (userName.isNotEmpty &&
+                (userData?['displayName'] == null ||
+                    userData!['displayName'].toString() != userName)) {
               updates['displayName'] = userName;
             }
-            
+
             if (updates.isNotEmpty) {
               await FirebaseFirestore.instance
                   .collection('users')
@@ -195,10 +206,7 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -211,386 +219,386 @@ class _AddLabBookingScreenState extends State<AddLabBookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('حجز جديد'),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF00BCD4), Color(0xFF00ACC1)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: GradientAppBar(
+        title: 'حجز جديد',
+        gradient: AppTheme.primaryGradient,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
           ),
         ),
-        foregroundColor: Colors.white,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF00BCD4), Color(0xFF00ACC1)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.science, color: Colors.white, size: 40),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.laboratory.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const Text(
-                              'إضافة حجز يدوي',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                const Text(
-                  'بيانات المريض',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Name field
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'اسم المريض *',
-                    prefixIcon: const Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'من فضلك أدخل اسم المريض';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Phone field
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(
-                    labelText: 'رقم الهاتف *',
-                    prefixIcon: const Icon(Icons.phone),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'من فضلك أدخل رقم الهاتف';
-                    }
-                    if (value.trim().length < 11) {
-                      return 'رقم الهاتف يجب أن يكون 11 رقماً على الأقل';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                const Text(
-                  'نوع التحليل *',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Test Type Dropdown
-                if (!_isCustomTest)
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
                   Container(
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedTest,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.science),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        hintText: 'اختر نوع التحليل',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00BCD4), Color(0xFF00ACC1)],
                       ),
-                      items: [
-                        ...widget.laboratory.availableTests.map((test) {
-                          return DropdownMenuItem(
-                            value: test,
-                            child: Text(test),
-                          );
-                        }),
-                        const DropdownMenuItem(
-                          value: '__custom__',
-                          child: Row(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.science,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.edit, size: 18, color: Colors.orange),
-                              SizedBox(width: 8),
                               Text(
-                                'أخرى (كتابة يدوية)',
-                                style: TextStyle(
-                                  color: Colors.orange,
+                                widget.laboratory.name,
+                                style: const TextStyle(
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const Text(
+                                'إضافة حجز يدوي',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ],
-                      onChanged: (value) {
-                        if (value == '__custom__') {
-                          setState(() {
-                            _isCustomTest = true;
-                            _selectedTest = null;
-                          });
-                        } else {
-                          setState(() => _selectedTest = value);
-                        }
-                      },
                     ),
-                  )
-                else
-                  Column(
-                    children: [
-                      TextFormField(
-                        controller: _customTestController,
-                        decoration: InputDecoration(
-                          labelText: 'اكتب نوع التحليل',
-                          hintText: 'مثل: تحليل هرمونات، فيتامينات، إلخ',
-                          prefixIcon: const Icon(Icons.science),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        validator: (value) {
-                          if (_isCustomTest && (value == null || value.trim().isEmpty)) {
-                            return 'من فضلك أدخل نوع التحليل';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _isCustomTest = false;
-                            _customTestController.clear();
-                          });
-                        },
-                        icon: const Icon(Icons.arrow_back),
-                        label: const Text('العودة للقائمة'),
-                      ),
-                    ],
                   ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Service Type selector
-                const Text(
-                  'نوع الخدمة *',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  const Text(
+                    'بيانات المريض',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _serviceType = 'lab'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              color: _serviceType == 'lab' 
-                                  ? const Color(0xFF00BCD4)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _serviceType == 'lab'
-                                    ? const Color(0xFF00BCD4)
-                                    : Colors.grey[300]!,
-                                width: 2,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.location_city,
-                                  color: _serviceType == 'lab' 
-                                      ? Colors.white 
-                                      : Colors.grey[700],
-                                  size: 32,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'في المعمل',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: _serviceType == 'lab' 
-                                        ? Colors.white 
-                                        : Colors.grey[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => setState(() => _serviceType = 'home'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              color: _serviceType == 'home' 
-                                  ? const Color(0xFF00BCD4)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _serviceType == 'home'
-                                    ? const Color(0xFF00BCD4)
-                                    : Colors.grey[300]!,
-                                width: 2,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.home,
-                                  color: _serviceType == 'home' 
-                                      ? Colors.white 
-                                      : Colors.grey[700],
-                                  size: 32,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'من البيت',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: _serviceType == 'home' 
-                                        ? Colors.white 
-                                        : Colors.grey[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
-                // Notes field
-                const Text(
-                  'ملاحظات',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _notesController,
-                  decoration: InputDecoration(
-                    hintText: 'أدخل أي ملاحظات أو تفاصيل إضافية (اختياري)',
-                    prefixIcon: const Icon(Icons.note),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 32),
-
-                // Submit button
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting ? null : _submitBooking,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00BCD4),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
+                  // Name field
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'اسم المريض *',
+                      prefixIcon: const Icon(Icons.person),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      elevation: 2,
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            'إضافة الحجز',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'من فضلك أدخل اسم المريض';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Phone field
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: InputDecoration(
+                      labelText: 'رقم الهاتف *',
+                      prefixIcon: const Icon(Icons.phone),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'من فضلك أدخل رقم الهاتف';
+                      }
+                      if (value.trim().length < 11) {
+                        return 'رقم الهاتف يجب أن يكون 11 رقماً على الأقل';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    'نوع التحليل *',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Test Type Dropdown
+                  if (!_isCustomTest)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedTest,
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.science),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          hintText: 'اختر نوع التحليل',
+                        ),
+                        items: [
+                          ...widget.laboratory.availableTests.map((test) {
+                            return DropdownMenuItem(
+                              value: test,
+                              child: Text(test),
+                            );
+                          }),
+                          const DropdownMenuItem(
+                            value: '__custom__',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.edit,
+                                  size: 18,
+                                  color: Colors.orange,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'أخرى (كتابة يدوية)',
+                                  style: TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                        ],
+                        onChanged: (value) {
+                          if (value == '__custom__') {
+                            setState(() {
+                              _isCustomTest = true;
+                              _selectedTest = null;
+                            });
+                          } else {
+                            setState(() => _selectedTest = value);
+                          }
+                        },
+                      ),
+                    )
+                  else
+                    Column(
+                      children: [
+                        TextFormField(
+                          controller: _customTestController,
+                          decoration: InputDecoration(
+                            labelText: 'اكتب نوع التحليل',
+                            hintText: 'مثل: تحليل هرمونات، فيتامينات، إلخ',
+                            prefixIcon: const Icon(Icons.science),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                          ),
+                          validator: (value) {
+                            if (_isCustomTest &&
+                                (value == null || value.trim().isEmpty)) {
+                              return 'من فضلك أدخل نوع التحليل';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _isCustomTest = false;
+                              _customTestController.clear();
+                            });
+                          },
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('العودة للقائمة'),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 24),
+
+                  // Service Type selector
+                  const Text(
+                    'نوع الخدمة *',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _serviceType = 'lab'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                color: _serviceType == 'lab'
+                                    ? const Color(0xFF00BCD4)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _serviceType == 'lab'
+                                      ? const Color(0xFF00BCD4)
+                                      : Colors.grey[300]!,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.location_city,
+                                    color: _serviceType == 'lab'
+                                        ? Colors.white
+                                        : Colors.grey[700],
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'في المعمل',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: _serviceType == 'lab'
+                                          ? Colors.white
+                                          : Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _serviceType = 'home'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                color: _serviceType == 'home'
+                                    ? const Color(0xFF00BCD4)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _serviceType == 'home'
+                                      ? const Color(0xFF00BCD4)
+                                      : Colors.grey[300]!,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.home,
+                                    color: _serviceType == 'home'
+                                        ? Colors.white
+                                        : Colors.grey[700],
+                                    size: 32,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'من البيت',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: _serviceType == 'home'
+                                          ? Colors.white
+                                          : Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Notes field
+                  const Text(
+                    'ملاحظات',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _notesController,
+                    decoration: InputDecoration(
+                      hintText: 'أدخل أي ملاحظات أو تفاصيل إضافية (اختياري)',
+                      prefixIcon: const Icon(Icons.note),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Submit button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submitBooking,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00BCD4),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: AppLoadingIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'إضافة الحجز',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

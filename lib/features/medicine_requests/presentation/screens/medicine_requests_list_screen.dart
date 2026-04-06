@@ -5,12 +5,120 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../medicine_reminders/services/medicine_notification_service.dart';
 import '../../data/models/medicine_request_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
-class MedicineRequestsListScreen extends StatelessWidget {
+class MedicineRequestsListScreen extends StatefulWidget {
   const MedicineRequestsListScreen({super.key});
 
-  void _showImageFullScreen(BuildContext context, String imageUrl, String heroTag) {
+  @override
+  State<MedicineRequestsListScreen> createState() =>
+      _MedicineRequestsListScreenState();
+}
+
+class _MedicineRequestsListScreenState
+    extends State<MedicineRequestsListScreen> {
+  static const Color _primary = Color(0xFF0B8293);
+  static const Color _primaryDark = Color(0xFF0A6F7C);
+
+  final ScrollController _scrollController = ScrollController();
+  final List<MedicineRequestModel> _requests = [];
+  bool _isLoading = false;
+  bool _hasMore = true;
+  DocumentSnapshot? _lastDocument;
+  static const int _pageSize = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 100) {
+      if (!_isLoading && _hasMore) {
+        _loadRequests();
+      }
+    }
+  }
+
+  Future<void> _loadRequests() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('medicine_requests')
+          .where('status', isEqualTo: 'pending')
+          .orderBy('createdAt', descending: true)
+          .limit(_pageSize);
+
+      if (_lastDocument != null) {
+        query = query.startAfterDocument(_lastDocument!);
+      }
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _hasMore = false;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      final newRequests = snapshot.docs.map((doc) {
+        final requestData = doc.data() as Map<String, dynamic>;
+        return MedicineRequestModel.fromJson({'id': doc.id, ...requestData});
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _requests.addAll(newRequests);
+          _lastDocument = snapshot.docs.last;
+          _hasMore = snapshot.docs.length == _pageSize;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في تحميل الطلبات: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _refreshRequests() async {
+    setState(() {
+      _requests.clear();
+      _lastDocument = null;
+      _hasMore = true;
+    });
+    await _loadRequests();
+  }
+
+  void _showImageFullScreen(
+    BuildContext context,
+    String imageUrl,
+    String heroTag,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -48,19 +156,14 @@ class MedicineRequestsListScreen extends StatelessWidget {
   }
 
   String _formatWhatsAppNumber(String input) {
-    // Keep digits and '+' only initially
+    // خد الرقم زي ما هو وضيفله +20 فقط
     String n = input.trim();
-    // Remove all spaces, dashes, and parentheses
-    n = n.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-    // Remove leading '+'
+    // لو بيبدأ بـ + شيله
     if (n.startsWith('+')) n = n.substring(1);
-    // Convert leading '00' international prefix to just country code
-    if (n.startsWith('00')) n = n.substring(2);
-    // Remove a single leading '0' for local numbers as requested
-    if (n.startsWith('0')) n = n.substring(1);
-    // Finally, strip any remaining non-digits to be safe
-    n = n.replaceAll(RegExp(r'[^0-9]'), '');
-    return n;
+    // لو بيبدأ بـ 20 يبقى خلاص
+    if (n.startsWith('20')) return '20$n';
+    // ضيف +20 قدام الرقم
+    return '20$n';
   }
 
   Future<void> _openWhatsApp(
@@ -78,7 +181,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
     // Get pharmacy name from authenticated user
     final authState = context.read<AuthCubit>().state;
     String pharmacyName = 'صيدليتنا';
-    
+
     if (authState is Authenticated && authState.user.pharmacyId != null) {
       // Try to get pharmacy name from Firestore
       try {
@@ -86,7 +189,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
             .collection('pharmacies')
             .doc(authState.user.pharmacyId)
             .get();
-        
+
         if (pharmacyDoc.exists) {
           pharmacyName = pharmacyDoc.data()?['name'] ?? 'صيدليتنا';
         }
@@ -96,7 +199,8 @@ class MedicineRequestsListScreen extends StatelessWidget {
     }
 
     // Create the message
-    final message = '''مرحباً 👋
+    final message =
+        '''مرحباً 👋
 
 الدواء [ ${medicineName} ] متاح لدينا في : \n*${pharmacyName}* 💊
 
@@ -104,7 +208,8 @@ class MedicineRequestsListScreen extends StatelessWidget {
 
 يمكنك زيارتنا أو التواصل معنا لطلب الدواء.''';
 
-    final String whatsappUrl = "https://wa.me/$formatted?text=${Uri.encodeComponent(message)}";
+    final String whatsappUrl =
+        "https://wa.me/$formatted?text=${Uri.encodeComponent(message)}";
     try {
       bool launched = await launchUrl(Uri.parse(whatsappUrl));
       if (!launched) {
@@ -124,10 +229,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     await launchUrl(launchUri);
   }
 
@@ -137,9 +239,14 @@ class MedicineRequestsListScreen extends StatelessWidget {
           .collection('medicine_requests')
           .doc(requestId)
           .update({
-        'status': 'completed',
-        'completedAt': FieldValue.serverTimestamp(),
-      });
+            'status': 'completed',
+            'completedAt': FieldValue.serverTimestamp(),
+          });
+
+      // Stop all follow-up reminders for this request once user confirms contact.
+      await MedicineNotificationService.cancelMedicineRequestFollowUp(
+        requestId,
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -153,10 +260,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -168,6 +272,11 @@ class MedicineRequestsListScreen extends StatelessWidget {
           .collection('medicine_requests')
           .doc(requestId)
           .delete();
+
+      // Also cancel reminders when request is deleted.
+      await MedicineNotificationService.cancelMedicineRequestFollowUp(
+        requestId,
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -181,10 +290,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -250,229 +356,190 @@ class MedicineRequestsListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // Modern SliverAppBar
-          SliverAppBar(
-            leading: IconButton(onPressed: (){
-              Navigator.pop(context);
-            }, icon: const Icon(Icons.arrow_back,color: Colors.white,)),
-            expandedHeight: 160,
-            floating: false,
-            pinned: true,
-            backgroundColor: Color(0xFF1E3A5F),
-            foregroundColor: const Color(0xFF1E3A5F),
-            elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 35),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.medical_services_rounded,
-                          size: 40,
-                          color: Colors.white,
-                        ),
-                      ),
-                      // const SizedBox(height: 12),
-                      // const Text(
-                      //   'طلبات الأدوية',
-                      //   style: TextStyle(
-                      //     color: Colors.white,
-                      //     fontSize: 24,
-                      //     fontWeight: FontWeight.bold,
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                ),
-              ),
-              title: const Text(
-                
-                'طلبات الأدوية',
-                style: TextStyle(
+      backgroundColor: const Color(0xFFF4F6F8),
+      body: RefreshIndicator(
+        onRefresh: _refreshRequests,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // Modern SliverAppBar
+            SliverAppBar(
+              leading: IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: const Icon(
+                  Icons.arrow_back,
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  size: 20,
                 ),
               ),
-              centerTitle: true,
-            ),
-          ),
-          
-          // Content
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('medicine_requests')
-                .where('status', isEqualTo: 'pending')
-                .orderBy('createdAt', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.error_outline_rounded,
-                              size: 56,
-                              color: Color(0xFFEF4444),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'حدث خطأ في تحميل الطلبات',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E3A5F),
-                            ),
-                          ),
-                        ],
-                      ),
+              expandedHeight: 128,
+              floating: false,
+              pinned: true,
+              backgroundColor: _primary,
+              foregroundColor: _primary,
+              elevation: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [_primary, _primaryDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                );
-              }
-
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SliverFillRemaining(
                   child: Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF1E3A5F),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(
+                            Icons.medical_services_rounded,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                        // const SizedBox(height: 12),
+                        // const Text(
+                        //   'طلبات الأدوية',
+                        //   style: TextStyle(
+                        //     color: Colors.white,
+                        //     fontSize: 24,
+                        //     fontWeight: FontWeight.bold,
+                        //   ),
+                        // ),
+                      ],
                     ),
-                  ),
-                );
-              }
-
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return SliverFillRemaining(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(28),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.inbox_outlined,
-                              size: 64,
-                              color: Color(0xFF94A3B8),
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          const Text(
-                            'لا توجد طلبات حالياً',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1E3A5F),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'سيظهر هنا طلبات المستخدمين للأدوية',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              final requests = snapshot.data!.docs;
-              
-              // Get current user ID
-              final authState = context.read<AuthCubit>().state;
-              final currentUserId = authState is Authenticated ? authState.user.uid : null;
-
-              return SliverPadding(
-                padding: const EdgeInsets.all(14),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final requestDoc = requests[index];
-                      final requestData = requestDoc.data() as Map<String, dynamic>;
-                      final request = MedicineRequestModel.fromJson({
-                        'id': requestDoc.id,
-                        ...requestData,
-                      });
-                      
-                      final isMyRequest = currentUserId != null && request.userId == currentUserId;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _buildRequestCard(context, request, isMyRequest),
-                      );
-                    },
-                    childCount: requests.length,
                   ),
                 ),
-              );
-            },
-          ),
-        ],
+                title: const Text(
+                  'طلبات الأدوية',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+                centerTitle: true,
+              ),
+            ),
+
+            // Content
+            SliverPadding(
+              padding: const EdgeInsets.all(14),
+              sliver: _isLoading && _requests.isEmpty
+                  ? SliverFillRemaining(
+                      child: const Center(
+                        child: AppLoadingIndicator(color: _primary),
+                      ),
+                    )
+                  : _requests.isEmpty
+                  ? SliverFillRemaining(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(28),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(24),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.inbox_outlined,
+                                  size: 64,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                              const Text(
+                                'لا توجد طلبات حالياً',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'سيظهر هنا طلبات المستخدمين للأدوية',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        if (index == _requests.length) {
+                          return _hasMore
+                              ? const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: AppLoadingIndicator(color: _primary),
+                                  ),
+                                )
+                              : const SizedBox.shrink();
+                        }
+
+                        final request = _requests[index];
+                        final authState = context.read<AuthCubit>().state;
+                        final currentUserId = authState is Authenticated
+                            ? authState.user.uid
+                            : null;
+                        final isMyRequest =
+                            currentUserId != null &&
+                            request.userId == currentUserId;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _buildRequestCard(
+                            context,
+                            request,
+                            isMyRequest,
+                          ),
+                        );
+                      }, childCount: _requests.length + (_hasMore ? 1 : 0)),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildRequestCard(BuildContext context, MedicineRequestModel request, bool isMyRequest) {
+  Widget _buildRequestCard(
+    BuildContext context,
+    MedicineRequestModel request,
+    bool isMyRequest,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: isMyRequest 
-            ? Border.all(color: const Color(0xFF1E3A5F), width: 1.5)
-            : null,
+        border: isMyRequest ? Border.all(color: _primary, width: 1.3) : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -493,14 +560,14 @@ class MedicineRequestsListScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
+                      colors: [_primary, _primaryDark],
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.medication_rounded,
                     color: Colors.white,
-                    size: 22,
+                    size: 19,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -511,17 +578,22 @@ class MedicineRequestsListScreen extends StatelessWidget {
                       Text(
                         'طلب ${request.allMedicines.length} ${request.allMedicines.length == 1 ? "دواء" : "أدوية"}',
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
                         ),
                       ),
                       if (isMyRequest) ...[
                         const SizedBox(height: 2),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Text(
@@ -539,7 +611,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 10),
 
             // Medicines list - compact
@@ -556,7 +628,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
                       height: 20,
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
+                          colors: [_primary, _primaryDark],
                         ),
                         shape: BoxShape.circle,
                       ),
@@ -577,7 +649,11 @@ class MedicineRequestsListScreen extends StatelessWidget {
                       Hero(
                         tag: 'medicine_${request.id}_$idx',
                         child: GestureDetector(
-                          onTap: () => _showImageFullScreen(context, med.imageUrl!, 'medicine_${request.id}_$idx'),
+                          onTap: () => _showImageFullScreen(
+                            context,
+                            med.imageUrl!,
+                            'medicine_${request.id}_$idx',
+                          ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(
@@ -590,7 +666,10 @@ class MedicineRequestsListScreen extends StatelessWidget {
                                   width: 80,
                                   height: 80,
                                   color: Colors.grey[300],
-                                  child: const Icon(Icons.error, color: Colors.red),
+                                  child: const Icon(
+                                    Icons.error,
+                                    color: Colors.red,
+                                  ),
                                 );
                               },
                             ),
@@ -606,7 +685,9 @@ class MedicineRequestsListScreen extends StatelessWidget {
                           // Only show name if no image OR if name is not empty
                           if (med.imageUrl == null || med.imageUrl!.isEmpty)
                             Text(
-                              med.medicineName.isNotEmpty ? med.medicineName : 'صورة الدواء',
+                              med.medicineName.isNotEmpty
+                                  ? med.medicineName
+                                  : 'صورة الدواء',
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -620,16 +701,19 @@ class MedicineRequestsListScreen extends StatelessWidget {
                             children: [
                               if (med.medicineType != null) ...[
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1E3A5F).withValues(alpha: 0.1),
+                                    color: _primary.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     med.medicineType!,
                                     style: const TextStyle(
                                       fontSize: 10,
-                                      color: Color(0xFF1E3A5F),
+                                      color: _primary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -637,9 +721,14 @@ class MedicineRequestsListScreen extends StatelessWidget {
                                 const SizedBox(width: 6),
                               ],
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                  color: const Color(
+                                    0xFF10B981,
+                                  ).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -662,7 +751,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
             }).toList(),
 
             const SizedBox(height: 10),
-            
+
             // User & date info - compact
             Column(
               children: [
@@ -690,7 +779,11 @@ class MedicineRequestsListScreen extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.note_outlined, size: 14, color: Color(0xFFB45309)),
+                    const Icon(
+                      Icons.note_outlined,
+                      size: 14,
+                      color: Color(0xFFB45309),
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -717,7 +810,8 @@ class MedicineRequestsListScreen extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: ElevatedButton.icon(
-                      onPressed: () => _showCompletionDialog(context, request.id),
+                      onPressed: () =>
+                          _showCompletionDialog(context, request.id),
                       icon: const Icon(Icons.check_circle_outline, size: 16),
                       label: const Text('تم التواصل'),
                       style: ElevatedButton.styleFrom(
@@ -758,9 +852,12 @@ class MedicineRequestsListScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () => _makePhoneCall(request.phoneNumber),
                       icon: const Icon(Icons.phone, size: 16),
-                      label: const Text('اتصال',style: TextStyle(fontWeight: FontWeight.bold),),
+                      label: const Text(
+                        'اتصال',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:  Colors.blue,
+                        backgroundColor: _primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: RoundedRectangleBorder(
@@ -770,32 +867,39 @@ class MedicineRequestsListScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (request.whatsappNumber != null) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openWhatsApp(
-                        context,
-                        request.whatsappNumber!,
-                        request.allMedicines.isNotEmpty ? request.allMedicines[0].medicineName : 'الدواء',
-                        request.allMedicines.isNotEmpty ? request.allMedicines[0].quantity : 1,
-                      ),
-                      icon: Icon(MdiIcons.whatsapp, size: 16),
-                      label: const Text('واتساب',style: TextStyle(fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF25D366),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  if (request.whatsappNumber != null) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _openWhatsApp(
+                          context,
+                          request.whatsappNumber!,
+                          request.allMedicines.isNotEmpty
+                              ? request.allMedicines[0].medicineName
+                              : 'الدواء',
+                          request.allMedicines.isNotEmpty
+                              ? request.allMedicines[0].quantity
+                              : 1,
                         ),
-                        textStyle: const TextStyle(fontSize: 12),
+                        icon: Icon(MdiIcons.whatsapp, size: 16),
+                        label: const Text(
+                          'واتساب',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
-            ),
+              ),
             ],
           ],
         ),
@@ -803,15 +907,12 @@ class MedicineRequestsListScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactInfo({
-    required IconData icon,
-    required String text,
-  }) {
+  Widget _buildCompactInfo({required IconData icon, required String text}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-      //  borderRadius: BorderRadius.circular(8),
+        //  borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
@@ -820,10 +921,7 @@ class MedicineRequestsListScreen extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF475569),
-              ),
+              style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

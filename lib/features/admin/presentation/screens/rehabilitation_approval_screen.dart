@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../rehabilitation/data/models/rehabilitation_center_model.dart';
 import '../../../rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import '../../../rehabilitation/presentation/cubit/rehabilitation_state.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class RehabilitationApprovalScreen extends StatefulWidget {
   const RehabilitationApprovalScreen({super.key});
@@ -26,21 +29,25 @@ class _RehabilitationApprovalScreenState
   }
 
   List<RehabilitationCenterModel> _filterCenters(
-      List<RehabilitationCenterModel> centers) {
+    List<RehabilitationCenterModel> centers,
+  ) {
     return centers.where((center) {
-      final matchesSearch = center.centerName
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
-          center.directorName
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
+      final matchesSearch =
+          center.centerName.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
+          center.directorName.toLowerCase().contains(
+            _searchQuery.toLowerCase(),
+          ) ||
           center.phone.contains(_searchQuery) ||
           center.address.toLowerCase().contains(_searchQuery.toLowerCase());
 
-      final matchesService = _filterServiceType == 'all' ||
+      final matchesService =
+          _filterServiceType == 'all' ||
           center.serviceTypes.contains(_filterServiceType);
 
-      final matchesStatus = _filterStatus == 'all' ||
+      final matchesStatus =
+          _filterStatus == 'all' ||
           (_filterStatus == 'pending' && center.status == 'pending') ||
           (_filterStatus == 'approved' && center.status == 'approved') ||
           (_filterStatus == 'rejected' && center.status == 'rejected');
@@ -73,9 +80,9 @@ class _RehabilitationApprovalScreenState
             onPressed: () {
               if (reasonController.text.trim().isNotEmpty) {
                 context.read<RehabilitationCubit>().rejectCenter(
-                      centerId,
-                      reasonController.text.trim(),
-                    );
+                  centerId,
+                  reasonController.text.trim(),
+                );
                 Navigator.pop(context);
               }
             },
@@ -90,194 +97,213 @@ class _RehabilitationApprovalScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الموافقة على مراكز التأهيل'),
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+      appBar: GradientAppBar(
+        title: 'الموافقة على مراكز التأهيل',
+        gradient: AppTheme.rehabilitationGradient,
       ),
-      body: Column(
-        children: [
-          // Search and Filter Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[100],
-            child: Column(
-              children: [
-                // Search Bar
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'ابحث بالاسم أو الهاتف أو العنوان...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                // Status Filter
-                Row(
-                  children: [
-                    const Text(
-                      'الحالة:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _filterStatus,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('الكل')),
-                          DropdownMenuItem(
-                              value: 'pending', child: Text('قيد الانتظار')),
-                          DropdownMenuItem(
-                              value: 'approved', child: Text('مقبول')),
-                          DropdownMenuItem(
-                              value: 'rejected', child: Text('مرفوض')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _filterStatus = value!;
-                          });
-                        },
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+          ),
+        ),
+        child: Column(
+          children: [
+            // Search and Filter Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.grey[100],
+              child: Column(
+                children: [
+                  // Search Bar
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'ابحث بالاسم أو الهاتف أو العنوان...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
                       ),
+                      filled: true,
+                      fillColor: Colors.white,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Service Type Filter
-                Row(
-                  children: [
-                    const Text(
-                      'الخدمة:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _filterServiceType,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                              value: 'all', child: Text('الكل')),
-                          ...RehabilitationTypes.allTypes.map(
-                            (type) => DropdownMenuItem(
-                              value: type,
-                              child: Text(type),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // Status Filter
+                  Row(
+                    children: [
+                      const Text(
+                        'الحالة:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _filterStatus,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
                             ),
                           ),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _filterServiceType = value!;
-                          });
-                        },
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('الكل')),
+                            DropdownMenuItem(
+                              value: 'pending',
+                              child: Text('قيد الانتظار'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'approved',
+                              child: Text('مقبول'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'rejected',
+                              child: Text('مرفوض'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _filterStatus = value!;
+                            });
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Service Type Filter
+                  Row(
+                    children: [
+                      const Text(
+                        'الخدمة:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _filterServiceType,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                          ),
+                          items: [
+                            const DropdownMenuItem(
+                              value: 'all',
+                              child: Text('الكل'),
+                            ),
+                            ...RehabilitationTypes.allTypes.map(
+                              (type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _filterServiceType = value!;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Centers List
-          Expanded(
-            child: BlocConsumer<RehabilitationCubit, RehabilitationState>(
-              listener: (context, state) {
-                if (state is RehabilitationApproved) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  context.read<RehabilitationCubit>().getAllCenters();
-                } else if (state is RehabilitationRejected) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  context.read<RehabilitationCubit>().getAllCenters();
-                } else if (state is RehabilitationError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                if (state is RehabilitationLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (state is RehabilitationLoaded) {
-                  final filteredCenters = _filterCenters(state.centers);
-
-                  if (filteredCenters.isEmpty) {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            size: 100,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'لا توجد مراكز',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
-                          ),
-                        ],
+            // Centers List
+            Expanded(
+              child: BlocConsumer<RehabilitationCubit, RehabilitationState>(
+                listener: (context, state) {
+                  if (state is RehabilitationApproved) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    context.read<RehabilitationCubit>().getAllCenters();
+                  } else if (state is RehabilitationRejected) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    context.read<RehabilitationCubit>().getAllCenters();
+                  } else if (state is RehabilitationError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.red,
                       ),
                     );
                   }
+                },
+                builder: (context, state) {
+                  if (state is RehabilitationLoading) {
+                    return const Center(child: AppLoadingIndicator());
+                  }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredCenters.length,
-                    itemBuilder: (context, index) {
-                      final center = filteredCenters[index];
-                      return _buildCenterCard(center);
-                    },
-                  );
-                }
+                  if (state is RehabilitationLoaded) {
+                    final filteredCenters = _filterCenters(state.centers);
 
-                return const SizedBox.shrink();
-              },
+                    if (filteredCenters.isEmpty) {
+                      return const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline,
+                              size: 100,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'لا توجد مراكز',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredCenters.length,
+                      itemBuilder: (context, index) {
+                        final center = filteredCenters[index];
+                        return _buildCenterCard(center);
+                      },
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -300,7 +326,11 @@ class _RehabilitationApprovalScreenState
                       ? NetworkImage(center.profileImageUrl!)
                       : null,
                   child: center.profileImageUrl == null
-                      ? const Icon(Icons.business, size: 35, color: Colors.purple)
+                      ? const Icon(
+                          Icons.business,
+                          size: 35,
+                          color: Colors.purple,
+                        )
                       : null,
                 ),
                 const SizedBox(width: 16),
@@ -318,10 +348,7 @@ class _RehabilitationApprovalScreenState
                       const SizedBox(height: 4),
                       Text(
                         'المدير: ${center.directorName}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -334,15 +361,14 @@ class _RehabilitationApprovalScreenState
               spacing: 6,
               runSpacing: 6,
               children: center.serviceTypes
-                  .map((type) => Chip(
-                        label: Text(
-                          type,
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                        backgroundColor: Colors.purple[50],
-                        padding: EdgeInsets.zero,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ))
+                  .map(
+                    (type) => Chip(
+                      label: Text(type, style: const TextStyle(fontSize: 11)),
+                      backgroundColor: Colors.purple[50],
+                      padding: EdgeInsets.zero,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  )
                   .toList(),
             ),
             const SizedBox(height: 12),
@@ -413,9 +439,9 @@ class _RehabilitationApprovalScreenState
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        context
-                            .read<RehabilitationCubit>()
-                            .approveCenter(center.id);
+                        context.read<RehabilitationCubit>().approveCenter(
+                          center.id,
+                        );
                       },
                       icon: const Icon(Icons.check),
                       label: const Text('موافقة'),
@@ -461,10 +487,7 @@ class _RehabilitationApprovalScreenState
           ),
         ),
         Expanded(
-          child: Text(
-            value,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
+          child: Text(value, style: TextStyle(color: Colors.grey[600])),
         ),
       ],
     );

@@ -4,11 +4,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/booking_model.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/patient_cubit.dart';
 import 'patient_details_screen.dart';
+import 'add_booking_screen.dart';
+import 'bookings_history_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class BookingsManagementScreen extends StatefulWidget {
   final ClinicModel clinic;
@@ -16,11 +20,17 @@ class BookingsManagementScreen extends StatefulWidget {
   const BookingsManagementScreen({super.key, required this.clinic});
 
   @override
-  State<BookingsManagementScreen> createState() => _BookingsManagementScreenState();
+  State<BookingsManagementScreen> createState() =>
+      _BookingsManagementScreenState();
 }
 
-class _BookingsManagementScreenState extends State<BookingsManagementScreen> with SingleTickerProviderStateMixin {
+class _BookingsManagementScreenState extends State<BookingsManagementScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  static const Color _primaryColor = Color(0xFF0B8293);
+  static const Color _secondaryColor = Color(0xFF179AAC);
+  static const Color _backgroundColor = Color(0xFFF3F8FB);
+  static const Color _textPrimary = Color(0xFF0F172A);
 
   @override
   void initState() {
@@ -33,21 +43,12 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
     _tabController.dispose();
     super.dispose();
   }
- 
-
-
 
   Future<void> _endDay() async {
-    final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
-    
-    // التأكد من وجود حجوزات لليوم الحالي قبل إنهاء اليوم
+    // التأكد من وجود حجوزات غير مؤرشفة
     final bookingsSnapshot = await FirebaseFirestore.instance
         .collection('bookings')
         .where('clinicId', isEqualTo: widget.clinic.id)
-        .where('appointmentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .where('appointmentDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
         .where('archivedDate', isNull: true)
         .get();
 
@@ -55,7 +56,7 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('لا توجد حجوزات لإنهاء اليوم'),
+            content: Text('لا توجد حجوزات للأرشفة'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -70,7 +71,7 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: const Text('إنهاء اليوم'),
         content: Text(
-          'سيتم نقل ${bookingsSnapshot.docs.length} حجز إلى السجل وإنهاء اليوم الحالي.\n\nهل أنت متأكد؟',
+          'سيتم أرشفة ${bookingsSnapshot.docs.length} حجز (بما فيها حجوزات اليوم).\n\nهل أنت متأكد؟',
           style: const TextStyle(fontSize: 15),
         ),
         actions: [
@@ -81,7 +82,7 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: const Color(0xFF06B6D4),
               foregroundColor: Colors.white,
             ),
             child: const Text('تأكيد'),
@@ -95,11 +96,14 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
     try {
       // أرشفة جميع الحجوزات الحالية
       final batch = FirebaseFirestore.instance.batch();
-      final now = DateTime.now();
 
       for (var doc in bookingsSnapshot.docs) {
+        final data = doc.data();
+        final appointmentTimestamp = data['appointmentDate'] as Timestamp?;
+        final archiveDate = appointmentTimestamp?.toDate() ?? DateTime.now();
+
         batch.update(doc.reference, {
-          'archivedDate': Timestamp.fromDate(now),
+          'archivedDate': Timestamp.fromDate(archiveDate),
         });
       }
 
@@ -108,7 +112,7 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('تم إنهاء اليوم بنجاح'),
+            content: Text('تمت أرشفة الحجوزات المنتهية بنجاح'),
             backgroundColor: Colors.green,
           ),
         );
@@ -116,10 +120,7 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -127,16 +128,10 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
-    
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('bookings')
           .where('clinicId', isEqualTo: widget.clinic.id)
-          .where('appointmentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('appointmentDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
           .where('archivedDate', isNull: true)
           .snapshots(),
       builder: (context, snapshot) {
@@ -156,103 +151,285 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
         }
 
         return Scaffold(
+          backgroundColor: _backgroundColor,
           appBar: AppBar(
-            leading:  IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: const Text('إدارة الحجوزات',style: TextStyle( color: Colors.white),),
-            backgroundColor: const Color(0xFF3B82F6),
-            foregroundColor: Colors.white,
-            actions: [
-              // زر التقويم
-              IconButton(
-                onPressed: () => _showCalendarView(context),
-                icon: const Icon(Icons.calendar_month_rounded, color: Colors.white),
-                tooltip: 'عرض التقويم',
+            toolbarHeight: 80,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            scrolledUnderElevation: 0,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [_primaryColor, _secondaryColor],
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                ),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(26),
+                ),
               ),
-              IconButton(
-                onPressed: _endDay,
-                icon: const Icon(Icons.event_available_rounded, color: Colors.white),
-                tooltip: 'إنهاء اليوم',
+            ),
+            leading: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Material(
+                color: Colors.white.withValues(alpha: 0.22),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(context),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            title: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'إدارة الحجوزات',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'تابع الحالات ونفذ الإجراءات بسرعة',
+                  style: TextStyle(
+                    color: Color(0xFFDDF7FC),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => _showCalendarView(context),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.calendar_month_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 8,
+                ),
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _endDay,
+                    child: const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Icon(
+                        Icons.task_alt_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
-            bottom: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('مؤكد'),
-                      if (confirmedCount > 0) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$confirmedCount',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(72),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFD7E7F1)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _primaryColor.withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicator: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: const LinearGradient(
+                        colors: [_primaryColor, _secondaryColor],
+                      ),
+                    ),
+                    indicatorPadding: const EdgeInsets.all(6),
+                    dividerColor: Colors.transparent,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: const Color(0xFF5D7183),
+                    labelStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    tabs: [
+                      _buildTabLabel('مؤكد', confirmedCount),
+                      _buildTabLabel('في الانتظار', pendingCount),
                     ],
                   ),
                 ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('في الانتظار'),
-                      if (pendingCount > 0) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$pendingCount',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ],
+              ),
+            ),
+          ),
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFEFF8FB), Color(0xFFF7FBFD)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _BookingsListTab(
+                  clinic: widget.clinic,
+                  status: BookingStatus.confirmed,
+                ),
+                _BookingsListTab(
+                  clinic: widget.clinic,
+                  status: BookingStatus.pending,
+                ),
+              ],
+            ),
+          ),
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _buildActionButton(
+                  icon: Icons.history_rounded,
+                  label: 'الأرشيف',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF64748B), Color(0xFF334155)],
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            BookingsHistoryScreen(clinicId: widget.clinic.id),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildActionButton(
+                  icon: Icons.add_rounded,
+                  label: 'حجز جديد',
+                  gradient: const LinearGradient(
+                    colors: [_primaryColor, _secondaryColor],
+                  ),
+                  onPressed: _showAddBookingDialog,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Tab _buildTabLabel(String title, int count) {
+    return Tab(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(title),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Text(
+                '$count',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required Gradient gradient,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryColor.withValues(alpha: 0.24),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 19),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _BookingsListTab(
-                clinic: widget.clinic,
-                status: BookingStatus.confirmed,
-              ),
-              _BookingsListTab(
-                clinic: widget.clinic,
-                status: BookingStatus.pending,
-              ),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _showAddBookingDialog(),
-            backgroundColor: const Color(0xFF3B82F6),
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.add),
-            label: const Text('حجز جديد'),
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -277,390 +454,13 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen> wit
     );
   }
 
-  void _showAddBookingDialog() {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-    final notesController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    bool isLoading = false;
-    bool isPaid = true; // الافتراضي: تم الدفع (مؤكد)
-    DateTime selectedAppointmentDate = DateTime.now(); // الافتراضي: الآن
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.9,
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.85,
-            ),
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.add_circle, color: Colors.white, size: 28),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'إضافة حجز جديد',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3B82F6),
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                      tooltip: 'إغلاق',
-                    ),
-                  ],
-                ),
-                const Divider(height: 32),
-                // Content
-                Flexible(
-                  child: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'اسم المريض',
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    validator: (v) => v?.trim().isEmpty ?? true ? 'مطلوب' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'رقم الهاتف (اختياري)',
-                      prefixIcon: Icon(Icons.phone),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // اختيار تاريخ ووقت الموعد
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_today, color: Color(0xFF3B82F6), size: 20),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'موعد الكشف',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: Color(0xFF3B82F6),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () async {
-                                  final date = await showDatePicker(
-                                    context: context,
-                                    initialDate: selectedAppointmentDate,
-                                    firstDate: DateTime.now(),
-                                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                                    builder: (context, child) {
-                                      return Theme(
-                                        data: Theme.of(context).copyWith(
-                                          colorScheme: const ColorScheme.light(
-                                            primary: Color(0xFF3B82F6),
-                                          ),
-                                        ),
-                                        child: child!,
-                                      );
-                                    },
-                                  );
-                                  if (date != null) {
-                                    setDialogState(() {
-                                      selectedAppointmentDate = DateTime(
-                                        date.year,
-                                        date.month,
-                                        date.day,
-                                        selectedAppointmentDate.hour,
-                                        selectedAppointmentDate.minute,
-                                      );
-                                    });
-                                  }
-                                },
-                                icon: const Icon(Icons.date_range, size: 18),
-                                label: Text(
-                                  '${selectedAppointmentDate.day}/${selectedAppointmentDate.month}/${selectedAppointmentDate.year}',
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () async {
-                                  final time = await showTimePicker(
-                                    context: context,
-                                    initialTime: TimeOfDay.fromDateTime(selectedAppointmentDate),
-                                    builder: (context, child) {
-                                      return Theme(
-                                        data: Theme.of(context).copyWith(
-                                          colorScheme: const ColorScheme.light(
-                                            primary: Color(0xFF3B82F6),
-                                          ),
-                                        ),
-                                        child: child!,
-                                      );
-                                    },
-                                  );
-                                  if (time != null) {
-                                    setDialogState(() {
-                                      selectedAppointmentDate = DateTime(
-                                        selectedAppointmentDate.year,
-                                        selectedAppointmentDate.month,
-                                        selectedAppointmentDate.day,
-                                        time.hour,
-                                        time.minute,
-                                      );
-                                    });
-                                  }
-                                },
-                                icon: const Icon(Icons.access_time, size: 18),
-                                label: Text(
-                                  '${selectedAppointmentDate.hour.toString().padLeft(2, '0')}:${selectedAppointmentDate.minute.toString().padLeft(2, '0')}',
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // حالة الدفع
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isPaid ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isPaid ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isPaid ? Icons.check_circle : Icons.pending,
-                          color: isPaid ? Colors.green : Colors.orange,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isPaid ? 'تم الدفع - حجز مؤكد' : 'بدون دفع - حجز غير مؤكد',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: isPaid ? Colors.green[700] : Colors.orange[700],
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                isPaid ? 'المريض دفع المبلغ المطلوب' : 'المريض لم يدفع بعد',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: isPaid,
-                          onChanged: (value) {
-                            setDialogState(() {
-                              isPaid = value;
-                            });
-                          },
-                          activeColor: Colors.green,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: notesController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'ملاحظات (اختياري)',
-                      prefixIcon: Icon(Icons.note),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Actions
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: isLoading ? null : () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      ),
-                      child: const Text(
-                        'إلغاء',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-              onPressed: isLoading ? null : () async {
-                if (!formKey.currentState!.validate()) return;
-
-                setDialogState(() {
-                  isLoading = true;
-                });
-
-                try {
-                  final bookingNumber = await _getNextBookingNumber(selectedAppointmentDate);
-                  
-                  final booking = BookingModel(
-                    id: '',
-                    patientName: nameController.text.trim(),
-                    patientPhone: phoneController.text.trim().isEmpty 
-                        ? 'غير محدد' 
-                        : phoneController.text.trim(),
-                    clinicId: widget.clinic.id,
-                    doctorName: widget.clinic.doctorName,
-                    bookingNumber: bookingNumber,
-                    status: isPaid ? BookingStatus.confirmed : BookingStatus.pending,
-                    createdAt: DateTime.now(),
-                    confirmedAt: isPaid ? DateTime.now() : null,
-                    appointmentDate: selectedAppointmentDate,
-                    notes: notesController.text.trim().isEmpty ? null : notesController.text.trim(),
-                    isOnlineBooking: false, // حجز يدوي من العيادة
-                  );
-
-                  await FirebaseFirestore.instance
-                      .collection('bookings')
-                      .add(booking.toFirestore());
-
-                  if (mounted) {
-                    Navigator.pop(context);
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('تم إضافة الحجز برقم $bookingNumber'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  setDialogState(() {
-                    isLoading = false;
-                  });
-                  
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
-                    );
-                  }
-                }
-              },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B82F6),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: isLoading 
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              'إضافة الحجز',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+  Future<void> _showAddBookingDialog() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddBookingScreen(clinic: widget.clinic),
       ),
     );
-  }
-
-  Future<int> _getNextBookingNumber(DateTime appointmentDate) async {
-    final startOfDay = DateTime(appointmentDate.year, appointmentDate.month, appointmentDate.day);
-    final endOfDay = DateTime(appointmentDate.year, appointmentDate.month, appointmentDate.day, 23, 59, 59);
-
-    // جلب كل الحجوزات في نفس يوم الموعد (مؤرشفة وغير مؤرشفة)
-    final snapshot = await FirebaseFirestore.instance
-        .collection('bookings')
-        .where('clinicId', isEqualTo: widget.clinic.id)
-        .where('appointmentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .where('appointmentDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
-        .get();
-
-    if (snapshot.docs.isEmpty) return 1;
-
-    // إيجاد أكبر رقم حجز
-    int maxBookingNumber = 0;
-    for (var doc in snapshot.docs) {
-      final booking = BookingModel.fromFirestore(doc);
-      if (booking.bookingNumber > maxBookingNumber) {
-        maxBookingNumber = booking.bookingNumber;
-      }
-    }
-
-    return maxBookingNumber + 1;
   }
 }
 
@@ -668,10 +468,7 @@ class _BookingsListTab extends StatefulWidget {
   final ClinicModel clinic;
   final BookingStatus status;
 
-  const _BookingsListTab({
-    required this.clinic,
-    required this.status,
-  });
+  const _BookingsListTab({required this.clinic, required this.status});
 
   @override
   State<_BookingsListTab> createState() => _BookingsListTabState();
@@ -697,7 +494,8 @@ class _BookingsListTabState extends State<_BookingsListTab> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
       _loadMore();
     }
   }
@@ -707,12 +505,15 @@ class _BookingsListTabState extends State<_BookingsListTab> {
       setState(() {
         _isLoadingMore = true;
       });
-      
+
       // تأخير بسيط لإظهار الـ loading
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           setState(() {
-            _displayCount = (_displayCount + _pageSize).clamp(0, _allBookings.length);
+            _displayCount = (_displayCount + _pageSize).clamp(
+              0,
+              _allBookings.length,
+            );
             _isLoadingMore = false;
           });
         }
@@ -725,10 +526,12 @@ class _BookingsListTabState extends State<_BookingsListTab> {
     final sorted = List<BookingModel>.from(bookings);
     sorted.sort((a, b) {
       // الحجوزات المكتملة في الأخير
-      if (a.status == BookingStatus.completed && b.status != BookingStatus.completed) {
+      if (a.status == BookingStatus.completed &&
+          b.status != BookingStatus.completed) {
         return 1;
       }
-      if (b.status == BookingStatus.completed && a.status != BookingStatus.completed) {
+      if (b.status == BookingStatus.completed &&
+          a.status != BookingStatus.completed) {
         return -1;
       }
       // إذا كانت نفس الحالة، رتب حسب التاريخ (الأقدم أولاً)
@@ -739,16 +542,10 @@ class _BookingsListTabState extends State<_BookingsListTab> {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = DateTime(today.year, today.month, today.day, 23, 59, 59);
-    
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('bookings')
           .where('clinicId', isEqualTo: widget.clinic.id)
-          .where('appointmentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('appointmentDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
           .where('archivedDate', isNull: true)
           .orderBy('appointmentDate', descending: false)
           .snapshots(),
@@ -776,12 +573,10 @@ class _BookingsListTabState extends State<_BookingsListTab> {
         }
 
         // عرض loading فقط إذا لم تكن هناك بيانات بعد
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return Center(
-            child: SpinKitPulsingGrid(
-              color: const Color(0xFF3B82F6),
-              size: 50,
-            ),
+            child: SpinKitPulsingGrid(color: const Color(0xFF06B6D4), size: 50),
           );
         }
 
@@ -799,8 +594,8 @@ class _BookingsListTabState extends State<_BookingsListTab> {
                 if (widget.status == BookingStatus.pending) {
                   return booking.status == BookingStatus.pending;
                 } else {
-                  return booking.status == BookingStatus.confirmed || 
-                         booking.status == BookingStatus.completed;
+                  return booking.status == BookingStatus.confirmed ||
+                      booking.status == BookingStatus.completed;
                 }
               })
               .toList(),
@@ -808,7 +603,7 @@ class _BookingsListTabState extends State<_BookingsListTab> {
 
         // ترتيب الحجوزات
         final sortedBookings = _sortBookings(_allBookings);
-        
+
         // الحجوزات المعروضة (pagination)
         final displayedBookings = sortedBookings.take(_displayCount).toList();
         final hasMore = _displayCount < sortedBookings.length;
@@ -837,7 +632,8 @@ class _BookingsListTabState extends State<_BookingsListTab> {
           key: const PageStorageKey('bookings_list'),
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
-          itemCount: displayedBookings.length + ((hasMore || _isLoadingMore) ? 1 : 0),
+          itemCount:
+              displayedBookings.length + ((hasMore || _isLoadingMore) ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == displayedBookings.length) {
               // مؤشر "تحميل المزيد" - بسيط
@@ -848,20 +644,19 @@ class _BookingsListTabState extends State<_BookingsListTab> {
                       child: const SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(
+                        child: AppLoadingIndicator(
                           strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3B82F6)),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF06B6D4),
+                          ),
                         ),
                       ),
                     )
                   : const SizedBox.shrink();
             }
-            
+
             final booking = displayedBookings[index];
-            return _BookingCard(
-              booking: booking,
-              key: ValueKey(booking.id),
-            );
+            return _BookingCard(booking: booking, key: ValueKey(booking.id));
           },
         );
       },
@@ -872,10 +667,7 @@ class _BookingsListTabState extends State<_BookingsListTab> {
 class _BookingCard extends StatelessWidget {
   final BookingModel booking;
 
-  const _BookingCard({
-    super.key,
-    required this.booking,
-  });
+  const _BookingCard({super.key, required this.booking});
 
   // التحقق من أن المستخدم دكتور وليس سكرتيرة
   Future<bool> _isDoctorUser(BuildContext context) async {
@@ -894,8 +686,19 @@ class _BookingCard extends StatelessWidget {
 
       if (clinicDoc.docs.isEmpty) return false;
 
-      // إذا كان لديه صلاحية الدخول (موجود في authEmails) فهو يستطيع رؤية المرضى
-      // لا نحتاج التحقق من doctorEmails لأن authEmails تكفي
+      final clinicData = clinicDoc.docs.first.data();
+
+      // التحقق من أن المستخدم ليس سكرتير
+      final secretaryEmails = clinicData['secretaryEmails'] != null
+          ? List<String>.from(clinicData['secretaryEmails'])
+          : <String>[];
+
+      // إذا كان في قائمة السكرتيرة، فهو ليس دكتور
+      if (secretaryEmails.contains(userEmail)) {
+        return false;
+      }
+
+      // إذا كان لديه صلاحية الدخول وليس سكرتير، فهو دكتور
       return true;
     } catch (e) {
       return false;
@@ -907,200 +710,364 @@ class _BookingCard extends StatelessWidget {
     final isPending = booking.status == BookingStatus.pending;
     final isCompleted = booking.status == BookingStatus.completed;
     final isCancelled = booking.status == BookingStatus.cancelled;
+    final isArchived = booking.archivedDate != null;
 
-    return Card(
+    final Color statusColor = isCancelled
+        ? const Color(0xFFDC2626)
+        : isCompleted
+        ? const Color(0xFFE5E7EB)
+        : isPending
+        ? const Color(0xFFF59E0B)
+        : const Color(0xFF059669);
+
+    final IconData statusIcon = isCancelled
+        ? Icons.cancel_rounded
+        : isCompleted
+        ? Icons.task_alt_rounded
+        : isPending
+        ? Icons.pending_rounded
+        : Icons.check_circle_rounded;
+
+    final bool showOnlyConfirmedDate =
+        booking.confirmedAt != null &&
+        _isSameDateTimeMinute(booking.createdAt, booking.confirmedAt!);
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      color: isCancelled ? Colors.red[50] : (isCompleted ? Colors.grey[200] : null),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isCancelled
-                        ? Colors.red.withValues(alpha: 0.1)
-                        : isCompleted
-                            ? Colors.grey.withValues(alpha: 0.3)
-                            : isPending 
-                                ? Colors.orange.withValues(alpha: 0.1)
-                                : Colors.green.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isCancelled
-                        ? Icons.cancel_rounded
-                        : isCompleted 
-                            ? Icons.task_alt_rounded
-                            : isPending ? Icons.pending_rounded : Icons.check_circle_rounded,
-                    color: isCancelled ? Colors.red : (isCompleted ? Colors.grey : (isPending ? Colors.orange : Colors.green)),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: isCompleted ? const Color(0xFFE5E7EB) : Colors.white,
+        border: Border.all(
+          color: isCompleted
+              ? const Color(0xFFCBD5E1)
+              : const Color(0xFFDDE7EF),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isCompleted
+                ? const Color(0xFF475569).withValues(alpha: 0.22)
+                : const Color(0xFF0F172A).withValues(alpha: 0.05),
+            blurRadius: isCompleted ? 10 : 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            'رقم الحجز: ',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                              decoration: (isCompleted || isCancelled) ? TextDecoration.lineThrough : null,
+                      Container(
+                        width: 4,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'رقم الحجز #${booking.bookingNumber}',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0F172A),
+                              ),
                             ),
+                            const SizedBox(height: 7),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                _buildTag(
+                                  icon: statusIcon,
+                                  text: booking.statusArabic,
+                                  color: statusColor,
+                                ),
+                                _buildTag(
+                                  icon:
+                                      booking.visitType == VisitType.examination
+                                      ? Icons.medical_services_rounded
+                                      : Icons.replay_circle_filled_rounded,
+                                  text: booking.visitTypeArabic,
+                                  color:
+                                      booking.visitType == VisitType.examination
+                                      ? const Color(0xFF2563EB)
+                                      : const Color(0xFF7C3AED),
+                                ),
+                                if (isArchived)
+                                  _buildTag(
+                                    icon: Icons.archive_rounded,
+                                    text: 'مؤرشف',
+                                    color: const Color(0xFF0D9488),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        children: [
+                          if (isPending)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.task_alt_rounded,
+                                color: Color(0xFF059669),
+                              ),
+                              onPressed: () => _confirmBooking(context),
+                            ),
+                          const SizedBox(height: 8),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.more_horiz_rounded,
+                              color: Color(0xFF334155),
+                            ),
+                            onPressed: () => _showOptions(context),
                           ),
-                          Text(
-                            '${booking.bookingNumber}',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: isCompleted ? Colors.grey : const Color(0xFF3B82F6),
-                              decoration: isCompleted ? TextDecoration.lineThrough : null,
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  FutureBuilder<bool>(
+                    future: _isDoctorUser(context),
+                    builder: (context, snapshot) {
+                      final isDoctor = snapshot.data ?? false;
+
+                      return InkWell(
+                        onTap: isDoctor
+                            ? () => _searchAndOpenPatient(context)
+                            : null,
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 9,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFDDE7EF)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE0F2F8),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.person_rounded,
+                                  color: Color(0xFF0B8293),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'اسم المريض',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF64748B),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      booking.patientName,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDoctor
+                                            ? const Color(0xFF0B8293)
+                                            : const Color(0xFF0F172A),
+                                        decoration: isDoctor
+                                            ? TextDecoration.underline
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isDoctor)
+                                const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 14,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  if (showOnlyConfirmedDate)
+                    _buildInfoRow(
+                      Icons.verified_rounded,
+                      'تاريخ التأكيد',
+                      _formatDateTime(booking.confirmedAt!),
+                    )
+                  else
+                    _buildInfoRow(
+                      Icons.access_time_filled_rounded,
+                      'تاريخ الحجز',
+                      _formatDateTime(booking.createdAt),
+                    ),
+                  if (!showOnlyConfirmedDate &&
+                      booking.confirmedAt != null) ...[
+                    const SizedBox(height: 8),
+                    _buildInfoRow(
+                      Icons.verified_rounded,
+                      'تاريخ التأكيد',
+                      _formatDateTime(booking.confirmedAt!),
+                    ),
+                  ],
+                  if (booking.notes != null && booking.notes!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.sticky_note_2_rounded,
+                            size: 18,
+                            color: Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              booking.notes!,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF334155),
+                                height: 1.4,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      Text(
-                        booking.statusArabic,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isCompleted ? Colors.grey : (isPending ? Colors.orange : Colors.green),
-                          fontWeight: FontWeight.w600,
-                          decoration: isCompleted ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isPending)
-                  IconButton(
-                    icon: const Icon(Icons.check, color: Colors.green),
-                    onPressed: () => _confirmBooking(context),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () => _showOptions(context),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            // اسم المريض - قابل للضغط للبحث عنه (للدكتور فقط)
-            InkWell(
-              onTap: () async {
-                // التحقق من أن المستخدم دكتور
-                final isDoctor = await _isDoctorUser(context);
-                if (!isDoctor) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('هذه الميزة متاحة للدكتور فقط'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                  }
-                  return;
-                }
-                if (context.mounted) {
-                  _searchAndOpenPatient(context);
-                }
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                child: Row(
-                  children: [
-                    Icon(Icons.person, size: 18, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'المريض: ',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                    ),
-                    Expanded(
-                      child: Text(
-                        booking.patientName,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF3B82F6),
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey[400]),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(Icons.phone, 'الهاتف', booking.patientPhone),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              Icons.access_time,
-              'تاريخ الحجز',
-              _formatDateTime(booking.createdAt),
-            ),
-            if (booking.confirmedAt != null) ...[
-              const SizedBox(height: 8),
-              _buildInfoRow(
-                Icons.check_circle,
-                'تاريخ التأكيد',
-                _formatDateTime(booking.confirmedAt!),
-              ),
-            ],
-            if (booking.notes != null && booking.notes!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.note, size: 18, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        booking.notes!,
-                        style: const TextStyle(fontSize: 13),
-                      ),
                     ),
                   ],
+                ],
+              ),
+            ),
+          ),
+          if (isCompleted)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: CustomPaint(painter: _CompletedCardStrikePainter()),
                 ),
               ),
-            ],
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
-        Text(
-          '$label: ',
-          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2ECF3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE9F6FA),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: const Color(0xFF0B8293)),
           ),
-        ),
-      ],
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF0F172A),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildTag({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.11),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isSameDateTimeMinute(DateTime a, DateTime b) {
+    return a.year == b.year &&
+        a.month == b.month &&
+        a.day == b.day &&
+        a.hour == b.hour &&
+        a.minute == b.minute;
   }
 
   String _formatDateTime(DateTime dateTime) {
@@ -1120,7 +1087,7 @@ class _BookingCard extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
+                AppLoadingIndicator(),
                 SizedBox(height: 16),
                 Text('جاري البحث عن المريض...'),
               ],
@@ -1132,36 +1099,42 @@ class _BookingCard extends StatelessWidget {
 
     try {
       List<QueryDocumentSnapshot> foundPatients = [];
-      
+
       // 1. البحث برقم الهاتف أولاً (إذا كان موجود وليس "غير محدد")
-      if (booking.patientPhone.isNotEmpty && 
+      if (booking.patientPhone.isNotEmpty &&
           booking.patientPhone != 'غير محدد' &&
           booking.patientPhone != 'لا يوجد') {
-        String cleanPhone = booking.patientPhone.replaceAll(RegExp(r'[^0-9+]'), '');
-        
+        String cleanPhone = booking.patientPhone.replaceAll(
+          RegExp(r'[^0-9+]'),
+          '',
+        );
+
         final phoneQuery = await FirebaseFirestore.instance
             .collection('patients')
             .where('clinicId', isEqualTo: booking.clinicId)
             .where('phoneNumber', isEqualTo: cleanPhone)
             .get();
-        
+
         foundPatients.addAll(phoneQuery.docs);
       }
-      
+
       // 2. إذا لم نجد برقم الهاتف، نبحث بالاسم
       if (foundPatients.isEmpty) {
         // تنظيف الاسم من المسافات الزائدة
-        String cleanName = booking.patientName.trim().replaceAll(RegExp(r'\s+'), ' ');
-        
+        String cleanName = booking.patientName.trim().replaceAll(
+          RegExp(r'\s+'),
+          ' ',
+        );
+
         // البحث بالاسم الكامل
         final exactNameQuery = await FirebaseFirestore.instance
             .collection('patients')
             .where('clinicId', isEqualTo: booking.clinicId)
             .where('name', isEqualTo: cleanName)
             .get();
-        
+
         foundPatients.addAll(exactNameQuery.docs);
-        
+
         // 3. إذا لم نجد بالاسم الكامل، نبحث بالتشابه
         if (foundPatients.isEmpty) {
           // جلب كل المرضى في العيادة للبحث المتقدم
@@ -1169,7 +1142,7 @@ class _BookingCard extends StatelessWidget {
               .collection('patients')
               .where('clinicId', isEqualTo: booking.clinicId)
               .get();
-          
+
           // البحث بالتشابه
           for (var doc in allPatientsQuery.docs) {
             String patientName = doc.get('name') as String;
@@ -1198,10 +1171,7 @@ class _BookingCard extends StatelessWidget {
       if (context.mounted) {
         Navigator.pop(context); // إغلاق loading
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -1212,21 +1182,25 @@ class _BookingCard extends StatelessWidget {
     // تنظيف الأسماء
     name1 = _normalizeName(name1);
     name2 = _normalizeName(name2);
-    
+
     // إذا كانا متطابقين تماماً
     if (name1 == name2) return true;
-    
+
     // تقسيم الأسماء إلى كلمات
     List<String> words1 = name1.split(' ');
     List<String> words2 = name2.split(' ');
-    
+
     // حالة خاصة: أحد الاسمين يحتوي على الآخر بالكامل
-    // مثال: "محمد أحمد" و "محمد أحمد علي" 
+    // مثال: "محمد أحمد" و "محمد أحمد علي"
     // نتحقق إن الاسم الأقصر موجود بالكامل في بداية الاسم الأطول
     if (words1.length != words2.length) {
-      List<String> shorterWords = words1.length < words2.length ? words1 : words2;
-      List<String> longerWords = words1.length < words2.length ? words2 : words1;
-      
+      List<String> shorterWords = words1.length < words2.length
+          ? words1
+          : words2;
+      List<String> longerWords = words1.length < words2.length
+          ? words2
+          : words1;
+
       bool allMatch = true;
       for (int i = 0; i < shorterWords.length; i++) {
         if (i >= longerWords.length || shorterWords[i] != longerWords[i]) {
@@ -1234,36 +1208,40 @@ class _BookingCard extends StatelessWidget {
           break;
         }
       }
-      
+
       // إذا كل كلمات الاسم الأقصر موجودة في بداية الاسم الأطول
       if (allMatch) return true;
     }
-    
+
     // حساب نسبة التطابق لكل الكلمات (ليس فقط الأولى)
     int matchCount = 0;
-    int maxWords = words1.length > words2.length ? words1.length : words2.length;
-    
+    int maxWords = words1.length > words2.length
+        ? words1.length
+        : words2.length;
+
     for (int i = 0; i < words1.length && i < words2.length; i++) {
       if (words1[i] == words2[i]) {
         matchCount++;
       }
     }
-    
+
     // نسبة التطابق يجب تكون 100% (كل الكلمات متطابقة)
     // أو على الأقل 80% وأول اسمين متطابقين
     double similarity = matchCount / maxWords;
-    
+
     // تشابه كامل أو شبه كامل
     if (similarity == 1.0) return true;
-    
+
     // تشابه 80% + أول اسمين متطابقين
-    if (similarity >= 0.8 && matchCount >= 2 && 
-        words1.isNotEmpty && words2.isNotEmpty &&
-        words1[0] == words2[0] && 
+    if (similarity >= 0.8 &&
+        matchCount >= 2 &&
+        words1.isNotEmpty &&
+        words2.isNotEmpty &&
+        words1[0] == words2[0] &&
         (words1.length < 2 || words2.length < 2 || words1[1] == words2[1])) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -1272,16 +1250,19 @@ class _BookingCard extends StatelessWidget {
     return name
         .trim()
         .toLowerCase()
-        .replaceAll('ى', 'ي')  // توحيد الياء
-        .replaceAll('ة', 'ه')  // توحيد التاء المربوطة
-        .replaceAll('أ', 'ا')  // توحيد الهمزة
+        .replaceAll('ى', 'ي') // توحيد الياء
+        .replaceAll('ة', 'ه') // توحيد التاء المربوطة
+        .replaceAll('أ', 'ا') // توحيد الهمزة
         .replaceAll('إ', 'ا')
         .replaceAll('آ', 'ا')
-        .replaceAll(RegExp(r'\s+'), ' ');  // توحيد المسافات
+        .replaceAll(RegExp(r'\s+'), ' '); // توحيد المسافات
   }
 
   // عرض dialog لاختيار المريض من قائمة
-  void _showPatientsSelectionDialog(BuildContext context, List<QueryDocumentSnapshot> patients) {
+  void _showPatientsSelectionDialog(
+    BuildContext context,
+    List<QueryDocumentSnapshot> patients,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1298,10 +1279,7 @@ class _BookingCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text(
-                'اختر المريض',
-                style: TextStyle(fontSize: 20),
-              ),
+              child: Text('اختر المريض', style: TextStyle(fontSize: 20)),
             ),
           ],
         ),
@@ -1320,16 +1298,17 @@ class _BookingCard extends StatelessWidget {
                   shrinkWrap: true,
                   itemCount: patients.length,
                   itemBuilder: (context, index) {
-                    final patient = patients[index].data() as Map<String, dynamic>;
+                    final patient =
+                        patients[index].data() as Map<String, dynamic>;
                     final patientId = patients[index].id;
                     final name = patient['name'] ?? '';
                     final phone = patient['phoneNumber'] ?? 'لا يوجد';
-                    
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: const Color(0xFF3B82F6),
+                          backgroundColor: const Color(0xFF06B6D4),
                           child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : '؟',
                             style: const TextStyle(color: Colors.white),
@@ -1341,7 +1320,10 @@ class _BookingCard extends StatelessWidget {
                         ),
                         subtitle: Text(
                           'رقم الهاتف: $phone',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
                         ),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
@@ -1367,7 +1349,7 @@ class _BookingCard extends StatelessWidget {
               _showCreatePatientDialog(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: const Color(0xFF06B6D4),
               foregroundColor: Colors.white,
             ),
             icon: const Icon(Icons.person_add, size: 18),
@@ -1406,7 +1388,7 @@ class _BookingCard extends StatelessWidget {
               _addPatientFromBooking(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: const Color(0xFF06B6D4),
               foregroundColor: Colors.white,
             ),
             child: const Text('إضافة مريض'),
@@ -1472,15 +1454,12 @@ class _BookingCard extends StatelessWidget {
       );
       return;
     }
-    
+
     try {
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(booking.id!)
-          .update({
-        'status': 'confirmed',
-        'confirmedAt': Timestamp.now(),
-      });
+          .update({'status': 'confirmed', 'confirmedAt': Timestamp.now()});
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1504,7 +1483,10 @@ class _BookingCard extends StatelessWidget {
     final isConfirmed = booking.status == BookingStatus.confirmed;
     final isCompleted = booking.status == BookingStatus.completed;
     final isCancelled = booking.status == BookingStatus.cancelled;
-    
+
+    // حفظ الـ context الأصلي
+    final originalContext = context;
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -1524,6 +1506,7 @@ class _BookingCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
+            // تعديل الحجز (يظهر للحجوزات غير المكتملة والملغية)
             // "تم الكشف" يظهر فقط للحجوزات المؤكدة
             if (isConfirmed)
               ListTile(
@@ -1531,7 +1514,7 @@ class _BookingCard extends StatelessWidget {
                 title: const Text('تم الكشف'),
                 onTap: () {
                   Navigator.pop(context);
-                  _markAsCompleted(context);
+                  _markAsCompleted(originalContext);
                 },
               ),
             // "لم يتم الكشف" يظهر فقط للحجوزات المكتملة
@@ -1541,7 +1524,7 @@ class _BookingCard extends StatelessWidget {
                 title: const Text('لم يتم الكشف'),
                 onTap: () {
                   Navigator.pop(context);
-                  _markAsNotCompleted(context);
+                  _markAsNotCompleted(originalContext);
                 },
               ),
             // "إلغاء الحجز" يظهر للحجوزات غير الملغية
@@ -1551,7 +1534,43 @@ class _BookingCard extends StatelessWidget {
                 title: const Text('إلغاء الحجز'),
                 onTap: () {
                   Navigator.pop(context);
-                  _cancelBooking(context);
+                  _cancelBooking(originalContext);
+                },
+              ),
+
+            if (!isCompleted && !isCancelled)
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text('تعديل الحجز'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editBooking(originalContext);
+                },
+              ),
+
+            const Divider(),
+            // زر الاتصال
+            if (booking.patientPhone.isNotEmpty &&
+                booking.patientPhone != 'غير محدد' &&
+                booking.patientPhone != 'لا يوجد')
+              ListTile(
+                leading: const Icon(Icons.phone, color: Colors.blue),
+                title: const Text('اتصال'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _makePhoneCall(originalContext);
+                },
+              ),
+            // زر الواتساب
+            if (booking.patientPhone.isNotEmpty &&
+                booking.patientPhone != 'غير محدد' &&
+                booking.patientPhone != 'لا يوجد')
+              ListTile(
+                leading: Icon(MdiIcons.whatsapp, color: Colors.green),
+                title: const Text('واتساب'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _openWhatsApp(originalContext);
                 },
               ),
             const SizedBox(height: 8),
@@ -1571,14 +1590,12 @@ class _BookingCard extends StatelessWidget {
       );
       return;
     }
-    
+
     try {
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(booking.id!)
-          .update({
-        'status': 'confirmed',
-      });
+          .update({'status': 'confirmed'});
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1607,7 +1624,7 @@ class _BookingCard extends StatelessWidget {
       );
       return;
     }
-    
+
     // تأكيد الإلغاء
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1642,15 +1659,12 @@ class _BookingCard extends StatelessWidget {
     );
 
     if (confirmed != true) return;
-    
+
     try {
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(booking.id!)
-          .update({
-        'status': 'cancelled',
-        'cancelledAt': Timestamp.now(),
-      });
+          .update({'status': 'cancelled', 'cancelledAt': Timestamp.now()});
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1684,9 +1698,7 @@ class _BookingCard extends StatelessWidget {
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(booking.id!)
-          .update({
-        'status': 'completed',
-      });
+          .update({'status': 'completed'});
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1705,6 +1717,118 @@ class _BookingCard extends StatelessWidget {
       }
     }
   }
+
+  Future<void> _makePhoneCall(BuildContext context) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: booking.patientPhone);
+    try {
+      await launchUrl(phoneUri);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('لا يمكن إجراء المكالمة')));
+      }
+    }
+  }
+
+  String _formatWhatsAppNumber(String phoneNumber) {
+    String n = phoneNumber.trim();
+    // لو بيبدأ بـ + شيله
+    if (n.startsWith('+')) n = n.substring(1);
+    // لو بيبدأ بـ 20 يبقى خلاص
+    if (n.startsWith('20')) return n;
+    // ضيف 20 قدام الرقم
+    return '20$n';
+  }
+
+  Future<void> _openWhatsApp(BuildContext context) async {
+    final String formattedNumber = _formatWhatsAppNumber(booking.patientPhone);
+    final String message =
+        '''مرحباً،
+
+نحن عيادة دكتور ${booking.doctorName}
+نحب نبلغك بتأكيد الحجز
+
+''';
+
+    final Uri whatsappUri = Uri.parse(
+      'https://wa.me/$formattedNumber?text=${Uri.encodeComponent(message)}',
+    );
+
+    try {
+      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('لا يمكن فتح واتساب')));
+      }
+    }
+  }
+
+  void _editBooking(BuildContext context) async {
+    // الحصول على بيانات العيادة
+    final clinicDoc = await FirebaseFirestore.instance
+        .collection('clinics')
+        .doc(booking.clinicId)
+        .get();
+
+    if (!clinicDoc.exists) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('خطأ: لم يتم العثور على بيانات العيادة'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final clinic = ClinicModel.fromFirestore(clinicDoc);
+
+    if (context.mounted) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              AddBookingScreen(clinic: clinic, booking: booking),
+        ),
+      );
+
+      if (result == true && context.mounted) {
+        // تم التعديل بنجاح
+      }
+    }
+  }
+}
+
+class _CompletedCardStrikePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final mainStrike = Paint()
+      ..color = const Color(0xFF334155).withValues(alpha: 0.45)
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+
+    final softStrike = Paint()
+      ..color = const Color(0xFF64748B).withValues(alpha: 0.28)
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+
+    final start = Offset(size.width * 0.05, size.height * 0.18);
+    final end = Offset(size.width * 0.95, size.height * 0.82);
+
+    canvas.drawLine(start, end, mainStrike);
+    canvas.drawLine(
+      Offset(start.dx, start.dy + 4),
+      Offset(end.dx, end.dy + 4),
+      softStrike,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // صفحة عرض حجوزات يوم معين
@@ -1712,10 +1836,7 @@ class _DayBookingsScreen extends StatefulWidget {
   final DateTime date;
   final List<BookingModel> bookings;
 
-  const _DayBookingsScreen({
-    required this.date,
-    required this.bookings,
-  });
+  const _DayBookingsScreen({required this.date, required this.bookings});
 
   @override
   State<_DayBookingsScreen> createState() => _DayBookingsScreenState();
@@ -1728,6 +1849,77 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
   void initState() {
     super.initState();
     _bookings = List.from(widget.bookings);
+  }
+
+  /// Check if booking can be edited/deleted (today or future dates only)
+  bool _isBookingEditable(BookingModel booking) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final bookingDate = DateTime(
+      booking.appointmentDate.year,
+      booking.appointmentDate.month,
+      booking.appointmentDate.day,
+    );
+    return bookingDate.isAfter(today) || bookingDate.isAtSameMomentAs(today);
+  }
+
+  /// Format date for notification (today or date string)
+  String _formatDateForNotification(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final bookingDate = DateTime(date.year, date.month, date.day);
+
+    if (bookingDate.isAtSameMomentAs(today)) {
+      return 'اليوم';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  /// Send notification to doctor when secretary deletes booking
+  Future<void> _sendDeletionNotification(BookingModel booking) async {
+    try {
+      final clinicDoc = await FirebaseFirestore.instance
+          .collection('clinics')
+          .doc(booking.clinicId)
+          .get();
+
+      if (!clinicDoc.exists) return;
+
+      final clinicData = clinicDoc.data()!;
+      final doctorEmails = clinicData['doctorEmails'] != null
+          ? List<String>.from(clinicData['doctorEmails'])
+          : <String>[];
+
+      if (doctorEmails.isEmpty) return;
+
+      final dateStr = _formatDateForNotification(booking.appointmentDate);
+      final timeStr =
+          '${booking.appointmentDate.hour.toString().padLeft(2, '0')}:${booking.appointmentDate.minute.toString().padLeft(2, '0')}';
+      final visitTypeArabic = booking.visitType == VisitType.examination
+          ? 'كشف'
+          : 'إعادة';
+
+      // Create notification document
+      await FirebaseFirestore.instance.collection('clinic_notifications').add({
+        'clinicId': booking.clinicId,
+        'title': 'تم حذف حجز 🗑️',
+        'message':
+            'السكرتيرة حذفت حجز ${booking.patientName}\n$visitTypeArabic - $dateStr الساعة $timeStr',
+        'type': 'booking_deleted',
+        'bookingNumber': booking.bookingNumber,
+        'patientName': booking.patientName,
+        'visitType': visitTypeArabic,
+        'appointmentDate': dateStr,
+        'appointmentTime': timeStr,
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+
+      print('✅ Deletion notification sent to doctors');
+    } catch (e) {
+      print('❌ Error sending deletion notification: $e');
+    }
   }
 
   Future<void> _deleteBooking(BookingModel booking) async {
@@ -1744,14 +1936,15 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                 color: Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.warning_rounded, color: Colors.red, size: 28),
+              child: const Icon(
+                Icons.warning_rounded,
+                color: Colors.red,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
-              child: Text(
-                'حذف الحجز',
-                style: TextStyle(fontSize: 20),
-              ),
+              child: Text('حذف الحجز', style: TextStyle(fontSize: 20)),
             ),
           ],
         ),
@@ -1828,6 +2021,9 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
     try {
       // حذف من Firestore مباشرة
       if (booking.id != null && booking.id!.isNotEmpty) {
+        // Send notification to doctor first
+        await _sendDeletionNotification(booking);
+
         await FirebaseFirestore.instance
             .collection('bookings')
             .doc(booking.id!)
@@ -1874,7 +2070,7 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
     }
   }
 
-     Future<void> _makePhoneCall(String phoneNumber) async {
+  Future<void> _makePhoneCall(String phoneNumber) async {
     final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
     try {
       await launchUrl(phoneUri);
@@ -1886,32 +2082,40 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF3F8FB),
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF0F172A),
+            size: 18,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'حجوزات ${widget.date.day}/${widget.date.month}/${widget.date.year}',
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF3B82F6),
-        elevation: 0,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFF3B82F6).withOpacity(0.1),
-              Colors.white,
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+          style: const TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
           ),
         ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+        ),
+      ),
+      body: Container(
+        color: const Color(0xFFF3F8FB),
         child: Column(
           children: [
             // Header Card
@@ -1921,14 +2125,14 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                  colors: [Color(0xFF0B8293), Color(0xFF179AAC)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF3B82F6).withOpacity(0.3),
+                    color: const Color(0xFF0B8293).withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -1955,18 +2159,15 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                       children: [
                         const Text(
                           'إجمالي الحجوزات',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${_bookings.length} حجز',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ],
@@ -1975,7 +2176,7 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                 ],
               ),
             ),
-            
+
             // Bookings List
             Expanded(
               child: ListView.builder(
@@ -1986,10 +2187,10 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                   final statusColor = booking.status == BookingStatus.confirmed
                       ? Colors.green
                       : booking.status == BookingStatus.pending
-                          ? Colors.orange
-                          : booking.status == BookingStatus.completed
-                              ? Colors.blue
-                              : Colors.red;
+                      ? Colors.orange
+                      : booking.status == BookingStatus.completed
+                      ? Colors.blue
+                      : Colors.red;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -2009,7 +2210,7 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () {
-                            _makePhoneCall(booking.patientPhone);
+                          _makePhoneCall(booking.patientPhone);
                           // يمكن إضافة عرض تفاصيل الحجز هنا
                         },
                         child: Padding(
@@ -2022,7 +2223,10 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                 height: 60,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [statusColor, statusColor.withOpacity(0.7)],
+                                    colors: [
+                                      statusColor,
+                                      statusColor.withOpacity(0.7),
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -2047,7 +2251,7 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              
+
                               // تفاصيل المريض
                               Expanded(
                                 child: Column(
@@ -2061,15 +2265,42 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                            Text(
-                                              booking.patientPhone,
+                                    Text(
+                                      booking.patientPhone,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[700],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    // عرض اسم العيادة للحجوزات الأونلاين
+                                    if (booking.isOnlineBooking == true &&
+                                        booking.doctorName.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.medical_services_rounded,
+                                            size: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              'عيادة د. ${booking.doctorName}',
                                               style: TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.grey[700],
-                                                fontWeight: FontWeight.w500,
+                                                fontSize: 12,
+                                                color: Colors.grey[600],
+                                                fontStyle: FontStyle.italic,
                                               ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                  const SizedBox(height: 8),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                    const SizedBox(height: 8),
                                     Row(
                                       children: [
                                         // الحالة
@@ -2080,9 +2311,13 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: statusColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                             border: Border.all(
-                                              color: statusColor.withOpacity(0.3),
+                                              color: statusColor.withOpacity(
+                                                0.3,
+                                              ),
                                             ),
                                           ),
                                           child: Text(
@@ -2102,8 +2337,12 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF3B82F6).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(6),
+                                            color: const Color(
+                                              0xFF06B6D4,
+                                            ).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -2111,7 +2350,7 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                               const Icon(
                                                 Icons.access_time,
                                                 size: 12,
-                                                color: Color(0xFF3B82F6),
+                                                color: Color(0xFF06B6D4),
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
@@ -2119,7 +2358,7 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                                 style: const TextStyle(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF3B82F6),
+                                                  color: Color(0xFF06B6D4),
                                                 ),
                                               ),
                                             ],
@@ -2130,34 +2369,37 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                   ],
                                 ),
                               ),
-                              
-                              // زر الحذف
-                              Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(10),
-                                    onTap: () => _deleteBooking(booking),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: Colors.red.withOpacity(0.3),
-                                          width: 1,
+
+                              // زر الحذف - يظهر فقط للحجوزات اليوم والأيام القادمة
+                              if (_isBookingEditable(booking))
+                                Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(10),
+                                      onTap: () => _deleteBooking(booking),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.red.withOpacity(0.3),
+                                            width: 1,
+                                          ),
                                         ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.delete_rounded,
-                                        color: Colors.red,
-                                        size: 24,
+                                        child: const Icon(
+                                          Icons.delete_rounded,
+                                          color: Colors.red,
+                                          size: 24,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -2199,17 +2441,31 @@ class _CalendarViewWidgetState extends State<_CalendarViewWidget> {
   Future<void> _loadBookings() async {
     // تحميل الحجوزات للشهر الحالي والشهر التالي
     final startDate = DateTime(_focusedDay.year, _focusedDay.month - 1, 1);
-    final endDate = DateTime(_focusedDay.year, _focusedDay.month + 2, 0, 23, 59, 59);
+    final endDate = DateTime(
+      _focusedDay.year,
+      _focusedDay.month + 2,
+      0,
+      23,
+      59,
+      59,
+    );
 
     final snapshot = await FirebaseFirestore.instance
         .collection('bookings')
         .where('clinicId', isEqualTo: widget.clinicId)
-        .where('appointmentDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-        .where('appointmentDate', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
-        .where('archivedDate', isNull: true)
+        .where(
+          'appointmentDate',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+        )
+        .where(
+          'appointmentDate',
+          isLessThanOrEqualTo: Timestamp.fromDate(endDate),
+        )
         .get();
 
-    final bookings = snapshot.docs.map((doc) => BookingModel.fromFirestore(doc)).toList();
+    final bookings = snapshot.docs
+        .map((doc) => BookingModel.fromFirestore(doc))
+        .toList();
 
     // تجميع الحجوزات حسب التاريخ
     final Map<DateTime, List<BookingModel>> groupedBookings = {};
@@ -2243,14 +2499,18 @@ class _CalendarViewWidgetState extends State<_CalendarViewWidget> {
         // Header
         Row(
           children: [
-            const Icon(Icons.calendar_month, color: Color(0xFF3B82F6), size: 28),
+            const Icon(
+              Icons.calendar_month,
+              color: Color(0xFF0B8293),
+              size: 24,
+            ),
             const SizedBox(width: 12),
             const Text(
               'التقويم',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF3B82F6),
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0B8293),
               ),
             ),
             const Spacer(),
@@ -2284,16 +2544,18 @@ class _CalendarViewWidgetState extends State<_CalendarViewWidget> {
               formatButtonVisible: false,
               titleCentered: true,
               titleTextStyle: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF3B82F6),
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF0B8293),
               ),
               leftChevronIcon: const Icon(Icons.chevron_left, size: 28),
               rightChevronIcon: const Icon(Icons.chevron_right, size: 28),
               headerPadding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
               ),
             ),
             daysOfWeekStyle: DaysOfWeekStyle(
@@ -2317,19 +2579,19 @@ class _CalendarViewWidgetState extends State<_CalendarViewWidget> {
               weekendTextStyle: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-               // color: Colors.red[400],
+                // color: Colors.red[400],
               ),
               todayDecoration: BoxDecoration(
-                color: const Color(0xFF3B82F6).withOpacity(0.2),
+                color: const Color(0xFF0B8293).withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               todayTextStyle: const TextStyle(
-                color: Color(0xFF3B82F6),
+                color: Color(0xFF0B8293),
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
               ),
               selectedDecoration: const BoxDecoration(
-                color: Color(0xFF3B82F6),
+                color: Color(0xFF0B8293),
                 shape: BoxShape.circle,
               ),
               selectedTextStyle: const TextStyle(
@@ -2398,23 +2660,16 @@ class _CalendarViewWidgetState extends State<_CalendarViewWidget> {
         //     ],
         //   ),
         // ),
-     
       ],
     );
-
-
-
   }
 
   void _showBookingsScreen(DateTime date, List<BookingModel> bookings) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => _DayBookingsScreen(
-          date: date,
-          bookings: bookings,
-        ),
+        builder: (context) =>
+            _DayBookingsScreen(date: date, bookings: bookings),
       ),
     );
   }
-
 }

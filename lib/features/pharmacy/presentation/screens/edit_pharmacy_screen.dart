@@ -3,15 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/pharmacy_model.dart';
 
 class EditPharmacyScreen extends StatefulWidget {
   final PharmacyModel pharmacy;
 
-  const EditPharmacyScreen({
-    super.key,
-    required this.pharmacy,
-  });
+  const EditPharmacyScreen({super.key, required this.pharmacy});
 
   @override
   State<EditPharmacyScreen> createState() => _EditPharmacyScreenState();
@@ -24,34 +22,40 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   late List<TextEditingController> _phoneControllers;
   late TextEditingController _workingHoursController;
   late TextEditingController _descriptionController;
-  
+  late TextEditingController _whatsappController;
+
   // Theme colors
-  static const Color _primaryColor = Color(0xFF0891B2);
-  static const Color _secondaryColor = Color(0xFF06B6D4);
-  static const Color _backgroundColor = Color(0xFFF8FAFC);
+  static const Color _primaryColor = Color(0xFF0B8293);
+  static const Color _secondaryColor = Color(0xFF179AAC);
+  static const Color _backgroundColor = Color(0xFFF3F8FB);
   static const Color _cardColor = Colors.white;
   static const Color _textPrimary = Color(0xFF0F172A);
   static const Color _textSecondary = Color(0xFF64748B);
-  
+  static const LinearGradient _primaryGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [Color(0xFF0B8293), Color(0xFF179AAC)],
+  );
+
   TimeOfDay? _openTime;
   TimeOfDay? _closeTime;
-  
+
   List<File> _selectedImages = [];
   List<String> _existingImageUrls = [];
   bool _isLoading = false;
-  
+
   // Auth Emails
   late List<TextEditingController> _authEmailControllers;
-  
+
   // Insurance
   bool _hasInsurance = false;
   List<TextEditingController> _insuranceCompanyControllers = [];
-  
+
   // Home Delivery
   bool _hasHomeDelivery = false;
   double? _deliveryFee;
   double? _minimumOrderForDelivery;
-  
+
   // Days of the week for holidays selection
   final Map<String, bool> _selectedHolidays = {
     'السبت': false,
@@ -69,34 +73,48 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
     _nameController = TextEditingController(text: widget.pharmacy.name);
     _addressController = TextEditingController(text: widget.pharmacy.address);
     _phoneControllers = widget.pharmacy.phones.isNotEmpty
-        ? widget.pharmacy.phones.map((phone) => TextEditingController(text: phone)).toList()
+        ? widget.pharmacy.phones
+              .map((phone) => TextEditingController(text: phone))
+              .toList()
         : [TextEditingController()];
-    _workingHoursController = TextEditingController(text: widget.pharmacy.workingHours);
-    _descriptionController = TextEditingController(text: widget.pharmacy.description ?? '');
+    _workingHoursController = TextEditingController(
+      text: widget.pharmacy.workingHours,
+    );
+    _descriptionController = TextEditingController(
+      text: widget.pharmacy.description ?? '',
+    );
+    _whatsappController = TextEditingController(text: widget.pharmacy.whatsapp);
     _existingImageUrls = List.from(widget.pharmacy.images);
-    
+
     // Initialize auth emails
     _authEmailControllers = widget.pharmacy.authEmails.isNotEmpty
-        ? widget.pharmacy.authEmails.map((email) => TextEditingController(text: email)).toList()
+        ? widget.pharmacy.authEmails
+              .map((email) => TextEditingController(text: email))
+              .toList()
         : [TextEditingController()];
-    
+
     // Initialize insurance
     _hasInsurance = widget.pharmacy.hasInsurance;
     _insuranceCompanyControllers = widget.pharmacy.insuranceCompanies.isNotEmpty
-        ? widget.pharmacy.insuranceCompanies.map((company) => TextEditingController(text: company)).toList()
+        ? widget.pharmacy.insuranceCompanies
+              .map((company) => TextEditingController(text: company))
+              .toList()
         : [];
-    
+
     // Initialize home delivery
     _hasHomeDelivery = widget.pharmacy.hasHomeDelivery;
     _deliveryFee = widget.pharmacy.deliveryFee;
     _minimumOrderForDelivery = widget.pharmacy.minimumOrderForDelivery;
-    
+
     // Parse existing working hours
     _parseWorkingHours(widget.pharmacy.workingHours);
-    
+
     // Parse existing holidays (comma-separated string)
     if (widget.pharmacy.holidays.isNotEmpty) {
-      final holidaysList = widget.pharmacy.holidays.split(',').map((e) => e.trim()).toList();
+      final holidaysList = widget.pharmacy.holidays
+          .split(',')
+          .map((e) => e.trim())
+          .toList();
       for (var holiday in holidaysList) {
         if (_selectedHolidays.containsKey(holiday)) {
           _selectedHolidays[holiday] = true;
@@ -104,17 +122,17 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
       }
     }
   }
-  
+
   void _parseWorkingHours(String workingHours) {
     if (workingHours.isEmpty) return;
-    
+
     // Expected format: "09:00-22:00"
     final parts = workingHours.split('-');
     if (parts.length == 2) {
       try {
         final openParts = parts[0].split(':');
         final closeParts = parts[1].split(':');
-        
+
         if (openParts.length == 2 && closeParts.length == 2) {
           _openTime = TimeOfDay(
             hour: int.parse(openParts[0]),
@@ -140,6 +158,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
     }
     _workingHoursController.dispose();
     _descriptionController.dispose();
+    _whatsappController.dispose();
     for (var controller in _authEmailControllers) {
       controller.dispose();
     }
@@ -152,14 +171,14 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   Future<void> _pickImages() async {
     final ImagePicker picker = ImagePicker();
     final List<XFile> images = await picker.pickMultiImage();
-    
+
     if (images.isNotEmpty) {
       setState(() {
         _selectedImages.addAll(images.map((xFile) => File(xFile.path)));
       });
     }
   }
-  
+
   Future<void> _selectOpenTime() async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -240,9 +259,125 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
         .child('pharmacies')
         .child(widget.pharmacy.id)
         .child('$fileName.jpg');
-    
+
     await ref.putFile(image);
     return await ref.getDownloadURL();
+  }
+
+  // ✅ فصل المستخدمين المحذوفين من الصيدلية وإرجاعهم لمستخدمين عاديين
+  Future<void> _unlinkRemovedUsersFromPharmacy(
+    List<String> oldEmails,
+    List<String> newEmails,
+    String pharmacyId,
+  ) async {
+    try {
+      // المستخدمين اللي اتشالو = موجودين في القديم، مش موجودين في الجديد
+      final removedEmails = oldEmails
+          .where((email) => email.isNotEmpty && !newEmails.contains(email))
+          .toList();
+
+      if (removedEmails.isEmpty) {
+        print('ℹ️ لا يوجد مستخدمين محذوفين');
+        return;
+      }
+
+      print('🔓 جاري فصل ${removedEmails.length} مستخدم من الصيدلية...');
+
+      for (final email in removedEmails) {
+        // البحث عن المستخدمين بهذा الإيميل
+        final usersSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .where(
+              'pharmacyId',
+              isEqualTo: pharmacyId,
+            ) // التأكد أنه تابع لهذه الصيدلية
+            .get();
+
+        if (usersSnapshot.docs.isEmpty) {
+          print('⚠️ لم يتم العثور على مستخدم بالإيميل: $email');
+          continue;
+        }
+
+        // فصل جميع المستخدمين المطابقين
+        for (final userDoc in usersSnapshot.docs) {
+          // حذف pharmacyId وإرجاع role إلى user
+          await userDoc.reference.update({
+            'role': 'user',
+            'pharmacyId': FieldValue.delete(), // حذف الحقل تماماً
+          });
+
+          print('✅ تم فصل المستخدم ${userDoc.id} من الصيدلية');
+
+          // حذف pharmacy_subscription
+          await FirebaseFirestore.instance
+              .collection('pharmacy_subscriptions')
+              .doc(userDoc.id)
+              .delete();
+
+          print('✅ تم حذف pharmacy_subscription للمستخدم ${userDoc.id}');
+
+          // إلغاء الاشتراك في pharmacy_requests topic (FCM)
+          // ملاحظة: هذا يحتاج FCM token من المستخدم، سيتم التعامل معه عند تسجيل الدخول القادم
+        }
+      }
+
+      print('✅ تم فصل جميع المستخدمين المحذوفين بنجاح');
+    } catch (e) {
+      print('❌ خطأ في فصل المستخدمين: $e');
+      rethrow;
+    }
+  }
+
+  // ✅ NEW: ربط المستخدمين الموجودين بالصيدلية
+  Future<void> _linkUsersToPharmacy(
+    List<String> emails,
+    String pharmacyId,
+  ) async {
+    try {
+      for (final email in emails) {
+        if (email.isEmpty) continue;
+
+        // البحث عن المستخدمين بهذا الإيميل
+        final usersSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .get();
+
+        if (usersSnapshot.docs.isEmpty) {
+          print('⚠️ No users found with email: $email');
+          continue;
+        }
+
+        // تحديث جميع المستخدمين المطابقين
+        for (final userDoc in usersSnapshot.docs) {
+          await userDoc.reference.update({
+            'role': 'pharmacy',
+            'pharmacyId': pharmacyId,
+          });
+
+          print(
+            '✅ Updated user ${userDoc.id} with pharmacy role and ID: $pharmacyId',
+          );
+
+          // إنشاء pharmacy_subscription للمستخدم
+          await FirebaseFirestore.instance
+              .collection('pharmacy_subscriptions')
+              .doc(userDoc.id)
+              .set({
+                'subscribedAt': FieldValue.serverTimestamp(),
+                'topic': 'pharmacy_requests',
+                'isActive': true,
+                'pharmacyId': pharmacyId,
+              }, SetOptions(merge: true));
+
+          print('✅ Created pharmacy_subscription for user ${userDoc.id}');
+        }
+      }
+    } catch (e) {
+      print('❌ Error linking users to pharmacy: $e');
+      // لا نرمي exception هنا لأننا لا نريد فشل عملية التحديث
+    }
   }
 
   Future<void> _saveChanges() async {
@@ -261,7 +396,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
           ),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -271,7 +408,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
 
     try {
       print('📝 بدء التحديث - ID: ${widget.pharmacy.id}');
-      
+
       // Upload new images
       List<String> newImageUrls = [];
       for (var image in _selectedImages) {
@@ -281,23 +418,30 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
 
       // Combine existing and new images
       final allImages = [..._existingImageUrls, ...newImageUrls];
-      
+
       // Get selected holidays as comma-separated string
       final selectedHolidaysList = _selectedHolidays.entries
           .where((entry) => entry.value)
           .map((entry) => entry.key)
           .toList();
-      final holidaysString = selectedHolidaysList.join(', ');
-      
+      final holidaysString = selectedHolidaysList.isEmpty
+          ? PharmacyModel.noHolidaysText
+          : selectedHolidaysList.join(', ');
+
       // Get insurance companies list
       final insuranceCompanies = _hasInsurance
           ? _insuranceCompanyControllers
-              .map((controller) => controller.text.trim())
-              .where((name) => name.isNotEmpty)
-              .toList()
+                .map((controller) => controller.text.trim())
+                .where((name) => name.isNotEmpty)
+                .toList()
           : <String>[];
 
       // Update pharmacy data
+      final authEmails = _authEmailControllers
+          .map((c) => c.text.trim())
+          .where((email) => email.isNotEmpty)
+          .toList();
+
       final updatedData = {
         'name': _nameController.text.trim(),
         'address': _addressController.text.trim(),
@@ -305,31 +449,45 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
             .map((c) => c.text.trim())
             .where((phone) => phone.isNotEmpty)
             .toList(),
+        'whatsapp': _whatsappController.text.trim(),
         'workingHours': _workingHoursController.text.trim(),
         'images': allImages,
         'holidays': holidaysString,
-        'authEmails': _authEmailControllers
-            .map((c) => c.text.trim())
-            .where((email) => email.isNotEmpty)
-            .toList(),
+        'authEmails': authEmails,
         'hasInsurance': _hasInsurance,
         'insuranceCompanies': insuranceCompanies,
         'hasHomeDelivery': _hasHomeDelivery,
-        'deliveryFee': _hasHomeDelivery ? _deliveryFee : null,
-        'minimumOrderForDelivery': _hasHomeDelivery ? _minimumOrderForDelivery : null,
-        'description': _descriptionController.text.trim().isNotEmpty 
-            ? _descriptionController.text.trim() 
+        'deliveryFee': _hasHomeDelivery ? (_deliveryFee ?? 0.0) : null,
+        'minimumOrderForDelivery': _hasHomeDelivery
+            ? (_minimumOrderForDelivery ?? 0.0)
+            : null,
+        'description': _descriptionController.text.trim().isNotEmpty
+            ? _descriptionController.text.trim()
             : null,
       };
 
       print('📤 جاري التحديث في Firestore...');
-      
+
       await FirebaseFirestore.instance
           .collection('pharmacies')
           .doc(widget.pharmacy.id)
           .update(updatedData);
 
       print('✅ تم التحديث بنجاح');
+
+      // ✅ STEP 1: فصل المستخدمين المحذوفين أولاً
+      print('🔓 جاري فصل المستخدمين المحذوفين...');
+      await _unlinkRemovedUsersFromPharmacy(
+        widget.pharmacy.authEmails, // الإيميلات القديمة
+        authEmails, // الإيميلات الجديدة
+        widget.pharmacy.id,
+      );
+      print('✅ تم فصل المستخدمين المحذوفين بنجاح');
+
+      // ✅ STEP 2: ربط المستخدمين الجدد/الموجودين
+      print('🔗 جاري ربط المستخدمين بالصيدلية...');
+      await _linkUsersToPharmacy(authEmails, widget.pharmacy.id);
+      print('✅ تم ربط المستخدمين بنجاح');
 
       if (mounted) {
         Navigator.pop(context, true);
@@ -344,14 +502,16 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
             ),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
     } catch (e, stackTrace) {
       print('❌ خطأ في التحديث: $e');
       print('📋 Stack trace: $stackTrace');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -364,7 +524,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
             ),
             backgroundColor: Colors.red.shade600,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'تفاصيل',
@@ -373,7 +535,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     title: const Row(
                       children: [
                         Icon(Icons.error_outline, color: Colors.red),
@@ -424,6 +588,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
   InputDecoration _buildInputDecoration({
     required String label,
     required IconData icon,
+    Color iconColor = _primaryColor,
     String? hint,
   }) {
     return InputDecoration(
@@ -432,34 +597,34 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
       prefixIcon: Container(
         margin: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: _primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
+          color: iconColor.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(11),
         ),
-        child: Icon(icon, color: _primaryColor, size: 22),
+        child: Icon(icon, color: iconColor, size: 20),
       ),
       labelStyle: const TextStyle(
         color: _textSecondary,
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.w500,
       ),
       hintStyle: TextStyle(
         color: _textSecondary.withOpacity(0.6),
-        fontSize: 14,
+        fontSize: 12.5,
       ),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFFDCE6EF), width: 1.2),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFFDCE6EF), width: 1.2),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: _primaryColor, width: 2),
+        borderSide: const BorderSide(color: _primaryColor, width: 1.6),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -506,7 +671,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                       'جاري حفظ التعديلات...',
                       style: TextStyle(
                         color: _textSecondary,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -515,116 +680,54 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
               )
             : CustomScrollView(
                 slivers: [
-                  // Premium App Bar
+                  // App Bar
                   SliverAppBar(
-                    expandedHeight: 140,
                     floating: false,
                     pinned: true,
+                    toolbarHeight: 62,
                     elevation: 0,
-                    backgroundColor: _primaryColor,
-                    leading: Container(
-                      margin: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                    scrolledUnderElevation: 0,
+                    backgroundColor: Colors.white,
+                    surfaceTintColor: Colors.white,
+                    leading: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: _textPrimary,
+                        size: 18,
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    centerTitle: true,
+                    title: const Text(
+                      'تعديل بيانات الصيدلية',
+                      style: TextStyle(
+                        color: _textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [_primaryColor, _secondaryColor],
+                    actions: [
+                      TextButton.icon(
+                        onPressed: _isLoading ? null : _saveChanges,
+                        icon: const Icon(Icons.check_rounded, size: 18),
+                        label: const Text(
+                          'حفظ',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        child: Stack(
-                          children: [
-                            // Decorative circles
-                            Positioned(
-                              top: -30,
-                              right: -30,
-                              child: Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.1),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 10,
-                              left: -20,
-                              child: Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.1),
-                                ),
-                              ),
-                            ),
-                            // Content
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        child: const Icon(
-                                          Icons.edit_note_rounded,
-                                          color: Colors.white,
-                                          size: 28,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      const Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'تعديل بيانات الصيدلية',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            SizedBox(height: 4),
-                                            Text(
-                                              'قم بتحديث معلومات الصيدلية',
-                                              style: TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        style: TextButton.styleFrom(
+                          foregroundColor: _primaryColor,
                         ),
                       ),
+                    ],
+                    bottom: const PreferredSize(
+                      preferredSize: Size.fromHeight(1),
+                      child: Divider(height: 1, color: Color(0xFFE2E8F0)),
                     ),
                   ),
-                  
+
                   // Form Content
                   SliverToBoxAdapter(
                     child: Form(
@@ -634,6 +737,8 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            _buildHeaderCard(),
+                            const SizedBox(height: 16),
                             // Basic Info Section
                             _buildSectionCard(
                               title: 'المعلومات الأساسية',
@@ -647,7 +752,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   ),
                                   style: const TextStyle(
                                     color: _textPrimary,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   validator: (value) {
@@ -666,7 +771,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   ),
                                   style: const TextStyle(
                                     color: _textPrimary,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 2,
@@ -678,41 +783,51 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   },
                                 ),
                                 const SizedBox(height: 20),
-                                
+
                                 // عن الصيدلية (اختياري)
                                 TextFormField(
                                   controller: _descriptionController,
                                   decoration: _buildInputDecoration(
                                     label: 'عن الصيدلية (اختياري)',
                                     icon: Icons.description,
+                                    hint:
+                                        'مثال:\n'
+                                        'قياس السكر مجانى\n'
+                                        'قياس الضغط مجانى\n'
+                                        'متاح لدينا عمل انبودى\n'
+                                        'متاح قياس الوزن بسعر رمزى',
                                   ),
                                   style: const TextStyle(
                                     color: _textPrimary,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w500,
                                   ),
-                                  maxLines: 3,
+                                  maxLines: 4,
                                 ),
                                 const SizedBox(height: 20),
-                                
+
                                 // أرقام الهاتف (Multiple)
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: _backgroundColor,
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: _secondaryColor.withOpacity(0.2)),
+                                    border: Border.all(
+                                      color: _secondaryColor.withOpacity(0.2),
+                                    ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           const Text(
                                             'أرقام الهاتف',
                                             style: TextStyle(
-                                              fontSize: 16,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                               color: _textPrimary,
                                             ),
@@ -721,7 +836,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                             TextButton.icon(
                                               onPressed: () {
                                                 setState(() {
-                                                  _phoneControllers.add(TextEditingController());
+                                                  _phoneControllers.add(
+                                                    TextEditingController(),
+                                                  );
                                                 });
                                               },
                                               icon: const Icon(Icons.add),
@@ -733,27 +850,39 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         ],
                                       ),
                                       const SizedBox(height: 8),
-                                      ...List.generate(_phoneControllers.length, (index) {
+                                      ...List.generate(_phoneControllers.length, (
+                                        index,
+                                      ) {
                                         return Padding(
-                                          padding: const EdgeInsets.only(bottom: 12),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
                                           child: Row(
                                             children: [
                                               Expanded(
                                                 child: TextFormField(
-                                                  controller: _phoneControllers[index],
-                                                  keyboardType: TextInputType.phone,
+                                                  controller:
+                                                      _phoneControllers[index],
+                                                  keyboardType:
+                                                      TextInputType.phone,
+                                                  textDirection:
+                                                      TextDirection.ltr,
+                                                  textAlign: TextAlign.left,
                                                   decoration: _buildInputDecoration(
-                                                    label: index == 0 ? 'رقم الهاتف الأساسي *' : 'رقم ${index + 1}',
+                                                    label: index == 0
+                                                        ? 'رقم الهاتف الأساسي *'
+                                                        : 'رقم ${index + 1}',
                                                     icon: Icons.phone_rounded,
                                                   ),
                                                   style: const TextStyle(
                                                     color: _textPrimary,
-                                                    fontSize: 16,
+                                                    fontSize: 14,
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                   validator: index == 0
                                                       ? (value) {
-                                                          if (value == null || value.isEmpty) {
+                                                          if (value == null ||
+                                                              value.isEmpty) {
                                                             return 'يرجى إدخال رقم الهاتف الأساسي';
                                                           }
                                                           return null;
@@ -763,11 +892,16 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                               ),
                                               if (index > 0)
                                                 IconButton(
-                                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                                  icon: const Icon(
+                                                    Icons.remove_circle,
+                                                    color: Colors.red,
+                                                  ),
                                                   onPressed: () {
                                                     setState(() {
-                                                      _phoneControllers[index].dispose();
-                                                      _phoneControllers.removeAt(index);
+                                                      _phoneControllers[index]
+                                                          .dispose();
+                                                      _phoneControllers
+                                                          .removeAt(index);
                                                     });
                                                   },
                                                 ),
@@ -778,11 +912,36 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     ],
                                   ),
                                 ),
+                                const SizedBox(height: 20),
+
+                                // رقم الواتساب
+                                TextFormField(
+                                  controller: _whatsappController,
+                                  keyboardType: TextInputType.phone,
+                                  textDirection: TextDirection.ltr,
+                                  textAlign: TextAlign.left,
+                                  decoration: _buildInputDecoration(
+                                    label: 'رقم الواتساب',
+                                    icon: MdiIcons.whatsapp,
+                                    iconColor: const Color(0xFF25D366),
+                                  ),
+                                  style: const TextStyle(
+                                    color: _textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'يرجى إدخال رقم الواتساب';
+                                    }
+                                    return null;
+                                  },
+                                ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Working Hours Section
                             _buildSectionCard(
                               title: 'ساعات العمل',
@@ -809,13 +968,11 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     ),
                                   ],
                                 ),
-                            
-                          
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Auth Emails Section
                             _buildSectionCard(
                               title: 'إيميلات المصادقة',
@@ -824,10 +981,10 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: _primaryColor.withOpacity(0.08),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.blue.shade200,
+                                      color: _primaryColor.withOpacity(0.24),
                                       width: 1,
                                     ),
                                   ),
@@ -835,7 +992,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     children: [
                                       Icon(
                                         Icons.info_outline_rounded,
-                                        color: Colors.blue.shade700,
+                                        color: _primaryColor,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 10),
@@ -843,7 +1000,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         child: Text(
                                           'الإيميلات المسموح لها بالدخول إلى لوحة التحكم',
                                           style: TextStyle(
-                                            color: Colors.blue.shade900,
+                                            color: _textPrimary,
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -853,7 +1010,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                ..._authEmailControllers.asMap().entries.map((entry) {
+                                ..._authEmailControllers.asMap().entries.map((
+                                  entry,
+                                ) {
                                   final index = entry.key;
                                   final controller = entry.value;
                                   return Padding(
@@ -863,17 +1022,27 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         Expanded(
                                           child: TextFormField(
                                             controller: controller,
-                                            keyboardType: TextInputType.emailAddress,
+                                            keyboardType:
+                                                TextInputType.emailAddress,
                                             decoration: InputDecoration(
                                               labelText: 'إيميل ${index + 1}',
-                                              prefixIcon: const Icon(Icons.email, color: _primaryColor),
-                                              suffixIcon: _authEmailControllers.length > 1
+                                              prefixIcon: const Icon(
+                                                Icons.email,
+                                                color: _primaryColor,
+                                              ),
+                                              suffixIcon:
+                                                  _authEmailControllers.length >
+                                                      1
                                                   ? IconButton(
-                                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                                      icon: const Icon(
+                                                        Icons.delete,
+                                                        color: Colors.red,
+                                                      ),
                                                       onPressed: () {
                                                         setState(() {
                                                           controller.dispose();
-                                                          _authEmailControllers.removeAt(index);
+                                                          _authEmailControllers
+                                                              .removeAt(index);
                                                         });
                                                       },
                                                     )
@@ -881,20 +1050,33 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                               filled: true,
                                               fillColor: Colors.white,
                                               border: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                                borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey.shade300,
+                                                  width: 2,
+                                                ),
                                               ),
                                               enabledBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                                borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide(
+                                                  color: Colors.grey.shade300,
+                                                  width: 2,
+                                                ),
                                               ),
                                               focusedBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                                borderSide: const BorderSide(color: _primaryColor, width: 2),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: const BorderSide(
+                                                  color: _primaryColor,
+                                                  width: 2,
+                                                ),
                                               ),
                                             ),
                                             validator: (value) {
-                                              if (value == null || value.trim().isEmpty) {
+                                              if (value == null ||
+                                                  value.trim().isEmpty) {
                                                 return 'الإيميل مطلوب';
                                               }
                                               if (!value.contains('@')) {
@@ -913,7 +1095,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   child: ElevatedButton.icon(
                                     onPressed: () {
                                       setState(() {
-                                        _authEmailControllers.add(TextEditingController());
+                                        _authEmailControllers.add(
+                                          TextEditingController(),
+                                        );
                                       });
                                     },
                                     icon: const Icon(Icons.add),
@@ -921,7 +1105,10 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: _primaryColor,
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 12,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -930,9 +1117,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Holidays Section
                             _buildSectionCard(
                               title: 'أيام العطلة',
@@ -982,7 +1169,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         });
                                       },
                                       child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 200),
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 18,
                                           vertical: 12,
@@ -990,11 +1179,18 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         decoration: BoxDecoration(
                                           gradient: isSelected
                                               ? const LinearGradient(
-                                                  colors: [Color(0xFFEF4444), Color(0xFFF87171)],
+                                                  colors: [
+                                                    Color(0xFFEF4444),
+                                                    Color(0xFFF87171),
+                                                  ],
                                                 )
                                               : null,
-                                          color: isSelected ? null : Colors.white,
-                                          borderRadius: BorderRadius.circular(12),
+                                          color: isSelected
+                                              ? null
+                                              : Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           border: Border.all(
                                             color: isSelected
                                                 ? Colors.transparent
@@ -1004,14 +1200,17 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                           boxShadow: isSelected
                                               ? [
                                                   BoxShadow(
-                                                    color: const Color(0xFFEF4444).withOpacity(0.3),
+                                                    color: const Color(
+                                                      0xFFEF4444,
+                                                    ).withOpacity(0.3),
                                                     blurRadius: 8,
                                                     offset: const Offset(0, 4),
                                                   ),
                                                 ]
                                               : [
                                                   BoxShadow(
-                                                    color: Colors.black.withOpacity(0.03),
+                                                    color: Colors.black
+                                                        .withOpacity(0.03),
                                                     blurRadius: 4,
                                                     offset: const Offset(0, 2),
                                                   ),
@@ -1046,9 +1245,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Home Delivery Section
                             _buildSectionCard(
                               title: 'خدمة التوصيل للمنزل',
@@ -1057,10 +1256,10 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF06B6D4).withOpacity(0.1),
+                                    color: _primaryColor.withOpacity(0.09),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0xFF06B6D4).withOpacity(0.3),
+                                      color: _primaryColor.withOpacity(0.28),
                                       width: 1,
                                     ),
                                   ),
@@ -1068,7 +1267,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     children: [
                                       Icon(
                                         Icons.info_outline_rounded,
-                                        color: const Color(0xFF06B6D4),
+                                        color: _primaryColor,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 10),
@@ -1076,7 +1275,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         child: Text(
                                           'هل خدمة التوصيل للمنازل متاحة؟',
                                           style: TextStyle(
-                                            color: const Color(0xFF0891B2),
+                                            color: _textPrimary,
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -1094,19 +1293,24 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     });
                                   },
                                   title: Text(
-                                    _hasHomeDelivery ? 'خدمة التوصيل متاحة' : 'خدمة التوصيل غير متاحة',
+                                    _hasHomeDelivery
+                                        ? 'خدمة التوصيل متاحة'
+                                        : 'خدمة التوصيل غير متاحة',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: _hasHomeDelivery ? const Color(0xFF06B6D4) : _textSecondary,
+                                      color: _hasHomeDelivery
+                                          ? _primaryColor
+                                          : _textSecondary,
                                     ),
                                   ),
-                                  activeColor: const Color(0xFF06B6D4),
+                                  activeColor: _primaryColor,
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 if (_hasHomeDelivery) ...[
                                   const SizedBox(height: 16),
                                   TextFormField(
-                                    initialValue: _deliveryFee?.toString() ?? '',
+                                    initialValue:
+                                        _deliveryFee?.toString() ?? '',
                                     decoration: InputDecoration(
                                       labelText: 'رسوم التوصيل (اختياري)',
                                       hintText: 'مثال: 10',
@@ -1114,27 +1318,36 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         margin: const EdgeInsets.all(8),
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF06B6D4).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(10),
+                                          color: _primaryColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         child: const Icon(
                                           Icons.money,
-                                          color: Color(0xFF06B6D4),
+                                          color: _primaryColor,
                                           size: 20,
                                         ),
                                       ),
                                       suffixText: 'جنيه',
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFE2E8F0),
+                                        ),
                                       ),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFE2E8F0),
+                                        ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                        borderSide: const BorderSide(
+                                          color: _primaryColor,
+                                          width: 2,
+                                        ),
                                       ),
                                       filled: true,
                                       fillColor: _cardColor,
@@ -1146,7 +1359,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   TextFormField(
-                                    initialValue: _minimumOrderForDelivery?.toString() ?? '',
+                                    initialValue:
+                                        _minimumOrderForDelivery?.toString() ??
+                                        '',
                                     decoration: InputDecoration(
                                       labelText: 'الحد الأدنى للطلب (اختياري)',
                                       hintText: 'مثال: 50',
@@ -1154,42 +1369,52 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         margin: const EdgeInsets.all(8),
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF06B6D4).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(10),
+                                          color: _primaryColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
                                         child: const Icon(
                                           Icons.shopping_cart,
-                                          color: Color(0xFF06B6D4),
+                                          color: _primaryColor,
                                           size: 20,
                                         ),
                                       ),
                                       suffixText: 'جنيه',
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFE2E8F0),
+                                        ),
                                       ),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFFE2E8F0),
+                                        ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                                        borderSide: const BorderSide(
+                                          color: _primaryColor,
+                                          width: 2,
+                                        ),
                                       ),
                                       filled: true,
                                       fillColor: _cardColor,
                                     ),
                                     keyboardType: TextInputType.number,
                                     onChanged: (value) {
-                                      _minimumOrderForDelivery = double.tryParse(value);
+                                      _minimumOrderForDelivery =
+                                          double.tryParse(value);
                                     },
                                   ),
                                 ],
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Insurance Section
                             _buildSectionCard(
                               title: 'شركات التأمين',
@@ -1198,10 +1423,10 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
+                                    color: _primaryColor.withOpacity(0.08),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: Colors.blue.shade200,
+                                      color: _primaryColor.withOpacity(0.24),
                                       width: 1,
                                     ),
                                   ),
@@ -1209,7 +1434,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     children: [
                                       Icon(
                                         Icons.info_outline_rounded,
-                                        color: Colors.blue.shade700,
+                                        color: _primaryColor,
                                         size: 20,
                                       ),
                                       const SizedBox(width: 10),
@@ -1217,7 +1442,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         child: Text(
                                           'هل الصيدلية متعاقدة مع شركات تأمين؟',
                                           style: TextStyle(
-                                            color: Colors.blue.shade900,
+                                            color: _textPrimary,
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -1234,7 +1459,8 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                       _hasInsurance = value;
                                       if (!value) {
                                         // Clear insurance companies when disabled
-                                        for (var controller in _insuranceCompanyControllers) {
+                                        for (var controller
+                                            in _insuranceCompanyControllers) {
                                           controller.dispose();
                                         }
                                         _insuranceCompanyControllers.clear();
@@ -1253,7 +1479,8 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 if (_hasInsurance) ...[
                                   const SizedBox(height: 16),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       const Text(
                                         'أسماء الشركات',
@@ -1266,10 +1493,15 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                       TextButton.icon(
                                         onPressed: () {
                                           setState(() {
-                                            _insuranceCompanyControllers.add(TextEditingController());
+                                            _insuranceCompanyControllers.add(
+                                              TextEditingController(),
+                                            );
                                           });
                                         },
-                                        icon: const Icon(Icons.add_circle, size: 20),
+                                        icon: const Icon(
+                                          Icons.add_circle,
+                                          size: 20,
+                                        ),
                                         label: const Text('إضافة شركة'),
                                         style: TextButton.styleFrom(
                                           foregroundColor: _primaryColor,
@@ -1278,77 +1510,45 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  if (_insuranceCompanyControllers.isEmpty)
-                                    Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 16,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.shade50,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(
-                                            color: Colors.grey.shade300,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Icon(
-                                              Icons.business_outlined,
-                                              size: 48,
-                                              color: Colors.grey.shade400,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'لا توجد شركات تأمين مضافة',
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            TextButton.icon(
-                                              onPressed: () {
-                                                setState(() {
-                                                  _insuranceCompanyControllers.add(TextEditingController());
-                                                });
-                                              },
-                                              icon: const Icon(Icons.add),
-                                              label: const Text('اضغط لإضافة شركة'),
-                                              style: TextButton.styleFrom(
-                                                foregroundColor: _primaryColor,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    )
-                                  else
+                                  if (_insuranceCompanyControllers.isNotEmpty)
                                     ListView.builder(
                                       shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      itemCount: _insuranceCompanyControllers.length,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount:
+                                          _insuranceCompanyControllers.length,
                                       itemBuilder: (context, index) {
                                         return Padding(
-                                          padding: const EdgeInsets.only(bottom: 12),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
                                           child: Row(
                                             children: [
                                               Expanded(
                                                 child: TextFormField(
-                                                  controller: _insuranceCompanyControllers[index],
+                                                  controller:
+                                                      _insuranceCompanyControllers[index],
                                                   decoration: InputDecoration(
-                                                    labelText: 'اسم الشركة ${index + 1}',
-                                                    prefixIcon: const Icon(Icons.business),
+                                                    labelText:
+                                                        'اسم الشركة ${index + 1}',
+                                                    prefixIcon: const Icon(
+                                                      Icons.business,
+                                                    ),
                                                     border: OutlineInputBorder(
-                                                      borderRadius: BorderRadius.circular(12),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
+                                                          ),
                                                     ),
                                                     filled: true,
                                                     fillColor: Colors.white,
                                                   ),
                                                   validator: (value) {
-                                                    if (_hasInsurance && (value == null || value.trim().isEmpty)) {
+                                                    if (_hasInsurance &&
+                                                        (value == null ||
+                                                            value
+                                                                .trim()
+                                                                .isEmpty)) {
                                                       return 'الرجاء إدخال اسم الشركة';
                                                     }
                                                     return null;
@@ -1359,11 +1559,15 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                               IconButton(
                                                 onPressed: () {
                                                   setState(() {
-                                                    _insuranceCompanyControllers[index].dispose();
-                                                    _insuranceCompanyControllers.removeAt(index);
+                                                    _insuranceCompanyControllers[index]
+                                                        .dispose();
+                                                    _insuranceCompanyControllers
+                                                        .removeAt(index);
                                                   });
                                                 },
-                                                icon: const Icon(Icons.remove_circle),
+                                                icon: const Icon(
+                                                  Icons.remove_circle,
+                                                ),
                                                 color: Colors.red,
                                                 tooltip: 'حذف',
                                               ),
@@ -1375,9 +1579,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 ],
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Images Section
                             _buildSectionCard(
                               title: 'صور الصيدلية',
@@ -1393,7 +1597,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: _primaryColor.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Text(
                                           'الصور الحالية (${_existingImageUrls.length})',
@@ -1412,11 +1618,13 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
                                       itemCount: _existingImageUrls.length,
-                                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(width: 12),
                                       itemBuilder: (context, index) {
                                         return _buildImageCard(
                                           imageUrl: _existingImageUrls[index],
-                                          onRemove: () => _removeExistingImage(index),
+                                          onRemove: () =>
+                                              _removeExistingImage(index),
                                         );
                                       },
                                     ),
@@ -1433,7 +1641,9 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.green.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         child: Text(
                                           'صور جديدة (${_selectedImages.length})',
@@ -1452,11 +1662,13 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                     child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
                                       itemCount: _selectedImages.length,
-                                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(width: 12),
                                       itemBuilder: (context, index) {
                                         return _buildImageCard(
                                           file: _selectedImages[index],
-                                          onRemove: () => _removeNewImage(index),
+                                          onRemove: () =>
+                                              _removeNewImage(index),
                                           isNew: true,
                                         );
                                       },
@@ -1480,13 +1692,18 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                       color: _primaryColor.withOpacity(0.05),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
-                                            color: _primaryColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(10),
+                                            color: _primaryColor.withOpacity(
+                                              0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
                                           ),
                                           child: const Icon(
                                             Icons.add_photo_alternate_rounded,
@@ -1496,13 +1713,14 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                         ),
                                         const SizedBox(width: 14),
                                         const Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'إضافة صور',
                                               style: TextStyle(
                                                 color: _primaryColor,
-                                                fontSize: 16,
+                                                fontSize: 14,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
@@ -1522,22 +1740,20 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 32),
-                            
+
                             // Save Button
                             Container(
-                              height: 60,
+                              height: 54,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
-                                gradient: const LinearGradient(
-                                  colors: [_primaryColor, _secondaryColor],
-                                ),
+                                gradient: _primaryGradient,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: _primaryColor.withOpacity(0.4),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 8),
+                                    color: _primaryColor.withOpacity(0.28),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
@@ -1553,12 +1769,16 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.save_rounded, color: Colors.white, size: 24),
+                                    Icon(
+                                      Icons.save_rounded,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
                                     SizedBox(width: 12),
                                     Text(
                                       'حفظ التعديلات',
                                       style: TextStyle(
-                                        fontSize: 18,
+                                        fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),
@@ -1567,7 +1787,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 30),
                           ],
                         ),
@@ -1576,6 +1796,66 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: _primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryColor.withOpacity(0.22),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.local_pharmacy_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.pharmacy.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'حدّث البيانات الأساسية وبيانات التواصل',
+                  style: TextStyle(
+                    color: Color(0xFFE8F7FB),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1589,12 +1869,13 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
     return Container(
       decoration: BoxDecoration(
         color: _cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFDDE7EF), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: _primaryColor.withOpacity(0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -1622,14 +1903,14 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     color: _textPrimary,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             ...children,
           ],
         ),
@@ -1651,7 +1932,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
           label,
           style: const TextStyle(
             color: _textSecondary,
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -1686,8 +1967,10 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                   time != null ? _formatTimeOfDay(time) : 'اختر الوقت',
                   style: TextStyle(
                     color: time != null ? _primaryColor : _textSecondary,
-                    fontSize: 15,
-                    fontWeight: time != null ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 13,
+                    fontWeight: time != null
+                        ? FontWeight.bold
+                        : FontWeight.w500,
                   ),
                 ),
               ],
@@ -1740,7 +2023,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                           strokeWidth: 2,
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                         ),
                       );

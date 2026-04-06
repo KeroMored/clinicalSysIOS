@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/laboratory_model.dart';
-import '../screens/laboratory_home_page.dart';
+import '../screens/laboratory_details_clinic_style_screen.dart';
 import '../screens/edit_laboratory_screen.dart';
 import '../screens/lab_bookings_management_screen.dart';
 import 'action_card.dart';
@@ -27,13 +27,10 @@ class ActionButtonsSection extends StatelessWidget {
       children: [
         const Text(
           'إجراءات سريعة',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        
+
         Row(
           children: [
             Expanded(
@@ -45,7 +42,7 @@ class ActionButtonsSection extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => LaboratoryDetailsScreen(
+                      builder: (context) => LaboratoryDetailsClinicStyleScreen(
                         laboratory: laboratory,
                       ),
                     ),
@@ -63,9 +60,8 @@ class ActionButtonsSection extends StatelessWidget {
                   final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => EditLaboratoryScreen(
-                        laboratory: laboratory,
-                      ),
+                      builder: (context) =>
+                          EditLaboratoryScreen(laboratory: laboratory),
                     ),
                   );
                   if (result == true) {
@@ -76,9 +72,9 @@ class ActionButtonsSection extends StatelessWidget {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // زر الحجوزات
         ActionCard(
           icon: Icons.calendar_today,
@@ -88,7 +84,8 @@ class ActionButtonsSection extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => LabBookingsManagementScreen(laboratory: laboratory),
+                builder: (context) =>
+                    LabBookingsManagementScreen(laboratory: laboratory),
               ),
             );
           },

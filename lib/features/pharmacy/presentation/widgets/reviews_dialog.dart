@@ -41,10 +41,7 @@ class ReviewsDialog extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF06B6D4),
-                    const Color(0xFF0891B2),
-                  ],
+                  colors: [const Color(0xFF06B6D4), const Color(0xFF0891B2)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -138,8 +135,8 @@ class ReviewsDialog extends StatelessWidget {
                                   index < averageRating.floor()
                                       ? Icons.star_rounded
                                       : (index < averageRating
-                                          ? Icons.star_half_rounded
-                                          : Icons.star_outline_rounded),
+                                            ? Icons.star_half_rounded
+                                            : Icons.star_outline_rounded),
                                   color: Colors.white,
                                   size: 16,
                                 );
@@ -161,16 +158,16 @@ class ReviewsDialog extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Reviews List
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: totalRatings > 0
-                    ? RatingsListWidget(
-                        serviceId: serviceId,
-                        starSize: 16,
-                      )
+                    ? RatingsListWidget(serviceId: serviceId, starSize: 16)
                     : Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,

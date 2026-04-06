@@ -5,20 +5,14 @@ import '../../data/models/gym_model.dart';
 class GymFeaturesCard extends StatelessWidget {
   final GymModel gym;
 
-  const GymFeaturesCard({
-    super.key,
-    required this.gym,
-  });
+  const GymFeaturesCard({super.key, required this.gym});
 
   @override
   Widget build(BuildContext context) {
     final features = <Map<String, dynamic>>[];
-    
+
     if (gym.hasPersonalTraining) {
-      features.add({
-        'icon': Icons.person_rounded,
-        'title': 'تدريب شخصي',
-      });
+      features.add({'icon': Icons.person_rounded, 'title': 'تدريب شخصي'});
     }
     if (gym.hasNutritionConsultation) {
       features.add({
@@ -27,22 +21,13 @@ class GymFeaturesCard extends StatelessWidget {
       });
     }
     if (gym.hasSwimmingPool) {
-      features.add({
-        'icon': Icons.pool_rounded,
-        'title': 'حمام سباحة',
-      });
+      features.add({'icon': Icons.pool_rounded, 'title': 'حمام سباحة'});
     }
     if (gym.hasSauna) {
-      features.add({
-        'icon': Icons.hot_tub_rounded,
-        'title': 'ساونا',
-      });
+      features.add({'icon': Icons.hot_tub_rounded, 'title': 'ساونا'});
     }
     if (gym.hasSteamRoom) {
-      features.add({
-        'icon': Icons.cloud_rounded,
-        'title': 'غرفة بخار',
-      });
+      features.add({'icon': Icons.cloud_rounded, 'title': 'غرفة بخار'});
     }
     if (gym.hasYogaClasses) {
       features.add({
@@ -81,16 +66,10 @@ class GymFeaturesCard extends StatelessWidget {
       });
     }
     if (gym.hasFunctionalTraining) {
-      features.add({
-        'icon': Icons.sports_rounded,
-        'title': 'تدريب وظيفي',
-      });
+      features.add({'icon': Icons.sports_rounded, 'title': 'تدريب وظيفي'});
     }
     if (gym.hasGroupClasses) {
-      features.add({
-        'icon': Icons.groups_rounded,
-        'title': 'حصص جماعية',
-      });
+      features.add({'icon': Icons.groups_rounded, 'title': 'حصص جماعية'});
     }
 
     if (features.isEmpty) return const SizedBox.shrink();
@@ -151,7 +130,9 @@ class GymFeaturesCard extends StatelessWidget {
                   color: AppTheme.gymGradient.colors[0].withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppTheme.gymGradient.colors[0].withValues(alpha: 0.2),
+                    color: AppTheme.gymGradient.colors[0].withValues(
+                      alpha: 0.2,
+                    ),
                     width: 1,
                   ),
                 ),

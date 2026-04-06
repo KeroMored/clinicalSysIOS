@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class RadiologyStatusBadge extends StatelessWidget {
   final bool isApproved;
 
-  const RadiologyStatusBadge({
-    super.key,
-    required this.isApproved,
-  });
+  const RadiologyStatusBadge({super.key, required this.isApproved});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +25,9 @@ class RadiologyStatusBadge extends StatelessWidget {
             isApproved ? 'مقبول' : 'قيد الانتظار',
             style: TextStyle(
               fontSize: 11,
-              color: isApproved ? Colors.green.shade700 : Colors.orange.shade700,
+              color: isApproved
+                  ? Colors.green.shade700
+                  : Colors.orange.shade700,
               fontWeight: FontWeight.bold,
             ),
           ),

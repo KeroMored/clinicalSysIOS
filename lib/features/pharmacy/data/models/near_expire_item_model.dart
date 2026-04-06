@@ -39,7 +39,7 @@ class NearExpireItemModel {
 
   factory NearExpireItemModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     return NearExpireItemModel(
       id: doc.id,
       pharmacyId: data['pharmacyId'] ?? '',
@@ -52,7 +52,9 @@ class NearExpireItemModel {
       medicineDescription: data['medicineDescription'],
       expiryDate: (data['expiryDate'] as Timestamp).toDate(),
       quantity: data['quantity'] ?? 0,
-      totalPrice: data['totalPrice'] != null ? (data['totalPrice'] as num).toDouble() : null,
+      totalPrice: data['totalPrice'] != null
+          ? (data['totalPrice'] as num).toDouble()
+          : null,
       imageUrl: data['imageUrl'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isActive: data['isActive'] ?? true,

@@ -5,10 +5,7 @@ import 'stat_card.dart';
 class QuickStatsSection extends StatelessWidget {
   final LaboratoryModel laboratory;
 
-  const QuickStatsSection({
-    super.key,
-    required this.laboratory,
-  });
+  const QuickStatsSection({super.key, required this.laboratory});
 
   @override
   Widget build(BuildContext context) {
@@ -17,13 +14,10 @@ class QuickStatsSection extends StatelessWidget {
       children: [
         const Text(
           'إحصائيات سريعة',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        
+
         Row(
           children: [
             StatCard(
@@ -34,9 +28,9 @@ class QuickStatsSection extends StatelessWidget {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         Row(
           children: [
             Expanded(
@@ -50,7 +44,9 @@ class QuickStatsSection extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: StatCard(
-                icon: laboratory.isVisible ? Icons.visibility : Icons.visibility_off,
+                icon: laboratory.isVisible
+                    ? Icons.visibility
+                    : Icons.visibility_off,
                 value: laboratory.isVisible ? 'ظاهر' : 'مخفي',
                 label: 'حالة العرض',
                 color: laboratory.isVisible ? Colors.green : Colors.orange,

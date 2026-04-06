@@ -5,7 +5,8 @@ import '../../data/models/payment_record_model.dart';
 class AddPaymentDialog extends StatefulWidget {
   final SubscriptionSettingsModel settings;
   final String placeName;
-  final Function(double amount, PaymentType type, DateTime date, String? notes) onSubmit;
+  final Function(double amount, PaymentType type, DateTime date, String? notes)
+  onSubmit;
 
   const AddPaymentDialog({
     super.key,
@@ -47,10 +48,12 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
         if (!_useCustomAmount) {
           switch (type) {
             case PaymentType.monthly:
-              _amountController.text = widget.settings.monthlyPrice.toStringAsFixed(0);
+              _amountController.text = widget.settings.monthlyPrice
+                  .toStringAsFixed(0);
               break;
             case PaymentType.yearly:
-              _amountController.text = widget.settings.yearlyPrice.toStringAsFixed(0);
+              _amountController.text = widget.settings.yearlyPrice
+                  .toStringAsFixed(0);
               break;
             case PaymentType.custom:
               _useCustomAmount = true;
@@ -77,9 +80,9 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
   void _submit() {
     final amount = double.tryParse(_amountController.text) ?? 0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال مبلغ صحيح')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى إدخال مبلغ صحيح')));
       return;
     }
 
@@ -112,7 +115,11 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                       color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.payments, color: Colors.green, size: 24),
+                    child: const Icon(
+                      Icons.payments,
+                      color: Colors.green,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -190,7 +197,8 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                   const Spacer(),
                   Switch(
                     value: _useCustomAmount,
-                    onChanged: (value) => setState(() => _useCustomAmount = value),
+                    onChanged: (value) =>
+                        setState(() => _useCustomAmount = value),
                     activeColor: Colors.orange,
                   ),
                   const Text('مبلغ مخصص', style: TextStyle(fontSize: 12)),
@@ -199,12 +207,14 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
               const SizedBox(height: 8),
               TextField(
                 controller: _amountController,
-                enabled: _useCustomAmount || _selectedType == PaymentType.custom,
+                enabled:
+                    _useCustomAmount || _selectedType == PaymentType.custom,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   suffixText: 'ج.م',
                   filled: true,
-                  fillColor: (_useCustomAmount || _selectedType == PaymentType.custom)
+                  fillColor:
+                      (_useCustomAmount || _selectedType == PaymentType.custom)
                       ? Colors.white
                       : Colors.grey[100],
                   border: OutlineInputBorder(
@@ -233,7 +243,10 @@ class _AddPaymentDialogState extends State<AddPaymentDialog> {
                 onTap: _selectDate,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey[300]!),
                     borderRadius: BorderRadius.circular(12),

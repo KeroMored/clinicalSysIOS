@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/radiology_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EditRadiologyScreen extends StatefulWidget {
   final RadiologyModel radiology;
@@ -27,16 +28,28 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
   @override
   void initState() {
     super.initState();
-    _centerNameController = TextEditingController(text: widget.radiology.centerName);
-    _ownerNameController = TextEditingController(text: widget.radiology.ownerName);
-    _phoneController = TextEditingController(text: widget.radiology.centerPhone);
-    _whatsappController = TextEditingController(text: widget.radiology.centerWhatsApp);
+    _centerNameController = TextEditingController(
+      text: widget.radiology.centerName,
+    );
+    _ownerNameController = TextEditingController(
+      text: widget.radiology.ownerName,
+    );
+    _phoneController = TextEditingController(
+      text: widget.radiology.centerPhone,
+    );
+    _whatsappController = TextEditingController(
+      text: widget.radiology.centerWhatsApp,
+    );
     _addressController = TextEditingController(text: widget.radiology.address);
-    _descriptionController = TextEditingController(text: widget.radiology.description ?? '');
+    _descriptionController = TextEditingController(
+      text: widget.radiology.description ?? '',
+    );
     _homeVisit = widget.radiology.homeVisit;
     _isActive = widget.radiology.isActive;
     _authEmailControllers = widget.radiology.authEmails.isNotEmpty
-        ? widget.radiology.authEmails.map((email) => TextEditingController(text: email)).toList()
+        ? widget.radiology.authEmails
+              .map((email) => TextEditingController(text: email))
+              .toList()
         : [TextEditingController()];
   }
 
@@ -66,8 +79,8 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
         'centerPhone': _phoneController.text.trim(),
         'centerWhatsApp': _whatsappController.text.trim(),
         'address': _addressController.text.trim(),
-        'description': _descriptionController.text.trim().isEmpty 
-            ? null 
+        'description': _descriptionController.text.trim().isEmpty
+            ? null
             : _descriptionController.text.trim(),
         'homeVisit': _homeVisit,
         'isActive': _isActive,
@@ -125,7 +138,7 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
                   child: SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(
+                    child: AppLoadingIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
@@ -248,9 +261,7 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
                     const Divider(height: 1),
                     SwitchListTile(
                       title: const Text('تفعيل المركز'),
-                      subtitle: Text(
-                        _isActive ? 'المركز نشط' : 'المركز معطل',
-                      ),
+                      subtitle: Text(_isActive ? 'المركز نشط' : 'المركز معطل'),
                       value: _isActive,
                       onChanged: (value) => setState(() => _isActive = value),
                       activeColor: Colors.green,
@@ -263,7 +274,7 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Auth Emails Section
               Container(
                 padding: const EdgeInsets.all(20),
@@ -326,10 +337,16 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             labelText: 'إيميل ${index + 1}',
-                            prefixIcon: const Icon(Icons.email, color: Colors.blue),
+                            prefixIcon: const Icon(
+                              Icons.email,
+                              color: Colors.blue,
+                            ),
                             suffixIcon: _authEmailControllers.length > 1
                                 ? IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
                                     onPressed: () {
                                       setState(() {
                                         controller.dispose();
@@ -342,15 +359,24 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
+                              borderSide: BorderSide(
+                                color: Colors.blue.shade300,
+                                width: 2,
+                              ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
+                              borderSide: BorderSide(
+                                color: Colors.blue.shade300,
+                                width: 2,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.blue, width: 2),
+                              borderSide: const BorderSide(
+                                color: Colors.blue,
+                                width: 2,
+                              ),
                             ),
                           ),
                           validator: (value) {
@@ -378,7 +404,10 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -403,10 +432,11 @@ class _EditRadiologyScreenState extends State<EditRadiologyScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(
+                        child: AppLoadingIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Text(

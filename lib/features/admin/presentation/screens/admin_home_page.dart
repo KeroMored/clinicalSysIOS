@@ -11,6 +11,7 @@ import 'add_delivery_screen.dart';
 import 'delivery_approval_screen.dart';
 import 'add_rehabilitation_center_screen.dart';
 import 'rehabilitation_approval_screen.dart';
+import 'send_admin_notification_screen.dart';
 import '../../../radiology/presentation/screens/add_radiology_screen.dart';
 import '../../../radiology/presentation/screens/radiology_approval_list_screen.dart';
 import '../../../gym/presentation/pages/add_gym_screen.dart';
@@ -32,7 +33,7 @@ class AdminHomePage extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: const GradientAppBar(
-          title: 'لوحة تحكم الأدمن',
+          title: 'إدارة الأدمن',
           gradient: AppTheme.accentGradient,
         ),
         body: Container(
@@ -40,10 +41,7 @@ class AdminHomePage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.backgroundColor,
-                Colors.white,
-              ],
+              colors: [AppTheme.backgroundColor, Colors.white],
             ),
           ),
           child: SingleChildScrollView(
@@ -86,17 +84,19 @@ class AdminHomePage extends StatelessWidget {
                           children: [
                             Text(
                               'مرحباً بك',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context).textTheme.headlineMedium
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'لوحة التحكم الإدارية',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
                             ),
                           ],
                         ),
@@ -125,7 +125,12 @@ class AdminHomePage extends StatelessWidget {
                         icon: FontAwesomeIcons.stethoscope,
                         title: 'الموافقة على العيادات',
                         gradient: AppTheme.clinicGradient,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClinicApprovalScreen())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ClinicApprovalScreen(),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -135,7 +140,12 @@ class AdminHomePage extends StatelessWidget {
                         icon: FontAwesomeIcons.pills,
                         title: 'الموافقة على الصيدليات',
                         gradient: AppTheme.pharmacyGradient,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ApprovePharmaciesScreen())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ApprovePharmaciesScreen(),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -151,7 +161,12 @@ class AdminHomePage extends StatelessWidget {
                         icon: FontAwesomeIcons.flask,
                         title: 'الموافقة على المعامل',
                         gradient: AppTheme.laboratoryGradient,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LaboratoryApprovalScreen())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LaboratoryApprovalScreen(),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -161,7 +176,12 @@ class AdminHomePage extends StatelessWidget {
                         icon: Icons.local_hospital_rounded,
                         title: 'الموافقة على مراكز الأشعة',
                         gradient: AppTheme.radiologyGradient,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RadiologyApprovalListScreen())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RadiologyApprovalListScreen(),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -177,7 +197,12 @@ class AdminHomePage extends StatelessWidget {
                         icon: FontAwesomeIcons.userNurse,
                         title: 'الموافقة على الممرضين',
                         gradient: AppTheme.nursingGradient,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NurseApprovalScreen())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NurseApprovalScreen(),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -186,8 +211,15 @@ class AdminHomePage extends StatelessWidget {
                         context,
                         icon: FontAwesomeIcons.truckMedical,
                         title: 'الموافقة على الديليفري',
-                        gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF2563EB)]),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeliveryApprovalScreen())),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DeliveryApprovalScreen(),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -203,27 +235,116 @@ class AdminHomePage extends StatelessWidget {
                         icon: FontAwesomeIcons.handHoldingMedical,
                         title: 'الموافقة على مراكز التأهيل',
                         gradient: AppTheme.rehabilitationGradient,
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RehabilitationApprovalScreen())),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const RehabilitationApprovalScreen(),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                      icon: Icons.fitness_center_rounded,
-                      title: 'الموافقة على الجيمات',
-                      gradient: AppTheme.gymGradient,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const GymApprovalScreen(),
-                          ),
-                        );
-                      },
+                        icon: Icons.fitness_center_rounded,
+                        title: 'الموافقة على الجيمات',
+                        gradient: AppTheme.gymGradient,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const GymApprovalScreen(),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 32),
+
+                // Broadcast Notifications Section
+                Text(
+                  'الإشعارات العامة',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.darkColor,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SendAdminNotificationScreen(),
+                    ),
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0284C7).withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.campaign_rounded,
+                            size: 32,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'إرسال إشعار لكل المستخدمين',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'تنبيه عام باسم التطبيق مع خيار فتح المتجر',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
 
                 const SizedBox(height: 32),
@@ -242,7 +363,9 @@ class AdminHomePage extends StatelessWidget {
                 InkWell(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const ReportsAdminScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const ReportsAdminScreen(),
+                    ),
                   ),
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
@@ -324,7 +447,9 @@ class AdminHomePage extends StatelessWidget {
                 InkWell(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SubscriptionsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const SubscriptionsScreen(),
+                    ),
                   ),
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
@@ -416,28 +541,48 @@ class AdminHomePage extends StatelessWidget {
                       icon: FontAwesomeIcons.stethoscope,
                       title: 'إضافة عيادة',
                       gradient: AppTheme.clinicGradient,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddClinicScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddClinicScreen(),
+                        ),
+                      ),
                     ),
                     _buildAddServiceCard(
                       context,
                       icon: FontAwesomeIcons.pills,
                       title: 'إضافة صيدلية',
                       gradient: AppTheme.pharmacyGradient,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPharmacyScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddPharmacyScreen(),
+                        ),
+                      ),
                     ),
                     _buildAddServiceCard(
                       context,
                       icon: FontAwesomeIcons.flask,
                       title: 'إضافة معمل',
                       gradient: AppTheme.laboratoryGradient,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddLaboratoryScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddLaboratoryScreen(),
+                        ),
+                      ),
                     ),
                     _buildAddServiceCard(
                       context,
                       icon: Icons.local_hospital_rounded,
                       title: 'إضافة مركز أشعة',
                       gradient: AppTheme.radiologyGradient,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddRadiologyScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddRadiologyScreen(),
+                        ),
+                      ),
                     ),
                     // _buildAddServiceCard(
                     //   context,
@@ -450,15 +595,27 @@ class AdminHomePage extends StatelessWidget {
                       context,
                       icon: FontAwesomeIcons.truckMedical,
                       title: 'إضافة ديليفري',
-                      gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF2563EB)]),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddDeliveryScreen())),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddDeliveryScreen(),
+                        ),
+                      ),
                     ),
                     _buildAddServiceCard(
                       context,
                       icon: FontAwesomeIcons.handHoldingMedical,
                       title: 'إضافة مركز تأهيل',
                       gradient: AppTheme.rehabilitationGradient,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddRehabilitationCenterScreen())),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddRehabilitationCenterScreen(),
+                        ),
+                      ),
                     ),
                     _buildAddServiceCard(
                       context,
@@ -522,11 +679,7 @@ class AdminHomePage extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    icon,
-                    size: 32,
-                    color: Colors.white,
-                  ),
+                  child: Icon(icon, size: 32, color: Colors.white),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -588,7 +741,10 @@ class AdminHomePage extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2), width: 2),
+          border: Border.all(
+            color: AppTheme.primaryColor.withValues(alpha: 0.2),
+            width: 2,
+          ),
           boxShadow: [
             BoxShadow(
               color: AppTheme.primaryColor.withValues(alpha: 0.1),
@@ -607,11 +763,7 @@ class AdminHomePage extends StatelessWidget {
                 gradient: gradient,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 28,
-                color: Colors.white,
-              ),
+              child: Icon(icon, size: 28, color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(

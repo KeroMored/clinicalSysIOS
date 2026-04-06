@@ -5,14 +5,12 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/rehabilitation_center_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EditRehabilitationCenterScreen extends StatefulWidget {
   final RehabilitationCenterModel center;
 
-  const EditRehabilitationCenterScreen({
-    super.key,
-    required this.center,
-  });
+  const EditRehabilitationCenterScreen({super.key, required this.center});
 
   @override
   State<EditRehabilitationCenterScreen> createState() =>
@@ -65,23 +63,29 @@ class _EditRehabilitationCenterScreenState
   @override
   void initState() {
     super.initState();
-    _centerNameController =
-        TextEditingController(text: widget.center.centerName);
-    _directorNameController =
-        TextEditingController(text: widget.center.directorName);
+    _centerNameController = TextEditingController(
+      text: widget.center.centerName,
+    );
+    _directorNameController = TextEditingController(
+      text: widget.center.directorName,
+    );
     _phoneController = TextEditingController(text: widget.center.phone);
-    _whatsappController =
-        TextEditingController(text: widget.center.whatsapp ?? '');
+    _whatsappController = TextEditingController(
+      text: widget.center.whatsapp ?? '',
+    );
     _addressController = TextEditingController(text: widget.center.address);
-    _descriptionController =
-        TextEditingController(text: widget.center.description);
+    _descriptionController = TextEditingController(
+      text: widget.center.description,
+    );
 
     _hasHomeService = widget.center.hasHomeService;
     _selectedServiceTypes = List.from(widget.center.serviceTypes);
 
     // Initialize auth emails
     _authEmailControllers = widget.center.authEmails.isNotEmpty
-        ? widget.center.authEmails.map((email) => TextEditingController(text: email)).toList()
+        ? widget.center.authEmails
+              .map((email) => TextEditingController(text: email))
+              .toList()
         : [TextEditingController()];
 
     // Initialize working hours from existing center data
@@ -103,10 +107,7 @@ class _EditRehabilitationCenterScreenState
 
   TimeOfDay _parseTimeOfDay(String time) {
     final parts = time.split(':');
-    return TimeOfDay(
-      hour: int.parse(parts[0]),
-      minute: int.parse(parts[1]),
-    );
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
   @override
@@ -147,7 +148,8 @@ class _EditRehabilitationCenterScreenState
   Future<String?> _uploadImage(File image) async {
     try {
       final ref = FirebaseStorage.instance.ref().child(
-          'rehabilitation/profiles/${widget.center.id}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        'rehabilitation/profiles/${widget.center.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       await ref.putFile(image);
       return await ref.getDownloadURL();
     } catch (e) {
@@ -157,7 +159,10 @@ class _EditRehabilitationCenterScreenState
   }
 
   Future<void> _selectTime(
-      BuildContext context, bool isFrom, String day) async {
+    BuildContext context,
+    bool isFrom,
+    String day,
+  ) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: isFrom
@@ -225,24 +230,24 @@ class _EditRehabilitationCenterScreenState
           .collection('rehabilitation_centers')
           .doc(widget.center.id)
           .update({
-        'centerName': _centerNameController.text.trim(),
-        'directorName': _directorNameController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'whatsapp': _whatsappController.text.trim().isEmpty
-            ? null
-            : _whatsappController.text.trim(),
-        'address': _addressController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'workingDays': workingDaysMap,
-        'serviceTypes': _selectedServiceTypes,
-        'hasHomeService': _hasHomeService,
-        'authEmails': _authEmailControllers
-            .map((c) => c.text.trim())
-            .where((email) => email.isNotEmpty)
-            .toList(),
-        'updatedAt': Timestamp.fromDate(DateTime.now()),
-        if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
-      });
+            'centerName': _centerNameController.text.trim(),
+            'directorName': _directorNameController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'whatsapp': _whatsappController.text.trim().isEmpty
+                ? null
+                : _whatsappController.text.trim(),
+            'address': _addressController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            'workingDays': workingDaysMap,
+            'serviceTypes': _selectedServiceTypes,
+            'hasHomeService': _hasHomeService,
+            'authEmails': _authEmailControllers
+                .map((c) => c.text.trim())
+                .where((email) => email.isNotEmpty)
+                .toList(),
+            'updatedAt': Timestamp.fromDate(DateTime.now()),
+            if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
+          });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -256,10 +261,7 @@ class _EditRehabilitationCenterScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -277,13 +279,16 @@ class _EditRehabilitationCenterScreenState
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text('تعديل بيانات المركز',style: TextStyle(color: Colors.white),),
+          title: const Text(
+            'تعديل بيانات المركز',
+            style: TextStyle(color: Colors.white),
+          ),
           centerTitle: true,
           backgroundColor: Colors.purple,
           foregroundColor: Colors.white,
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: AppLoadingIndicator())
             : Form(
                 key: _formKey,
                 child: ListView(
@@ -304,31 +309,34 @@ class _EditRehabilitationCenterScreenState
                           child: _profileImage != null
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(_profileImage!,
-                                      fit: BoxFit.cover),
+                                  child: Image.file(
+                                    _profileImage!,
+                                    fit: BoxFit.cover,
+                                  ),
                                 )
                               : widget.center.profileImageUrl != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.network(
-                                        widget.center.profileImageUrl!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                                  : Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.add_a_photo,
-                                            size: 40, color: Colors.grey[600]),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'صورة المركز',
-                                          style: TextStyle(
-                                              color: Colors.grey[600]),
-                                        ),
-                                      ],
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    widget.center.profileImageUrl!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_a_photo,
+                                      size: 40,
+                                      color: Colors.grey[600],
                                     ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'صورة المركز',
+                                      style: TextStyle(color: Colors.grey[600]),
+                                    ),
+                                  ],
+                                ),
                         ),
                       ),
                     ),
@@ -462,7 +470,8 @@ class _EditRehabilitationCenterScreenState
                                 const SizedBox(width: 12),
                                 const Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'إيميلات المصادقة',
@@ -484,7 +493,9 @@ class _EditRehabilitationCenterScreenState
                               ],
                             ),
                             const SizedBox(height: 16),
-                            ..._authEmailControllers.asMap().entries.map((entry) {
+                            ..._authEmailControllers.asMap().entries.map((
+                              entry,
+                            ) {
                               final index = entry.key;
                               final controller = entry.value;
                               return Padding(
@@ -497,11 +508,16 @@ class _EditRehabilitationCenterScreenState
                                     prefixIcon: const Icon(Icons.email),
                                     suffixIcon: _authEmailControllers.length > 1
                                         ? IconButton(
-                                            icon: const Icon(Icons.delete, color: Colors.red),
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ),
                                             onPressed: () {
                                               setState(() {
                                                 controller.dispose();
-                                                _authEmailControllers.removeAt(index);
+                                                _authEmailControllers.removeAt(
+                                                  index,
+                                                );
                                               });
                                             },
                                           )
@@ -524,7 +540,9 @@ class _EditRehabilitationCenterScreenState
                               child: ElevatedButton.icon(
                                 onPressed: () {
                                   setState(() {
-                                    _authEmailControllers.add(TextEditingController());
+                                    _authEmailControllers.add(
+                                      TextEditingController(),
+                                    );
                                   });
                                 },
                                 icon: const Icon(Icons.add),
@@ -555,7 +573,10 @@ class _EditRehabilitationCenterScreenState
                       runSpacing: 8,
                       children: RehabilitationTypes.allTypes.map((type) {
                         return FilterChip(
-                          label: Text(type,style: TextStyle(color: Colors.black),),
+                          label: Text(
+                            type,
+                            style: TextStyle(color: Colors.black),
+                          ),
                           selected: _selectedServiceTypes.contains(type),
                           onSelected: (selected) {
                             setState(() {
@@ -629,7 +650,10 @@ class _EditRehabilitationCenterScreenState
                                     Expanded(
                                       child: OutlinedButton.icon(
                                         onPressed: () => _selectTime(
-                                            context, true, englishDay),
+                                          context,
+                                          true,
+                                          englishDay,
+                                        ),
                                         icon: const Icon(Icons.access_time),
                                         label: Text(
                                           _workingHoursFrom[englishDay] != null
@@ -645,7 +669,10 @@ class _EditRehabilitationCenterScreenState
                                     Expanded(
                                       child: OutlinedButton.icon(
                                         onPressed: () => _selectTime(
-                                            context, false, englishDay),
+                                          context,
+                                          false,
+                                          englishDay,
+                                        ),
                                         icon: const Icon(Icons.access_time),
                                         label: Text(
                                           _workingHoursTo[englishDay] != null

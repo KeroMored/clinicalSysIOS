@@ -8,20 +8,20 @@ class AppTheme {
   static const Color backgroundColor = Color(0xFFF5F5F5); // Light Gray
   static const Color surfaceColor = Color(0xFFFFFFFF); // White
   static const Color darkColor = Color(0xFF1E3A5F); // Navy (text)
-  
+
   // Gradient Colors
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient secondaryGradient = LinearGradient(
     colors: [Color(0xFF1E3A5F), Color(0xFF2C5F8D)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient accentGradient = LinearGradient(
     colors: [Color(0xFFFF6B9D), Color(0xFFC44569)],
     begin: Alignment.topLeft,
@@ -34,39 +34,39 @@ class AppTheme {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient pharmacyGradient = LinearGradient(
     colors: [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient laboratoryGradient = LinearGradient(
-    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+    colors: [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient radiologyGradient = LinearGradient(
-    colors: [Color(0xFFFF6B9D), Color(0xFFC44569)],
+    colors: [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient nursingGradient = LinearGradient(
     colors: [Color(0xFF10B981), Color(0xFF059669)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient rehabilitationGradient = LinearGradient(
-    colors: [Color(0xFF7C3AED), Color(0xFF9333EA)],
+    colors: [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  
+
   static const LinearGradient gymGradient = LinearGradient(
-    colors: [Color(0xFF1F2937), Color(0xFF374151)],
+    colors: [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -82,7 +82,7 @@ class AppTheme {
         error: accentColor,
         brightness: Brightness.light,
       ),
-      
+
       // Typography using Cairo font (local)
       fontFamily: 'Cairo',
       textTheme: const TextTheme(
@@ -167,7 +167,7 @@ class AppTheme {
           color: Color(0xFF64748B),
         ),
       ),
-      
+
       // AppBar Theme
       appBarTheme: const AppBarTheme(
         elevation: 0,
@@ -182,17 +182,15 @@ class AppTheme {
         ),
         iconTheme: IconThemeData(color: darkColor),
       ),
-      
+
       // Card Theme
       cardTheme: CardThemeData(
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: surfaceColor,
         shadowColor: darkColor.withValues(alpha: 0.05),
       ),
-      
+
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -208,14 +206,12 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: const TextStyle(
             fontFamily: 'Cairo',
             fontSize: 14,
@@ -223,7 +219,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -231,7 +227,10 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          side: BorderSide(color: primaryColor.withValues(alpha: 0.3), width: 1.5),
+          side: BorderSide(
+            color: primaryColor.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
           textStyle: const TextStyle(
             fontFamily: 'Cairo',
             fontSize: 16,
@@ -239,7 +238,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -264,7 +263,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: accentColor, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         labelStyle: const TextStyle(
           fontFamily: 'Cairo',
           fontSize: 14,
@@ -276,7 +278,7 @@ class AppTheme {
           color: Color(0xFF94A3B8),
         ),
       ),
-      
+
       // Floating Action Button Theme
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         elevation: 4,
@@ -284,7 +286,7 @@ class AppTheme {
           borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
       ),
-      
+
       // Chip Theme
       chipTheme: ChipThemeData(
         backgroundColor: backgroundColor,
@@ -296,11 +298,9 @@ class AppTheme {
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      
+
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: surfaceColor,
@@ -318,20 +318,17 @@ class AppTheme {
         ),
         elevation: 8,
       ),
-      
+
       // Divider Theme
       dividerTheme: DividerThemeData(
         color: const Color(0xFFE2E8F0),
         thickness: 1,
         space: 1,
       ),
-      
+
       // Icon Theme
-      iconTheme: const IconThemeData(
-        color: darkColor,
-        size: 24,
-      ),
-      
+      iconTheme: const IconThemeData(color: darkColor, size: 24),
+
       scaffoldBackgroundColor: backgroundColor,
     );
   }

@@ -8,7 +8,10 @@ class MedicineOfferRepository {
   // إضافة عرض جديد
   Future<void> addOffer(MedicineOfferModel offer) async {
     try {
-      await _firestore.collection(_collection).doc(offer.id).set(offer.toJson());
+      await _firestore
+          .collection(_collection)
+          .doc(offer.id)
+          .set(offer.toJson());
     } catch (e) {
       throw Exception('فشل في إضافة العرض: $e');
     }
@@ -34,7 +37,9 @@ class MedicineOfferRepository {
   }
 
   // جلب عروض صيدلية معينة
-  Future<List<MedicineOfferModel>> getOffersByPharmacy(String pharmacyId) async {
+  Future<List<MedicineOfferModel>> getOffersByPharmacy(
+    String pharmacyId,
+  ) async {
     try {
       final querySnapshot = await _firestore
           .collection(_collection)
@@ -81,14 +86,19 @@ class MedicineOfferRepository {
   // تحديث بيانات العرض
   Future<void> updateOffer(MedicineOfferModel offer) async {
     try {
-      await _firestore.collection(_collection).doc(offer.id).update(offer.toJson());
+      await _firestore
+          .collection(_collection)
+          .doc(offer.id)
+          .update(offer.toJson());
     } catch (e) {
       throw Exception('فشل في تحديث العرض: $e');
     }
   }
 
   // جلب عروض الصيدلية (بما فيها الغير نشطة) - للإدارة
-  Future<List<MedicineOfferModel>> getAllOffersByPharmacy(String pharmacyId) async {
+  Future<List<MedicineOfferModel>> getAllOffersByPharmacy(
+    String pharmacyId,
+  ) async {
     try {
       final querySnapshot = await _firestore
           .collection(_collection)

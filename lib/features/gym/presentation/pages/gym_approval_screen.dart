@@ -5,12 +5,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/gym_model.dart';
 import 'gym_details_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
-enum GymApprovalStatus {
-  all,
-  pending,
-  approved,
-}
+enum GymApprovalStatus { all, pending, approved }
 
 class GymApprovalScreen extends StatefulWidget {
   const GymApprovalScreen({super.key});
@@ -79,13 +76,11 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
               stream: _getGymsStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: AppLoadingIndicator());
                 }
 
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text('حدث خطأ: ${snapshot.error}'),
-                  );
+                  return Center(child: Text('حدث خطأ: ${snapshot.error}'));
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -199,20 +194,16 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
 
   Widget _buildGymCard(GymModel gym) {
     final dateFormat = DateFormat('dd/MM/yyyy - hh:mm a', 'ar');
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => GymDetailsScreen(gym: gym),
-            ),
+            MaterialPageRoute(builder: (context) => GymDetailsScreen(gym: gym)),
           );
         },
         borderRadius: BorderRadius.circular(12),
@@ -250,7 +241,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
                           ),
                   ),
                   const SizedBox(width: 12),
-                  
+
                   // Gym Info
                   Expanded(
                     child: Column(
@@ -288,7 +279,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Status Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -340,18 +331,11 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
               // Owner Info
               Row(
                 children: [
-                  Icon(
-                    Icons.person,
-                    size: 18,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.person, size: 18, color: Colors.grey[600]),
                   const SizedBox(width: 8),
                   Text(
                     'المالك: ${gym.ownerName}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                 ],
               ),
@@ -374,11 +358,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.male,
-                            size: 14,
-                            color: Colors.blue[700],
-                          ),
+                          Icon(Icons.male, size: 14, color: Colors.blue[700]),
                           const SizedBox(width: 4),
                           Text(
                             'رجالي',
@@ -405,11 +385,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.female,
-                            size: 14,
-                            color: Colors.pink[700],
-                          ),
+                          Icon(Icons.female, size: 14, color: Colors.pink[700]),
                           const SizedBox(width: 4),
                           Text(
                             'نسائي',
@@ -429,18 +405,11 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
               // Date Info
               Row(
                 children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 14,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
                   const SizedBox(width: 6),
                   Text(
                     'تاريخ الإضافة: ${dateFormat.format(gym.createdAt)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -457,10 +426,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
                     const SizedBox(width: 6),
                     Text(
                       'تاريخ الموافقة: ${dateFormat.format(gym.approvedAt!)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.green[600]),
                     ),
                   ],
                 ),
@@ -485,9 +451,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
                       label: const Text('عرض التفاصيل'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppTheme.gymGradient.colors[0],
-                        side: BorderSide(
-                          color: AppTheme.gymGradient.colors[0],
-                        ),
+                        side: BorderSide(color: AppTheme.gymGradient.colors[0]),
                       ),
                     ),
                   ),
@@ -544,9 +508,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text('موافقة'),
           ),
         ],
@@ -571,10 +533,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('حدث خطأ: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
           );
         }
       }
@@ -629,10 +588,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('حدث خطأ: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
           );
         }
       }
@@ -652,10 +608,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
             const SizedBox(height: 8),
             const Text(
               'سيتم حذف الجيم نهائياً من النظام.',
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.red, fontSize: 14),
             ),
           ],
         ),
@@ -666,9 +619,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('رفض وحذف'),
           ),
         ],
@@ -677,7 +628,10 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
 
     if (confirmed == true) {
       try {
-        await FirebaseFirestore.instance.collection('gyms').doc(gym.id).delete();
+        await FirebaseFirestore.instance
+            .collection('gyms')
+            .doc(gym.id)
+            .delete();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -690,10 +644,7 @@ class _GymApprovalScreenState extends State<GymApprovalScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('حدث خطأ: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
           );
         }
       }

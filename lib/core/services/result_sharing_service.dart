@@ -12,7 +12,8 @@ class ResultSharingService {
     LabResultModel result, {
     String? phoneNumber,
   }) async {
-    final message = '''
+    final message =
+        '''
 🔬 *نتيجة تحليل ${result.testName}*
 
 📋 رقم النتيجة: ${result.id.substring(0, 8)}
@@ -27,8 +28,7 @@ class ResultSharingService {
     String url;
     if (phoneNumber != null && phoneNumber.isNotEmpty) {
       // إرسال لرقم محدد
-      url =
-          'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
+      url = 'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}';
     } else {
       // فتح قائمة جهات الاتصال
       url = 'https://wa.me/?text=${Uri.encodeComponent(message)}';
@@ -49,7 +49,8 @@ class ResultSharingService {
     String? doctorName,
   }) async {
     final subject = 'نتيجة تحليل ${result.testName}';
-    final body = '''
+    final body =
+        '''
 <div dir="rtl" style="font-family: Arial, sans-serif;">
   <h2 style="color: #00BCD4;">🔬 نتيجة تحليل ${result.testName}</h2>
   
@@ -77,10 +78,9 @@ class ResultSharingService {
     final emailUri = Uri(
       scheme: 'mailto',
       path: recipientEmail ?? '',
-      query: {
-        'subject': subject,
-        'body': body,
-      }.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&'),
+      query: {'subject': subject, 'body': body}.entries
+          .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+          .join('&'),
     );
 
     if (await canLaunchUrl(emailUri)) {
@@ -92,7 +92,8 @@ class ResultSharingService {
 
   /// مشاركة عامة (خيارات متعددة)
   static Future<void> shareGeneral(LabResultModel result) async {
-    final message = '''
+    final message =
+        '''
 🔬 نتيجة تحليل ${result.testName}
 
 📋 رقم النتيجة: ${result.id.substring(0, 8)}
@@ -103,10 +104,7 @@ class ResultSharingService {
 ${result.pdfUrl}
     ''';
 
-    await Share.share(
-      message,
-      subject: 'نتيجة تحليل ${result.testName}',
-    );
+    await Share.share(message, subject: 'نتيجة تحليل ${result.testName}');
   }
 
   /// توليد QR Code للنتيجة
@@ -139,9 +137,7 @@ ${result.pdfUrl}
         color: Color(0xFF1E3A5F),
       ),
       embeddedImage: AssetImage('assets/images/lab_icon.png'),
-      embeddedImageStyle: QrEmbeddedImageStyle(
-        size: Size(40, 40),
-      ),
+      embeddedImageStyle: QrEmbeddedImageStyle(size: Size(40, 40)),
     );
   }
 
@@ -172,7 +168,7 @@ ${result.pdfUrl}
       'سبتمبر',
       'أكتوبر',
       'نوفمبر',
-      'ديسمبر'
+      'ديسمبر',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -191,17 +187,15 @@ ${result.pdfUrl}
           children: [
             Text(
               'مشاركة النتيجة',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _ShareButton(
-                  icon: MdiIcons.whatsapp, // WhatsApp icon not available in Material
+                  icon: MdiIcons
+                      .whatsapp, // WhatsApp icon not available in Material
                   label: 'WhatsApp',
                   color: Color(0xFF25D366),
                   onTap: () async {
@@ -247,7 +241,10 @@ ${result.pdfUrl}
                             SizedBox(height: 16),
                             Text(
                               'رقم النتيجة: ${result.id.substring(0, 8)}',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -318,10 +315,7 @@ class _ShareButton extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
           ),
         ],
       ),

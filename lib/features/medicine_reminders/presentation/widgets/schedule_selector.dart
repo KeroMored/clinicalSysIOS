@@ -48,7 +48,7 @@ class _ScheduleSelectorState extends State<ScheduleSelector> {
           ),
         ),
         const SizedBox(height: 12),
-        
+
         // Repeat Type Selector
         Container(
           decoration: BoxDecoration(
@@ -73,7 +73,8 @@ class _ScheduleSelectorState extends State<ScheduleSelector> {
                   if (value != null) {
                     widget.onTypeChanged(value);
                     // Reset selections when type changes
-                    if (value != RepeatType.specificDays && value != RepeatType.weekly) {
+                    if (value != RepeatType.specificDays &&
+                        value != RepeatType.weekly) {
                       widget.onDaysChanged(null);
                     }
                     if (value != RepeatType.monthly) {
@@ -86,13 +87,13 @@ class _ScheduleSelectorState extends State<ScheduleSelector> {
             }).toList(),
           ),
         ),
-        
+
         // Show day selector for weekly or specific days
-        if (widget.selectedType == RepeatType.weekly || 
+        if (widget.selectedType == RepeatType.weekly ||
             widget.selectedType == RepeatType.specificDays) ...[
           const SizedBox(height: 16),
           Text(
-            widget.selectedType == RepeatType.weekly 
+            widget.selectedType == RepeatType.weekly
                 ? 'اختر اليوم (يوم واحد فقط - مثلاً كل سبت)'
                 : 'اختر الأيام (يمكنك اختيار أكثر من يوم)',
             style: const TextStyle(
@@ -107,8 +108,9 @@ class _ScheduleSelectorState extends State<ScheduleSelector> {
             runSpacing: 8,
             children: List.generate(7, (index) {
               final dayNumber = index + 1;
-              final isSelected = widget.selectedDays?.contains(dayNumber) ?? false;
-              
+              final isSelected =
+                  widget.selectedDays?.contains(dayNumber) ?? false;
+
               return widget.selectedType == RepeatType.weekly
                   ? ChoiceChip(
                       label: Text(weekDays[index]),
@@ -124,34 +126,42 @@ class _ScheduleSelectorState extends State<ScheduleSelector> {
                       selectedColor: const Color(0xFF06B6D4),
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     )
                   : FilterChip(
                       label: Text(weekDays[index]),
                       selected: isSelected,
                       onSelected: (selected) {
-                        final currentDays = List<int>.from(widget.selectedDays ?? []);
+                        final currentDays = List<int>.from(
+                          widget.selectedDays ?? [],
+                        );
                         if (selected) {
                           currentDays.add(dayNumber);
                         } else {
                           currentDays.remove(dayNumber);
                         }
                         currentDays.sort();
-                        widget.onDaysChanged(currentDays.isEmpty ? null : currentDays);
+                        widget.onDaysChanged(
+                          currentDays.isEmpty ? null : currentDays,
+                        );
                       },
                       backgroundColor: Colors.white,
                       selectedColor: const Color(0xFF06B6D4).withOpacity(0.3),
                       checkmarkColor: const Color(0xFF06B6D4),
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.black : Colors.black87,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     );
             }),
           ),
         ],
-        
+
         // Show day selector for monthly
         if (widget.selectedType == RepeatType.monthly) ...[
           const SizedBox(height: 16),
@@ -186,14 +196,14 @@ class _ScheduleSelectorState extends State<ScheduleSelector> {
                 ),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
               items: List.generate(31, (index) {
                 final day = index + 1;
-                return DropdownMenuItem(
-                  value: day,
-                  child: Text('يوم $day'),
-                );
+                return DropdownMenuItem(value: day, child: Text('يوم $day'));
               }),
               onChanged: (value) => widget.onMonthDayChanged(value),
               hint: const Text('اختر اليوم'),

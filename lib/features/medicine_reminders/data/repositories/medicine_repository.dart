@@ -1,6 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:io';
+
 import '../models/medicine_model.dart';
 
 class MedicineRepository {
@@ -8,18 +10,35 @@ class MedicineRepository {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Collection reference
-  CollectionReference get _medicinesCollection => _firestore.collection('medicine_reminders');
+  CollectionReference get _medicinesCollection =>
+      _firestore.collection('medicine_reminders');
 
   // Get all medicines for a user
   Stream<List<MedicineModel>> getUserMedicines(String userId) {
     return _medicinesCollection
         .where('userId', isEqualTo: userId)
-        .where('isActive', isEqualTo: true) // عرض الأدوية النشطة فقط
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => MedicineModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map((snapshot) {
+          final medicines = snapshot.docs
+              .map(
+                (doc) => MedicineModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList();
+
+          // Keep active medicines first, then inactive ones.
+          medicines.sort((a, b) {
+            if (a.isActive == b.isActive) {
+              return b.createdAt.compareTo(a.createdAt);
+            }
+            return a.isActive ? -1 : 1;
+          });
+
+          return medicines;
+        });
   }
 
   // Get single medicine by ID
@@ -27,7 +46,10 @@ class MedicineRepository {
     try {
       final doc = await _medicinesCollection.doc(id).get();
       if (doc.exists) {
-        return MedicineModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        return MedicineModel.fromMap(
+          doc.data() as Map<String, dynamic>,
+          doc.id,
+        );
       }
       return null;
     } catch (e) {
@@ -36,18 +58,28 @@ class MedicineRepository {
   }
 
   // Add new medicine
-  Future<String> addMedicine(MedicineModel medicine, {File? imageFile}) async {
+  Future<String> addMedicine(
+    MedicineModel medicine, {
+    File? imageFile,
+    void Function(double progress)? onUploadProgress,
+  }) async {
     try {
       String? imageUrl;
 
       // Upload image if provided
       if (imageFile != null) {
-        imageUrl = await _uploadImage(imageFile, medicine.userId);
+        imageUrl = await _uploadImage(
+          imageFile,
+          medicine.userId,
+          onUploadProgress: onUploadProgress,
+        );
+      } else {
+        onUploadProgress?.call(1.0);
       }
 
       // Create medicine with image URL
       final medicineWithImage = medicine.copyWith(imageUrl: imageUrl);
-      
+
       final docRef = await _medicinesCollection.add(medicineWithImage.toMap());
       return docRef.id;
     } catch (e) {
@@ -56,7 +88,12 @@ class MedicineRepository {
   }
 
   // Update medicine
-  Future<void> updateMedicine(String id, MedicineModel medicine, {File? newImageFile}) async {
+  Future<void> updateMedicine(
+    String id,
+    MedicineModel medicine, {
+    File? newImageFile,
+    void Function(double progress)? onUploadProgress,
+  }) async {
     try {
       String? imageUrl = medicine.imageUrl;
 
@@ -66,7 +103,13 @@ class MedicineRepository {
         if (medicine.imageUrl != null) {
           await _deleteImage(medicine.imageUrl!);
         }
-        imageUrl = await _uploadImage(newImageFile, medicine.userId);
+        imageUrl = await _uploadImage(
+          newImageFile,
+          medicine.userId,
+          onUploadProgress: onUploadProgress,
+        );
+      } else {
+        onUploadProgress?.call(1.0);
       }
 
       final updatedMedicine = medicine.copyWith(imageUrl: imageUrl);
@@ -76,10 +119,20 @@ class MedicineRepository {
     }
   }
 
-  // Delete medicine (soft delete by setting isActive to false)
+  // Delete medicine permanently and cleanup its image if available.
   Future<void> deleteMedicine(String id) async {
     try {
-      await _medicinesCollection.doc(id).update({'isActive': false});
+      final doc = await _medicinesCollection.doc(id).get();
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>?;
+        final imageUrl = data?['imageUrl'];
+        if (imageUrl is String && imageUrl.trim().isNotEmpty) {
+          await _deleteImage(imageUrl);
+        }
+      }
+
+      await _medicinesCollection.doc(id).delete();
     } catch (e) {
       throw Exception('فشل في حذف الدواء: $e');
     }
@@ -109,12 +162,25 @@ class MedicineRepository {
   }
 
   // Upload image to Firebase Storage
-  Future<String> _uploadImage(File imageFile, String userId) async {
+  Future<String> _uploadImage(
+    File imageFile,
+    String userId, {
+    void Function(double progress)? onUploadProgress,
+  }) async {
     try {
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = _storage.ref().child('medicine_images/$userId/$fileName');
-      
-      await ref.putFile(imageFile);
+
+      final uploadTask = ref.putFile(imageFile);
+      uploadTask.snapshotEvents.listen((snapshot) {
+        final total = snapshot.totalBytes;
+        if (total > 0) {
+          onUploadProgress?.call(snapshot.bytesTransferred / total);
+        }
+      });
+
+      await uploadTask;
+      onUploadProgress?.call(1.0);
       return await ref.getDownloadURL();
     } catch (e) {
       throw Exception('فشل في رفع الصورة: $e');
@@ -154,7 +220,12 @@ class MedicineRepository {
           .get();
 
       final medicines = snapshot.docs
-          .map((doc) => MedicineModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map(
+            (doc) => MedicineModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
           .toList();
 
       // Filter medicines that have reminders today

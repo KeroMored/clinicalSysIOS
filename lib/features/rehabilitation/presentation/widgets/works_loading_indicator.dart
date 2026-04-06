@@ -10,10 +10,7 @@ class WorksLoadingIndicator extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         children: [
-          const SpinKitThreeBounce(
-            color: Colors.purple,
-            size: 20,
-          ),
+          const SpinKitPulsingGrid(color: Colors.purple, size: 20),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

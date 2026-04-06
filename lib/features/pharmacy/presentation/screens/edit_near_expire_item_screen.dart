@@ -4,14 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../data/models/near_expire_item_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EditNearExpireItemScreen extends StatefulWidget {
   final NearExpireItemModel item;
 
-  const EditNearExpireItemScreen({
-    super.key,
-    required this.item,
-  });
+  const EditNearExpireItemScreen({super.key, required this.item});
 
   @override
   State<EditNearExpireItemScreen> createState() =>
@@ -49,18 +47,24 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
   @override
   void initState() {
     super.initState();
-    _medicineNameController = TextEditingController(text: widget.item.medicineName);
-    _descriptionController = TextEditingController(text: widget.item.medicineDescription ?? '');
-    _quantityController = TextEditingController(text: widget.item.quantity.toString());
+    _medicineNameController = TextEditingController(
+      text: widget.item.medicineName,
+    );
+    _descriptionController = TextEditingController(
+      text: widget.item.medicineDescription ?? '',
+    );
+    _quantityController = TextEditingController(
+      text: widget.item.quantity.toString(),
+    );
     _totalPriceController = TextEditingController(
       text: widget.item.totalPrice?.toString() ?? '',
     );
     _customTypeController = TextEditingController();
-    
+
     _currentImageUrl = widget.item.imageUrl;
     _selectedYear = widget.item.expiryDate.year;
     _selectedMonth = widget.item.expiryDate.month;
-    
+
     if (_medicineTypes.contains(widget.item.medicineType)) {
       _selectedType = widget.item.medicineType;
     } else {
@@ -99,7 +103,8 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
     if (_selectedImage == null) return _currentImageUrl;
 
     try {
-      final fileName = 'near_expire_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName =
+          'near_expire_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance
           .ref()
           .child('near_expire_items')
@@ -151,8 +156,8 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
     try {
       final imageUrl = await _uploadImage();
       final expiryDate = DateTime(_selectedYear!, _selectedMonth!, 1);
-      final finalType = _isCustomType 
-          ? _customTypeController.text.trim() 
+      final finalType = _isCustomType
+          ? _customTypeController.text.trim()
           : _selectedType!;
       final totalPrice = _totalPriceController.text.trim().isEmpty
           ? null
@@ -162,16 +167,16 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
           .collection('near_expire_items')
           .doc(widget.item.id)
           .update({
-        'medicineName': _medicineNameController.text.trim(),
-        'medicineType': finalType,
-        'medicineDescription': _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        'expiryDate': Timestamp.fromDate(expiryDate),
-        'quantity': int.parse(_quantityController.text.trim()),
-        'totalPrice': totalPrice,
-        'imageUrl': imageUrl,
-      });
+            'medicineName': _medicineNameController.text.trim(),
+            'medicineType': finalType,
+            'medicineDescription': _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            'expiryDate': Timestamp.fromDate(expiryDate),
+            'quantity': int.parse(_quantityController.text.trim()),
+            'totalPrice': totalPrice,
+            'imageUrl': imageUrl,
+          });
 
       if (mounted) {
         Navigator.pop(context);
@@ -185,10 +190,7 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -238,21 +240,28 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
                         child: Image.file(_selectedImage!, fit: BoxFit.cover),
                       )
                     : _currentImageUrl != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(_currentImageUrl!, fit: BoxFit.cover),
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_photo_alternate, size: 60, color: Colors.grey[400]),
-                              const SizedBox(height: 8),
-                              Text(
-                                'اضغط لتغيير الصورة',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                            ],
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          _currentImageUrl!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.add_photo_alternate,
+                            size: 60,
+                            color: Colors.grey[400],
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'اضغط لتغيير الصورة',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
               ),
             ),
             const SizedBox(height: 16),
@@ -302,7 +311,8 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
                       prefixIcon: Icon(Icons.edit),
                       border: OutlineInputBorder(),
                     ),
-                    validator: (v) => v?.trim().isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (v) =>
+                        v?.trim().isEmpty ?? true ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
@@ -349,7 +359,10 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
                     ),
                     items: List.generate(3, (index) {
                       final year = DateTime.now().year + index;
-                      return DropdownMenuItem(value: year, child: Text('$year'));
+                      return DropdownMenuItem(
+                        value: year,
+                        child: Text('$year'),
+                      );
                     }),
                     onChanged: (value) => setState(() => _selectedYear = value),
                   ),
@@ -377,7 +390,8 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
                       DropdownMenuItem(value: 11, child: Text('نوفمبر')),
                       DropdownMenuItem(value: 12, child: Text('ديسمبر')),
                     ],
-                    onChanged: (value) => setState(() => _selectedMonth = value),
+                    onChanged: (value) =>
+                        setState(() => _selectedMonth = value),
                   ),
                 ),
               ],
@@ -438,14 +452,17 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(
+                        child: AppLoadingIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
                         ),
                       )
                     : const Text(
                         'تحديث المنتج',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
             ),

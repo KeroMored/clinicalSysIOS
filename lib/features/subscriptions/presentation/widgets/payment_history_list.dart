@@ -26,10 +26,7 @@ class PaymentHistoryList extends StatelessWidget {
             const SizedBox(height: 16),
             const Text(
               'لا توجد سجلات دفع',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ],
         ),
@@ -87,9 +84,14 @@ class PaymentHistoryList extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: _getPaymentTypeColor(payment.paymentType).withValues(alpha: 0.1),
+                          color: _getPaymentTypeColor(
+                            payment.paymentType,
+                          ).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -141,7 +143,8 @@ class PaymentHistoryList extends StatelessWidget {
                     icon: Icons.event_busy,
                     label: 'نهاية الاشتراك',
                     value: _formatDate(payment.subscriptionEndDate),
-                    valueColor: payment.subscriptionEndDate.isBefore(DateTime.now())
+                    valueColor:
+                        payment.subscriptionEndDate.isBefore(DateTime.now())
                         ? Colors.red
                         : Colors.green,
                   ),
@@ -250,7 +253,10 @@ class PaymentHistoryList extends StatelessWidget {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  void _showDeleteConfirmation(BuildContext context, PaymentRecordModel payment) {
+  void _showDeleteConfirmation(
+    BuildContext context,
+    PaymentRecordModel payment,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

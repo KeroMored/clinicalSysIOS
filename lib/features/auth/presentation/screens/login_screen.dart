@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/auth_cubit.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,28 +10,34 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
+  static const Color _primary = Color(0xFF0B8293);
+  static const Color _secondary = Color(0xFF179AAC);
+  static const Color _background = Color(0xFFF3F8FB);
+  static const Color _textPrimary = Color(0xFF0F172A);
+  static const Color _textSecondary = Color(0xFF64748B);
+  static const LinearGradient _primaryGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [_primary, _secondary],
+  );
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
-    
+
     _animationController.forward();
   }
 
@@ -42,406 +49,363 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    
+    final size = MediaQuery.of(context).size;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [
-                const Color(0xFF0EA5E9),
-                const Color(0xFF06B6D4),
-                const Color(0xFF0891B2),
-              ],
-              stops: const [0.0, 0.5, 1.0],
+        backgroundColor: _background,
+        body: Stack(
+          children: [
+            Positioned(
+              top: -120,
+              left: -60,
+              child: Container(
+                width: size.width * 0.65,
+                height: size.width * 0.65,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _primary.withOpacity(0.10),
+                ),
+              ),
             ),
-          ),
-          child: SafeArea(
-            child: BlocConsumer<AuthCubit, AuthState>(
-              listener: (context, state) {
-                if (state is AuthError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red.shade400,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+            Positioned(
+              bottom: -140,
+              right: -90,
+              child: Container(
+                width: size.width * 0.78,
+                height: size.width * 0.78,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _secondary.withOpacity(0.12),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: BlocConsumer<AuthCubit, AuthState>(
+                listener: (context, state) {
+                  if (state is AuthError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.red.shade600,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        margin: const EdgeInsets.all(14),
                       ),
-                      margin: const EdgeInsets.all(16),
+                    );
+                  }
+                  if (state is Authenticated) {
+                    Navigator.pop(context);
+                  }
+                },
+                builder: (context, state) {
+                  final isLoading = state is AuthLoading;
+
+                  return Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 18,
+                      ),
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Column(
+                          children: [
+                            _buildLogoCard(),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'أهلاً بك في Mallawy Care',
+                              style: TextStyle(
+                                color: _textPrimary,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'تسجيل الدخول يفتح لك كل الخدمات الطبية بسهولة',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _textSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFFDDE7EF),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _primary.withOpacity(0.08),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      'تسجيل الدخول',
+                                      style: TextStyle(
+                                        color: _textPrimary,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildGoogleButton(isLoading),
+                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 10),
+                                  OutlinedButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: const Size.fromHeight(48),
+                                      side: const BorderSide(
+                                        color: Color(0xFFD7E3EC),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'تخطي والدخول كضيف',
+                                      style: TextStyle(
+                                        color: _textSecondary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: const Color(0xFFDDE7EF),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    'مميزات تسجيل الدخول',
+                                    style: TextStyle(
+                                      color: _textPrimary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  _BenefitItem(
+                                    icon: Icons.store_rounded,
+                                    text: 'إدارة مكانك الطبي بسهولة',
+                                  ),
+                                  _BenefitItem(
+                                    icon: Icons.shopping_bag_rounded,
+                                    text: 'طلب الأدوية من الصيدليات',
+                                  ),
+                                  _BenefitItem(
+                                    icon: Icons.calendar_month_rounded,
+                                    text: 'حجز المواعيد ومتابعة الخدمات',
+                                  ),
+                                  _BenefitItem(
+                                    icon: Icons.notifications_active_rounded,
+                                    text: 'تنبيهات ومتابعة أسرع للحجوزات',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   );
-                }
-                if (state is Authenticated) {
-                  Navigator.pop(context);
-                }
-              },
-              builder: (context, state) {
-                final isLoading = state is AuthLoading;
-
-                return Stack(
-                  children: [
-                    // Decorative circles
-                    Positioned(
-                      top: -100,
-                      right: -100,
-                      child: Container(
-                        width: 300,
-                        height: 300,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -150,
-                      left: -150,
-                      child: Container(
-                        width: 400,
-                        height: 400,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                      ),
-                    ),
-                    
-                    // Main content
-                    Center(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.08,
-                          vertical: 24,
-                        ),
-                        child: FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: SlideTransition(
-                            position: _slideAnimation,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Premium Logo Design
-                                Container(
-                                  width: 140,
-                                  height: 140,
-                                  decoration: BoxDecoration(
-                                     borderRadius: BorderRadius.all(Radius.circular(20)),
-                                  //  shape: BoxShape.circle,
-                                    color: Colors.white,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 30,
-                                        offset: const Offset(0, 15),
-                                      ),
-                                      BoxShadow(
-                                        color: Colors.white.withOpacity(0.5),
-                                        blurRadius: 20,
-                                        offset: const Offset(-5, -5),
-                                      ),
-                                    ],
-                                  ),
-                                  padding: const EdgeInsets.all(20),
-                                  child: ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/LO.png',
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          decoration: const BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                              colors: [
-                                                Color(0xFF06B6D4),
-                                                Color(0xFF0891B2),
-                                              ],
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.local_hospital_rounded,
-                                            size: 60,
-                                            color: Colors.white,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 40),
-
-                                // Elegant Welcome Section
-                                Column(
-                                  children: [
-                                    const Text(
-                                      'أهلاً وسهلاً',
-                                      style: TextStyle(
-                                        fontSize: 36,
-                                        fontWeight: FontWeight.w800,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                        shadows: [
-                                          Shadow(
-                                            color: Color(0x40000000),
-                                            offset: Offset(0, 2),
-                                            blurRadius: 8,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'في منصتك الصحية الشاملة',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white.withOpacity(0.95),
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                           ],
-                                ),
-                                const SizedBox(height: 48),
-
-                                // Google Sign In Button with premium design
-                                Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.15),
-                                        blurRadius: 25,
-                                        offset: const Offset(0, 12),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: InkWell(
-                                      onTap: isLoading
-                                          ? null
-                                          : () {
-                                              context.read<AuthCubit>().signInWithGoogle();
-                                            },
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Container(
-                                        height: 65,
-                                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                                        child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            if (isLoading)
-                                              const SizedBox(
-                                                width: 24,
-                                                height: 24,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2.5,
-                                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                                    Color(0xFF06B6D4),
-                                                  ),
-                                                ),
-                                              )
-                                            else
-                                            //   Container(
-                                            //     width: 28,
-                                            //     height: 28,
-                                            //     decoration: BoxDecoration(
-                                            //       color: Colors.white,
-                                            //       shape: BoxShape.circle,
-                                            //       boxShadow: [
-                                            //         BoxShadow(
-                                            //           color: Colors.black.withValues(alpha: 0.1),
-                                            //           blurRadius: 4,
-                                            //           offset: const Offset(0, 2),
-                                            //         ),
-                                            //       ],
-                                            //     ),
-                                            //     child: const Icon(
-                                            //       Icons.g_mobiledata_rounded,
-                                            //       color: Color(0xFF06B6D4),
-                                            //       size: 24,
-                                            //     ),
-                                            //   ),
-                                            // const SizedBox(width: 16),
-                                            Text(
-                                              isLoading
-                                                  ? 'جاري تسجيل الدخول...'
-                                                  : 'تسجيل الدخول بواسطة Google',
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF06B6D4),
-                                                letterSpacing: 0.2,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-
-                                // Skip Button with elegant design
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                                    backgroundColor: Colors.white.withOpacity(0.1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                      side: BorderSide(
-                                        color: Colors.white.withOpacity(0.3),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'تخطي والدخول كضيف',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          color: Colors.white.withOpacity(0.95),
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Icon(
-                                        Icons.arrow_forward_rounded,
-                                        color: Colors.white.withOpacity(0.9),
-                                        size: 20,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 40),
-
-                                // Benefits Card with glassmorphism
-                                Container(
-                                  padding: const EdgeInsets.all(24),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.25),
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.08),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(10),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: const Icon(
-                                              Icons.workspace_premium_rounded,
-                                              color: Colors.white,
-                                              size: 24,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 14),
-                                          const Text(
-                                            'مميزات تسجيل الدخول',
-                                            style: TextStyle(
-                                              fontSize: 19,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                              letterSpacing: 0.2,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 20),
-                                      _buildBenefitItem(
-                                        Icons.store_rounded,
-                                        'إدارة مكانك بسهولة',
-                                      ),
-                                       _buildBenefitItem(
-                                        Icons.shopping_bag_rounded,
-                                        "طلب الدواء من الصيدليات المتاحة",
-                                      ),
-                                      
-                                      _buildBenefitItem(
-                                        Icons.local_shipping_rounded,
-                                        'طلب خدمات التوصيل الطبي',
-                                      ),
-                                         _buildBenefitItem(
-                                        Icons.date_range_outlined,
-                                        "حجز ميعاد للكشف",
-                                      ),
-                                      _buildBenefitItem(
-                                        Icons.star_rounded,
-                                        'الوصول لجميع الميزات المتقدمة',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+                },
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoCard() {
+    return Container(
+      width: 122,
+      height: 122,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.merge(
+          Border(right: BorderSide(color: _primary, width: 2.5)),
+          Border(bottom: BorderSide(color: _primary, width: 2.5)),
+        ),
+        //  gradient: _primaryGradient,
+        borderRadius: BorderRadius.circular(26),
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: _primary.withOpacity(0.24),
+        //     blurRadius: 18,
+        //     offset: const Offset(0, 2),
+        //   ),
+        // ],
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          //  border: Border.merge(
+          // Border(right: BorderSide(color: _primary, width: 0.5)),
+          // Border(bottom: BorderSide(color: _primary, width: 2.5)),
+          // ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Image.asset(
+            'assets/images/LO.png',
+            fit: BoxFit.fill,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(
+                Icons.local_hospital_rounded,
+                size: 54,
+                color: _primary,
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBenefitItem(IconData icon, String text) {
+  Widget _buildGoogleButton(bool isLoading) {
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        gradient: _primaryGradient,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withOpacity(0.26),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: isLoading
+              ? null
+              : () => context.read<AuthCubit>().signInWithGoogle(),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isLoading)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: AppLoadingIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 23,
+                      height: 23,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'G',
+                        style: TextStyle(
+                          color: _primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      isLoading
+                          ? 'جاري تسجيل الدخول...'
+                          : 'تسجيل الدخول بواسطة Google',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BenefitItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _BenefitItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 28,
+            height: 28,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
+              color: const Color(0xFF0B8293).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 18,
-            ),
+            child: Icon(icon, color: const Color(0xFF0B8293), size: 16),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.95),
-                fontSize: 15,
-                height: 1.4,
-                fontWeight: FontWeight.w500,
+              style: const TextStyle(
+                color: Color(0xFF334155),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

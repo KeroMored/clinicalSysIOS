@@ -1,10 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum BookingStatus {
-  pending,    // في انتظار التأكيد
-  confirmed,  // مؤكد
-  cancelled,  // ملغي
-  completed,  // تم
+  pending, // في انتظار التأكيد
+  confirmed, // مؤكد
+  cancelled, // ملغي
+  completed, // تم
+}
+
+enum VisitType {
+  examination, // كشف
+  followUp, // إعادة
 }
 
 class BookingModel {
@@ -21,8 +26,10 @@ class BookingModel {
   final String? notes; // ملاحظات إضافية
   final String? userId; // معرف المستخدم إذا كان مسجلاً
   final DateTime? archivedDate; // تاريخ أرشفة الحجز (عند إنهاء اليوم)
-  final bool? isOnlineBooking; // حجز أونلاين من المريض (true) أو حجز يدوي من العيادة (false)
+  final bool?
+  isOnlineBooking; // حجز أونلاين من المريض (true) أو حجز يدوي من العيادة (false)
   final DateTime appointmentDate; // تاريخ ووقت الموعد المحدد للكشف
+  final VisitType visitType; // نوع الزيارة: كشف أو إعادة
 
   BookingModel({
     this.id,
@@ -40,11 +47,12 @@ class BookingModel {
     this.archivedDate,
     this.isOnlineBooking,
     required this.appointmentDate,
+    this.visitType = VisitType.examination, // الافتراضي: كشف
   });
 
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     return BookingModel(
       id: doc.id,
       patientName: data['patientName'] ?? '',
@@ -60,9 +68,11 @@ class BookingModel {
       userId: data['userId'],
       archivedDate: (data['archivedDate'] as Timestamp?)?.toDate(),
       isOnlineBooking: data['isOnlineBooking'] as bool?,
-      appointmentDate: (data['appointmentDate'] as Timestamp?)?.toDate() ?? 
-                       (data['createdAt'] as Timestamp?)?.toDate() ?? 
-                       DateTime.now(),
+      appointmentDate:
+          (data['appointmentDate'] as Timestamp?)?.toDate() ??
+          (data['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.now(),
+      visitType: _parseVisitType(data['visitType']),
     );
   }
 
@@ -75,13 +85,20 @@ class BookingModel {
       'bookingNumber': bookingNumber,
       'status': _statusToString(status),
       'createdAt': Timestamp.fromDate(createdAt),
-      'confirmedAt': confirmedAt != null ? Timestamp.fromDate(confirmedAt!) : null,
-      'cancelledAt': cancelledAt != null ? Timestamp.fromDate(cancelledAt!) : null,
+      'confirmedAt': confirmedAt != null
+          ? Timestamp.fromDate(confirmedAt!)
+          : null,
+      'cancelledAt': cancelledAt != null
+          ? Timestamp.fromDate(cancelledAt!)
+          : null,
       'notes': notes,
       'userId': userId,
-      'archivedDate': archivedDate != null ? Timestamp.fromDate(archivedDate!) : null,
+      'archivedDate': archivedDate != null
+          ? Timestamp.fromDate(archivedDate!)
+          : null,
       'isOnlineBooking': isOnlineBooking,
       'appointmentDate': Timestamp.fromDate(appointmentDate),
+      'visitType': _visitTypeToString(visitType),
     };
   }
 
@@ -111,6 +128,25 @@ class BookingModel {
     }
   }
 
+  static VisitType _parseVisitType(String? type) {
+    switch (type) {
+      case 'followUp':
+        return VisitType.followUp;
+      case 'examination':
+      default:
+        return VisitType.examination;
+    }
+  }
+
+  static String _visitTypeToString(VisitType type) {
+    switch (type) {
+      case VisitType.examination:
+        return 'examination';
+      case VisitType.followUp:
+        return 'followUp';
+    }
+  }
+
   String get statusArabic {
     switch (status) {
       case BookingStatus.pending:
@@ -121,6 +157,15 @@ class BookingModel {
         return 'تم الإلغاء';
       case BookingStatus.completed:
         return 'تم الكشف';
+    }
+  }
+
+  String get visitTypeArabic {
+    switch (visitType) {
+      case VisitType.examination:
+        return 'كشف';
+      case VisitType.followUp:
+        return 'إعادة';
     }
   }
 
@@ -140,6 +185,7 @@ class BookingModel {
     DateTime? archivedDate,
     bool? isOnlineBooking,
     DateTime? appointmentDate,
+    VisitType? visitType,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -157,6 +203,7 @@ class BookingModel {
       archivedDate: archivedDate ?? this.archivedDate,
       isOnlineBooking: isOnlineBooking ?? this.isOnlineBooking,
       appointmentDate: appointmentDate ?? this.appointmentDate,
+      visitType: visitType ?? this.visitType,
     );
   }
 }

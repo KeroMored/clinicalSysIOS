@@ -18,19 +18,13 @@ class SettingsTabWidget extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          SubscriptionSettingsCard(
-            settings: settings,
-            onSave: onSave,
-          ),
+          SubscriptionSettingsCard(settings: settings, onSave: onSave),
 
           const Padding(
             padding: EdgeInsets.all(16),
             child: Text(
               'مزامنة سريعة حسب النوع',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           Padding(

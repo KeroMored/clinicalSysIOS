@@ -7,7 +7,9 @@ class PatientRepository {
   // إضافة مريض جديد
   Future<String> addPatient(PatientModel patient) async {
     try {
-      final docRef = await _firestore.collection('patients').add(patient.toFirestore());
+      final docRef = await _firestore
+          .collection('patients')
+          .add(patient.toFirestore());
       return docRef.id;
     } catch (e) {
       throw Exception('فشل في إضافة المريض: ${e.toString()}');
@@ -21,9 +23,11 @@ class PatientRepository {
         .where('clinicId', isEqualTo: clinicId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => PatientModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => PatientModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // جلب مريض واحد
@@ -40,7 +44,10 @@ class PatientRepository {
   }
 
   // تحديث بيانات مريض
-  Future<void> updatePatient(String patientId, Map<String, dynamic> updates) async {
+  Future<void> updatePatient(
+    String patientId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       await _firestore.collection('patients').doc(patientId).update(updates);
     } catch (e) {
@@ -53,13 +60,13 @@ class PatientRepository {
     try {
       // حذف المريض
       await _firestore.collection('patients').doc(patientId).delete();
-      
+
       // حذف جميع الكشوفات الخاصة به
       final visits = await _firestore
           .collection('visits')
           .where('patientId', isEqualTo: patientId)
           .get();
-      
+
       for (var doc in visits.docs) {
         await doc.reference.delete();
       }
@@ -89,17 +96,17 @@ class PatientRepository {
     // دمج النتائج
     return nameQuery.asyncMap((nameSnapshot) async {
       final phoneSnapshot = await phoneQuery.first;
-      
+
       final results = <String, PatientModel>{};
-      
+
       for (var doc in nameSnapshot.docs) {
         results[doc.id] = PatientModel.fromFirestore(doc);
       }
-      
+
       for (var doc in phoneSnapshot.docs) {
         results[doc.id] = PatientModel.fromFirestore(doc);
       }
-      
+
       return results.values.toList();
     });
   }

@@ -5,7 +5,7 @@ class ClinicModel {
   final String id;
   final String doctorName;
   final ClinicDepartment department;
-  final String specialization; // تخصص دقيق (مثلاً: جراحة قلب، أطفال حديثي الولادة)
+  final List<String> specialization; // خدمات العيادة كنقاط
   final String about; // نبذة عن الدكتور
   final double consultationFee; // سعر الكشف
   final List<String> phones; // أرقام هاتف العيادة (يمكن أن تكون متعددة)
@@ -15,27 +15,28 @@ class ClinicModel {
   final double? longitude;
   final String governorate; // المحافظة (مثلاً: المنيا)
   final String center; // المركز (مثلاً: ملوي)
-  
+
   // Doctor Account Info
-  final List<String> authEmails; // إيميلات المصادقة للدخول (يمكن أن تكون أكثر من إيميل)
+  final List<String>
+  authEmails; // إيميلات المصادقة للدخول (يمكن أن تكون أكثر من إيميل)
   final List<String> doctorEmails; // إيميلات الدكاترة (صلاحيات كاملة)
   final List<String> secretaryEmails; // إيميلات السكرتيرة (صلاحيات محدودة)
   final String? doctorPhone; // رقم تليفون الدكتور الشخصي
-  
+
   // Working Hours
-  final Map<String, WorkingHours> workingHours; // Key: day name (saturday, sunday, etc.)
+  final Map<String, WorkingHours>
+  workingHours; // Key: day name (saturday, sunday, etc.)
   final List<String> holidays; // أيام العطلات الرسمية
-  
+
   // Additional Info
   final bool hasNursery; // يوجد حضانة (لعيادات الأطفال فقط)
   final bool onlineBookingEnabled; // متاح الحجز أونلاين
-  final String? clinicImageUrl;
   final String? doctorImageUrl;
   final bool isActive;
   final String status; // pending, approved, rejected
   final DateTime createdAt;
   final String? ownerId; // إذا كان الدكتور يملك حساب
-  
+
   // Rating and Engagement
   final double averageRating; // متوسط التقييم (0.0 - 5.0)
   final int totalRatings; // عدد التقييمات
@@ -63,7 +64,6 @@ class ClinicModel {
     required this.holidays,
     this.hasNursery = false,
     this.onlineBookingEnabled = false,
-    this.clinicImageUrl,
     this.doctorImageUrl,
     this.isActive = true,
     this.status = 'pending', // Default: waiting for approval
@@ -76,14 +76,24 @@ class ClinicModel {
 
   factory ClinicModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
+    // Debug: Print raw data from Firestore
+    print('🔍 ClinicModel.fromFirestore - Doc ID: ${doc.id}');
+    print('   Raw hasNursery: ${data['hasNursery']}');
+    print('   Raw onlineBookingEnabled: ${data['onlineBookingEnabled']}');
+    print('   Raw doctorEmails: ${data['doctorEmails']}');
+    print('   Raw secretaryEmails: ${data['secretaryEmails']}');
+    print('   Raw authEmails: ${data['authEmails']}');
+
     // Parse working hours
     Map<String, WorkingHours> parsedWorkingHours = {};
     if (data['workingHours'] != null) {
       final hoursData = data['workingHours'] as Map<String, dynamic>;
       hoursData.forEach((day, hours) {
         if (hours != null) {
-          parsedWorkingHours[day] = WorkingHours.fromMap(hours as Map<String, dynamic>);
+          parsedWorkingHours[day] = WorkingHours.fromMap(
+            hours as Map<String, dynamic>,
+          );
         }
       });
     }
@@ -92,24 +102,30 @@ class ClinicModel {
       id: doc.id,
       doctorName: data['doctorName'] ?? '',
       department: ClinicDepartment.fromString(data['department'] ?? 'other'),
-      specialization: data['specialization'] ?? '',
+      specialization: _parseSpecialization(data['specialization']),
       about: data['about'] ?? '',
       consultationFee: (data['consultationFee'] ?? 0).toDouble(),
       phones: data['phones'] != null
           ? List<String>.from(data['phones'])
-          : (data['phone'] != null ? [data['phone']] : []), // للتوافق مع البيانات القديمة
+          : (data['phone'] != null
+                ? [data['phone']]
+                : []), // للتوافق مع البيانات القديمة
       whatsapp: data['whatsapp'],
       address: data['address'] ?? '',
       latitude: data['latitude']?.toDouble(),
       longitude: data['longitude']?.toDouble(),
       governorate: data['governorate'] ?? 'المنيا',
       center: data['center'] ?? 'ملوي',
-      authEmails: data['authEmails'] != null 
+      authEmails: data['authEmails'] != null
           ? List<String>.from(data['authEmails'])
-          : (data['doctorEmail'] != null ? [data['doctorEmail']] : []), // للتوافق مع البيانات القديمة
+          : (data['doctorEmail'] != null
+                ? [data['doctorEmail']]
+                : []), // للتوافق مع البيانات القديمة
       doctorEmails: data['doctorEmails'] != null
           ? List<String>.from(data['doctorEmails'])
-          : (data['doctorEmail'] != null ? [data['doctorEmail']] : []), // للتوافق مع doctorEmail القديم
+          : (data['doctorEmail'] != null
+                ? [data['doctorEmail']]
+                : []), // للتوافق مع doctorEmail القديم
       secretaryEmails: data['secretaryEmails'] != null
           ? List<String>.from(data['secretaryEmails'])
           : [],
@@ -118,7 +134,6 @@ class ClinicModel {
       holidays: List<String>.from(data['holidays'] ?? []),
       hasNursery: data['hasNursery'] ?? false,
       onlineBookingEnabled: data['onlineBookingEnabled'] ?? false,
-      clinicImageUrl: data['clinicImageUrl'],
       doctorImageUrl: data['doctorImageUrl'],
       isActive: data['isActive'] ?? true,
       status: data['status'] ?? 'pending',
@@ -128,6 +143,24 @@ class ClinicModel {
       totalRatings: data['totalRatings'] ?? 0,
       totalLikes: data['totalLikes'] ?? 0,
     );
+  }
+
+  // Helper to handle old String and new List<String> formats
+  static List<String> _parseSpecialization(dynamic spec) {
+    if (spec == null) return [];
+    if (spec is List) {
+      return List<String>.from(spec);
+    }
+    if (spec is String) {
+      if (spec.trim().isEmpty) return [];
+      // تحويل النص القديم إلى قائمة (فصل بالفواصل أو النقاط)
+      return spec
+          .split(RegExp(r'[,،]'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    return [];
   }
 
   Map<String, dynamic> toFirestore() {
@@ -157,7 +190,6 @@ class ClinicModel {
       'holidays': holidays,
       'hasNursery': hasNursery,
       'onlineBookingEnabled': onlineBookingEnabled,
-      'clinicImageUrl': clinicImageUrl,
       'doctorImageUrl': doctorImageUrl,
       'isActive': isActive,
       'status': status,
@@ -172,14 +204,10 @@ class ClinicModel {
 
 class WorkingHours {
   final String from; // "09:00"
-  final String to;   // "17:00"
+  final String to; // "17:00"
   final bool isClosed;
 
-  WorkingHours({
-    required this.from,
-    required this.to,
-    this.isClosed = false,
-  });
+  WorkingHours({required this.from, required this.to, this.isClosed = false});
 
   factory WorkingHours.fromMap(Map<String, dynamic> map) {
     return WorkingHours(
@@ -190,10 +218,6 @@ class WorkingHours {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'from': from,
-      'to': to,
-      'isClosed': isClosed,
-    };
+    return {'from': from, 'to': to, 'isClosed': isClosed};
   }
 }

@@ -6,16 +6,20 @@ class LaboratoryRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'laboratories';
 
+  List<LaboratoryModel> _toPublicLaboratories(QuerySnapshot snapshot) {
+    return snapshot.docs
+        .map((doc) => LaboratoryModel.fromFirestore(doc))
+        .where((lab) => lab.isVisible)
+        .toList();
+  }
+
   // Get all approved laboratories
   Stream<List<LaboratoryModel>> getLaboratories() {
     return _firestore
         .collection(_collection)
         .where('status', isEqualTo: 'approved')
-        .where('isVisible', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(_toPublicLaboratories);
   }
 
   // Get laboratory by ID
@@ -39,60 +43,47 @@ class LaboratoryRepository {
         .limit(1)
         .snapshots()
         .map((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        return LaboratoryModel.fromFirestore(snapshot.docs.first);
-      }
-      return null;
-    });
+          if (snapshot.docs.isNotEmpty) {
+            return LaboratoryModel.fromFirestore(snapshot.docs.first);
+          }
+          return null;
+        });
   }
 
-  // Search laboratories in database
-  Stream<List<LaboratoryModel>> searchLaboratories(String query) {
-    if (query.trim().isEmpty) {
-      return Stream.value([]);
+  // Search laboratories by name only (manual trigger from UI)
+  Future<List<LaboratoryModel>> searchLaboratoriesByName(String query) async {
+    final normalizedQuery = query.toLowerCase().trim();
+    if (normalizedQuery.isEmpty) {
+      return [];
     }
-    
-    final lowerQuery = query.toLowerCase().trim();
-    
-    // Search in database using Firestore
-    return _firestore
+
+    try {
+      final nameSnapshot = await _firestore
+          .collection(_collection)
+          .where('status', isEqualTo: 'approved')
+          .orderBy('nameLower')
+          .startAt([normalizedQuery])
+          .endAt(['$normalizedQuery\uf8ff'])
+          .limit(30)
+          .get();
+
+      final labsByPrefix = _toPublicLaboratories(nameSnapshot);
+      if (labsByPrefix.isNotEmpty) {
+        return labsByPrefix;
+      }
+    } catch (_) {
+      // Fallback below handles missing index or ordering constraints.
+    }
+
+    final snapshot = await _firestore
         .collection(_collection)
         .where('status', isEqualTo: 'approved')
-        .where('isVisible', isEqualTo: true)
-        .snapshots()
-        .asyncMap((snapshot) async {
-      // Try to search by name prefix first
-      try {
-        final nameSnapshot = await _firestore
-            .collection(_collection)
-            .where('status', isEqualTo: 'approved')
-            .where('isVisible', isEqualTo: true)
-            .orderBy('nameLower')
-            .startAt([lowerQuery])
-            .endAt(['$lowerQuery\uf8ff'])
-            .limit(20)
-            .get();
-        
-        if (nameSnapshot.docs.isNotEmpty) {
-          return nameSnapshot.docs
-              .map((doc) => LaboratoryModel.fromFirestore(doc))
-              .toList();
-        }
-      } catch (e) {
-        print('Name search index not available: $e');
-      }
-      
-      // Fallback: filter from current snapshot
-      final labs = snapshot.docs
-          .map((doc) => LaboratoryModel.fromFirestore(doc))
-          .toList();
-      
-      return labs.where((lab) {
-        return lab.name.toLowerCase().contains(lowerQuery) ||
-            lab.city.toLowerCase().contains(lowerQuery) ||
-            lab.address.toLowerCase().contains(lowerQuery);
-      }).toList();
-    });
+        .get();
+
+    final labs = _toPublicLaboratories(snapshot);
+    return labs
+        .where((lab) => lab.name.toLowerCase().contains(normalizedQuery))
+        .toList();
   }
 
   // Filter laboratories by city
@@ -101,24 +92,20 @@ class LaboratoryRepository {
         .collection(_collection)
         .where('status', isEqualTo: 'approved')
         .where('city', isEqualTo: city)
-        .where('isVisible', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(_toPublicLaboratories);
   }
 
   // Filter laboratories by governorate
-  Stream<List<LaboratoryModel>> getLaboratoriesByGovernorate(String governorate) {
+  Stream<List<LaboratoryModel>> getLaboratoriesByGovernorate(
+    String governorate,
+  ) {
     return _firestore
         .collection(_collection)
         .where('status', isEqualTo: 'approved')
         .where('governorate', isEqualTo: governorate)
-        .where('isVisible', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(_toPublicLaboratories);
   }
 
   // Filter laboratories by available test
@@ -127,11 +114,8 @@ class LaboratoryRepository {
         .collection(_collection)
         .where('status', isEqualTo: 'approved')
         .where('availableTests', arrayContains: testName)
-        .where('isVisible', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(_toPublicLaboratories);
   }
 
   // Filter laboratories with home service
@@ -140,17 +124,16 @@ class LaboratoryRepository {
         .collection(_collection)
         .where('status', isEqualTo: 'approved')
         .where('hasHomeService', isEqualTo: true)
-        .where('isVisible', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(_toPublicLaboratories);
   }
 
   // Add new laboratory
   Future<String> addLaboratory(LaboratoryModel laboratory) async {
     try {
-      final docRef = await _firestore.collection(_collection).add(laboratory.toFirestore());
+      final docRef = await _firestore
+          .collection(_collection)
+          .add(laboratory.toFirestore());
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to add laboratory: $e');
@@ -199,36 +182,40 @@ class LaboratoryRepository {
     return _firestore
         .collection(_collection)
         .where('status', isEqualTo: 'approved')
-        .where('isVisible', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      final labs = snapshot.docs
-          .map((doc) => LaboratoryModel.fromFirestore(doc))
-          .toList();
+          final labs = _toPublicLaboratories(snapshot);
 
-      // Filter by distance
-      return labs.where((lab) {
-        final distance = _calculateDistance(
-          userLat,
-          userLng,
-          lab.latitude,
-          lab.longitude,
-        );
-        return distance <= radiusInKm;
-      }).toList();
-    });
+          // Filter by distance
+          return labs.where((lab) {
+            final distance = _calculateDistance(
+              userLat,
+              userLng,
+              lab.latitude,
+              lab.longitude,
+            );
+            return distance <= radiusInKm;
+          }).toList();
+        });
   }
 
   // Calculate distance between two coordinates (Haversine formula)
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const double earthRadius = 6371; // km
     final double dLat = _toRadians(lat2 - lat1);
     final double dLon = _toRadians(lon2 - lon1);
 
-    final double a = 
+    final double a =
         math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
-        math.sin(dLon / 2) * math.sin(dLon / 2);
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
 
     final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return earthRadius * c;

@@ -18,6 +18,8 @@ class GymWorkingHoursCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sortedEntries = _getSortedWorkingHoursEntries();
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       padding: const EdgeInsets.all(20),
@@ -43,11 +45,7 @@ class GymWorkingHoursCard extends StatelessWidget {
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
+                child: Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 12),
               Text(
@@ -61,7 +59,7 @@ class GymWorkingHoursCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ...workingHours.entries.map((entry) {
+          ...sortedEntries.map((entry) {
             final day = _getDayName(entry.key);
             final hours = entry.value;
             return Padding(
@@ -98,10 +96,7 @@ class GymWorkingHoursCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.grey[50],
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
+                        border: Border.all(color: Colors.grey[200]!, width: 1),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -144,5 +139,64 @@ class GymWorkingHoursCard extends StatelessWidget {
       'friday': 'الجمعة',
     };
     return days[day.toLowerCase()] ?? day;
+  }
+
+  List<MapEntry<String, WorkingHours>> _getSortedWorkingHoursEntries() {
+    const weekOrder = [
+      'saturday',
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+    ];
+
+    final dayAlias = {
+      'saturday': 'saturday',
+      'sat': 'saturday',
+      'السبت': 'saturday',
+      'sunday': 'sunday',
+      'sun': 'sunday',
+      'الاحد': 'sunday',
+      'الأحد': 'sunday',
+      'monday': 'monday',
+      'mon': 'monday',
+      'الاثنين': 'monday',
+      'الإثنين': 'monday',
+      'tuesday': 'tuesday',
+      'tue': 'tuesday',
+      'الثلاثاء': 'tuesday',
+      'wednesday': 'wednesday',
+      'wed': 'wednesday',
+      'الاربعاء': 'wednesday',
+      'الأربعاء': 'wednesday',
+      'thursday': 'thursday',
+      'thu': 'thursday',
+      'الخميس': 'thursday',
+      'friday': 'friday',
+      'fri': 'friday',
+      'الجمعة': 'friday',
+    };
+
+    final entries = workingHours.entries.toList();
+    entries.sort((a, b) {
+      final normalizedA =
+          dayAlias[a.key.trim().toLowerCase()] ?? a.key.trim().toLowerCase();
+      final normalizedB =
+          dayAlias[b.key.trim().toLowerCase()] ?? b.key.trim().toLowerCase();
+
+      final indexA = weekOrder.indexOf(normalizedA);
+      final indexB = weekOrder.indexOf(normalizedB);
+
+      if (indexA == -1 && indexB == -1) {
+        return normalizedA.compareTo(normalizedB);
+      }
+      if (indexA == -1) return 1;
+      if (indexB == -1) return -1;
+      return indexA.compareTo(indexB);
+    });
+
+    return entries;
   }
 }

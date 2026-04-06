@@ -131,21 +131,21 @@ class SeasonalOfferModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        laboratoryId,
-        title,
-        description,
-        discountPercentage,
-        startDate,
-        endDate,
-        applicableTestIds,
-        bannerImageUrl,
-        isActive,
-        usageCount,
-        maxUsage,
-        offerType,
-        createdAt,
-      ];
+    id,
+    laboratoryId,
+    title,
+    description,
+    discountPercentage,
+    startDate,
+    endDate,
+    applicableTestIds,
+    bannerImageUrl,
+    isActive,
+    usageCount,
+    maxUsage,
+    offerType,
+    createdAt,
+  ];
 }
 
 /// باقة تحاليل (Package) - موجودة في test_catalog_model لكن هنا نسخة محسّنة
@@ -226,17 +226,17 @@ class EnhancedTestPackageModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        laboratoryId,
-        name,
-        description,
-        testIds,
-        originalPrice,
-        packagePrice,
-        imageUrl,
-        isActive,
-        salesCount,
-        category,
-        createdAt,
-      ];
+    id,
+    laboratoryId,
+    name,
+    description,
+    testIds,
+    originalPrice,
+    packagePrice,
+    imageUrl,
+    isActive,
+    salesCount,
+    category,
+    createdAt,
+  ];
 }

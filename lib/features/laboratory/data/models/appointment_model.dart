@@ -116,11 +116,13 @@ class AppointmentModel extends Equatable {
       'homeLongitude': homeLongitude,
       'homeVisitFee': homeVisitFee,
       'cancellationReason': cancellationReason,
-      'cancelledAt':
-          cancelledAt != null ? Timestamp.fromDate(cancelledAt!) : null,
+      'cancelledAt': cancelledAt != null
+          ? Timestamp.fromDate(cancelledAt!)
+          : null,
       'createdAt': Timestamp.fromDate(createdAt),
-      'reminderSentAt':
-          reminderSentAt != null ? Timestamp.fromDate(reminderSentAt!) : null,
+      'reminderSentAt': reminderSentAt != null
+          ? Timestamp.fromDate(reminderSentAt!)
+          : null,
       'remindersSent': remindersSent,
     };
   }
@@ -261,29 +263,29 @@ class AppointmentModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        laboratoryId,
-        laboratoryName,
-        userId,
-        userName,
-        userPhone,
-        testId,
-        testName,
-        appointmentDateTime,
-        status,
-        price,
-        notes,
-        isHomeVisit,
-        homeAddress,
-        homeLatitude,
-        homeLongitude,
-        homeVisitFee,
-        cancellationReason,
-        cancelledAt,
-        createdAt,
-        reminderSentAt,
-        remindersSent,
-      ];
+    id,
+    laboratoryId,
+    laboratoryName,
+    userId,
+    userName,
+    userPhone,
+    testId,
+    testName,
+    appointmentDateTime,
+    status,
+    price,
+    notes,
+    isHomeVisit,
+    homeAddress,
+    homeLatitude,
+    homeLongitude,
+    homeVisitFee,
+    cancellationReason,
+    cancelledAt,
+    createdAt,
+    reminderSentAt,
+    remindersSent,
+  ];
 }
 
 /// نموذج فترة زمنية متاحة

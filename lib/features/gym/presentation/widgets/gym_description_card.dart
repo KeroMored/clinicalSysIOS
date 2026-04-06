@@ -7,10 +7,7 @@ import '../pages/gym_works_screen.dart';
 class GymDescriptionCard extends StatelessWidget {
   final GymModel gym;
 
-  const GymDescriptionCard({
-    super.key,
-    required this.gym,
-  });
+  const GymDescriptionCard({super.key, required this.gym});
 
   @override
   Widget build(BuildContext context) {

@@ -4,10 +4,7 @@ import '../../data/models/subscribed_place_model.dart';
 class SubscriptionStatusCardWidget extends StatelessWidget {
   final SubscribedPlaceModel place;
 
-  const SubscriptionStatusCardWidget({
-    super.key,
-    required this.place,
-  });
+  const SubscriptionStatusCardWidget({super.key, required this.place});
 
   @override
   Widget build(BuildContext context) {
@@ -51,14 +48,15 @@ class SubscriptionStatusCardWidget extends StatelessWidget {
                   Text(
                     place.subscriptionEndDate != null
                         ? (place.isSubscriptionExpired
-                            ? 'انتهى الاشتراك'
-                            : 'الاشتراك فعال')
+                              ? 'انتهى الاشتراك'
+                              : 'الاشتراك فعال')
                         : 'لم يتم الاشتراك بعد',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color:
-                          place.isSubscriptionExpired ? Colors.red : Colors.green,
+                      color: place.isSubscriptionExpired
+                          ? Colors.red
+                          : Colors.green,
                     ),
                   ),
                   if (place.subscriptionEndDate != null)
@@ -66,9 +64,7 @@ class SubscriptionStatusCardWidget extends StatelessWidget {
                       place.isSubscriptionExpired
                           ? 'انتهى في: ${_formatDate(place.subscriptionEndDate!)}'
                           : 'ينتهي في: ${_formatDate(place.subscriptionEndDate!)}',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(color: Colors.grey[700]),
                     ),
                 ],
               ),
@@ -86,10 +82,7 @@ class SubscriptionStatusCardWidget extends StatelessWidget {
                 ),
                 Text(
                   '${place.paymentCount} دفعة',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),

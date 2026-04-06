@@ -1,6 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PharmacyModel {
+  static const String noHolidaysText = 'متاح طوال الإسبوع';
+
+  static String normalizeHolidays(dynamic rawHolidays) {
+    final value = (rawHolidays?.toString() ?? '').trim();
+    if (value.isEmpty ||
+        value == 'لا يوجد' ||
+        value == 'لا يوجد - متاحون دائماً' ||
+        value == 'متاح طوال الأسبوع' ||
+        value == noHolidaysText) {
+      return noHolidaysText;
+    }
+    return value;
+  }
+
   final String id;
   final String name;
   final String? description; // وصف الصيدلية (اختياري)
@@ -26,11 +40,11 @@ class PharmacyModel {
   final List<String> authEmails; // إيميلات المصادقة للدخول
   final String governorate; // المحافظة (مثلاً: المنيا)
   final String center; // المركز (مثلاً: ملوي)
-  
+
   // Insurance Information
   final bool hasInsurance; // متعاقد مع شركات تأمين؟
   final List<String> insuranceCompanies; // أسماء شركات التأمين
-  
+
   // Rating and Engagement
   final double averageRating; // متوسط التقييم (0.0 - 5.0)
   final int totalRatings; // عدد التقييمات
@@ -82,7 +96,7 @@ class PharmacyModel {
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       workingHours: json['workingHours'] ?? '',
-      holidays: json['holidays'] ?? '',
+      holidays: normalizeHolidays(json['holidays']),
       images: List<String>.from(json['images'] ?? []),
       hasHomeDelivery: json['hasHomeDelivery'] ?? false,
       deliveryFee: json['deliveryFee']?.toDouble(),
@@ -124,7 +138,7 @@ class PharmacyModel {
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       workingHours: json['workingHours'] ?? '',
-      holidays: json['holidays'] ?? '',
+      holidays: normalizeHolidays(json['holidays']),
       images: List<String>.from(json['images'] ?? []),
       hasHomeDelivery: json['hasHomeDelivery'] ?? false,
       deliveryFee: json['deliveryFee']?.toDouble(),
@@ -163,7 +177,7 @@ class PharmacyModel {
       'latitude': latitude,
       'longitude': longitude,
       'workingHours': workingHours,
-      'holidays': holidays,
+      'holidays': normalizeHolidays(holidays),
       'images': images,
       'hasHomeDelivery': hasHomeDelivery,
       'deliveryFee': deliveryFee,
@@ -226,7 +240,7 @@ class PharmacyModel {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       workingHours: workingHours ?? this.workingHours,
-      holidays: holidays ?? this.holidays,
+      holidays: normalizeHolidays(holidays ?? this.holidays),
       images: images ?? this.images,
       hasHomeDelivery: hasHomeDelivery ?? this.hasHomeDelivery,
       deliveryFee: deliveryFee ?? this.deliveryFee,

@@ -23,8 +23,11 @@ class LabBookingModel {
   final DateTime? archivedDate; // تاريخ أرشفة الحجز (عند إنهاء اليوم)
   final bool?
   isOnlineBooking; // حجز أونلاين من المريض (true) أو حجز يدوي من المعمل (false)
-  final String? testType; // نوع التحليل (مثل: صورة دم كاملة، تحليل سكر، إلخ)
+  final List<String> testTypes; // قائمة التحاليل المطلوبة
   final String? serviceType; // نوع الخدمة: 'lab' للمعمل، 'home' للمنزل
+
+  // توافق خلفي مع السجلات القديمة التي كانت تدعم تحليل واحد فقط.
+  String? get testType => testTypes.isNotEmpty ? testTypes.first : null;
 
   LabBookingModel({
     this.id,
@@ -41,12 +44,22 @@ class LabBookingModel {
     this.userId,
     this.archivedDate,
     this.isOnlineBooking,
-    this.testType,
+    List<String>? testTypes,
+    String? testType,
     this.serviceType,
-  });
+  }) : testTypes = _normalizeTestTypes(testTypes, testType);
 
   factory LabBookingModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    final rawList = data['testTypes'];
+    final parsedList = rawList is List
+        ? rawList
+              .whereType<String>()
+              .map((test) => test.trim())
+              .where((test) => test.isNotEmpty)
+              .toList()
+        : const <String>[];
 
     return LabBookingModel(
       id: doc.id,
@@ -63,6 +76,7 @@ class LabBookingModel {
       userId: data['userId'],
       archivedDate: (data['archivedDate'] as Timestamp?)?.toDate(),
       isOnlineBooking: data['isOnlineBooking'] as bool?,
+      testTypes: parsedList,
       testType: data['testType'] as String?,
       serviceType: data['serviceType'] as String?,
     );
@@ -89,9 +103,30 @@ class LabBookingModel {
           ? Timestamp.fromDate(archivedDate!)
           : null,
       'isOnlineBooking': isOnlineBooking,
+      'testTypes': testTypes,
       'testType': testType,
       'serviceType': serviceType,
     };
+  }
+
+  static List<String> _normalizeTestTypes(
+    List<String>? testTypes,
+    String? testType,
+  ) {
+    final values = <String>[];
+
+    if (testTypes != null) {
+      values.addAll(
+        testTypes.map((test) => test.trim()).where((test) => test.isNotEmpty),
+      );
+    }
+
+    final single = testType?.trim() ?? '';
+    if (single.isNotEmpty) {
+      values.add(single);
+    }
+
+    return values.toSet().toList();
   }
 
   static LabBookingStatus _parseStatus(String? status) {
@@ -148,6 +183,7 @@ class LabBookingModel {
     String? userId,
     DateTime? archivedDate,
     bool? isOnlineBooking,
+    List<String>? testTypes,
     String? testType,
     String? serviceType,
   }) {
@@ -166,7 +202,8 @@ class LabBookingModel {
       userId: userId ?? this.userId,
       archivedDate: archivedDate ?? this.archivedDate,
       isOnlineBooking: isOnlineBooking ?? this.isOnlineBooking,
-      testType: testType ?? this.testType,
+      testTypes: testTypes ?? this.testTypes,
+      testType: testType,
       serviceType: serviceType ?? this.serviceType,
     );
   }

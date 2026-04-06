@@ -8,16 +8,14 @@ import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/patient_model.dart';
 import '../../data/models/visit_model.dart';
 import '../cubit/visit_cubit.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddEditVisitScreen extends StatefulWidget {
   final PatientModel patient;
   final VisitModel? visit;
 
-  const AddEditVisitScreen({
-    Key? key,
-    required this.patient,
-    this.visit,
-  }) : super(key: key);
+  const AddEditVisitScreen({Key? key, required this.patient, this.visit})
+    : super(key: key);
 
   @override
   State<AddEditVisitScreen> createState() => _AddEditVisitScreenState();
@@ -28,7 +26,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   final _diagnosisController = TextEditingController();
   final _notesController = TextEditingController();
   final _medicineController = TextEditingController();
-  
+
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   List<String> _medicines = [];
@@ -45,7 +43,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
       _selectedDate = widget.visit!.date;
       _medicines = List.from(widget.visit!.medicines);
       _prescriptionImageUrl = widget.visit!.prescriptionImageUrl;
-      
+
       // تحويل الوقت من String إلى TimeOfDay
       final timeParts = widget.visit!.time.split(':');
       if (timeParts.length == 2) {
@@ -140,9 +138,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   Widget _buildPatientInfoCard() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -158,11 +154,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                 gradient: AppTheme.clinicGradient,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 25,
-              ),
+              child: const Icon(Icons.person, color: Colors.white, size: 25),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -179,10 +171,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                   ),
                   Text(
                     widget.patient.phoneNumber,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -196,9 +185,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   Widget _buildDateTimeSection() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -226,11 +213,17 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: AppTheme.primaryColor),
+                          const Icon(
+                            Icons.calendar_today,
+                            color: AppTheme.primaryColor,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              DateFormat('dd/MM/yyyy', 'ar').format(_selectedDate),
+                              DateFormat(
+                                'dd/MM/yyyy',
+                                'ar',
+                              ).format(_selectedDate),
                               style: const TextStyle(fontSize: 14),
                             ),
                           ),
@@ -251,7 +244,10 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.access_time, color: AppTheme.primaryColor),
+                          const Icon(
+                            Icons.access_time,
+                            color: AppTheme.primaryColor,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -275,9 +271,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   Widget _buildDiagnosisSection() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -300,7 +294,10 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                prefixIcon: const Icon(Icons.medical_services, color: AppTheme.primaryColor),
+                prefixIcon: const Icon(
+                  Icons.medical_services,
+                  color: AppTheme.primaryColor,
+                ),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -318,9 +315,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   Widget _buildMedicinesSection() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -345,14 +340,21 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      prefixIcon: const Icon(Icons.medication, color: AppTheme.primaryColor),
+                      prefixIcon: const Icon(
+                        Icons.medication,
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: _addMedicine,
-                  icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor, size: 32),
+                  icon: const Icon(
+                    Icons.add_circle,
+                    color: AppTheme.primaryColor,
+                    size: 32,
+                  ),
                 ),
               ],
             ),
@@ -368,7 +370,11 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.medication, color: AppTheme.primaryColor, size: 20),
+                      const Icon(
+                        Icons.medication,
+                        color: AppTheme.primaryColor,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -378,7 +384,11 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                       ),
                       IconButton(
                         onPressed: () => _removeMedicine(entry.key),
-                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                        icon: const Icon(
+                          Icons.delete,
+                          color: Colors.red,
+                          size: 20,
+                        ),
                       ),
                     ],
                   ),
@@ -394,9 +404,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   Widget _buildPrescriptionImageSection() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -411,7 +419,8 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (_prescriptionImage != null || _prescriptionImageUrl != null) ...[
+            if (_prescriptionImage != null ||
+                _prescriptionImageUrl != null) ...[
               Container(
                 height: 200,
                 decoration: BoxDecoration(
@@ -455,14 +464,22 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                 child: Container(
                   height: 150,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppTheme.primaryColor, width: 2, style: BorderStyle.solid),
+                    border: Border.all(
+                      color: AppTheme.primaryColor,
+                      width: 2,
+                      style: BorderStyle.solid,
+                    ),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_photo_alternate, size: 50, color: AppTheme.primaryColor),
+                        Icon(
+                          Icons.add_photo_alternate,
+                          size: 50,
+                          color: AppTheme.primaryColor,
+                        ),
                         SizedBox(height: 8),
                         Text(
                           'اضغط لإضافة صورة الروشتة',
@@ -483,9 +500,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   Widget _buildNotesSection() {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -508,7 +523,10 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                prefixIcon: const Icon(Icons.note, color: AppTheme.primaryColor),
+                prefixIcon: const Icon(
+                  Icons.note,
+                  color: AppTheme.primaryColor,
+                ),
               ),
             ),
           ],
@@ -523,12 +541,10 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppTheme.primaryColor,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       child: _isLoading
-          ? const CircularProgressIndicator(color: Colors.white)
+          ? const AppLoadingIndicator(color: Colors.white)
           : Text(
               widget.visit == null ? 'حفظ الكشف' : 'تحديث الكشف',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -581,7 +597,7 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (image != null) {
       setState(() {
         _prescriptionImage = File(image.path);
@@ -600,11 +616,16 @@ class _AddEditVisitScreenState extends State<AddEditVisitScreen> {
 
     // رفع الصورة إذا كانت جديدة
     if (_prescriptionImage != null) {
-      final tempId = widget.visit?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
-      imageUrl = await context.read<VisitCubit>().uploadPrescriptionImage(_prescriptionImage!, tempId);
+      final tempId =
+          widget.visit?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+      imageUrl = await context.read<VisitCubit>().uploadPrescriptionImage(
+        _prescriptionImage!,
+        tempId,
+      );
     }
 
-    final timeString = '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
+    final timeString =
+        '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}';
 
     final visit = VisitModel(
       id: widget.visit?.id ?? '',

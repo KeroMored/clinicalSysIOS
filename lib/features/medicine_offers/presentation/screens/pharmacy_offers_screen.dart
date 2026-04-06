@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/medicine_offer_cubit.dart';
 import '../widgets/medicine_offer_card.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PharmacyOffersScreen extends StatefulWidget {
   final String pharmacyId;
@@ -26,7 +27,9 @@ class _PharmacyOffersScreenState extends State<PharmacyOffersScreen> {
   }
 
   Future<void> _refreshOffers() async {
-    await context.read<MedicineOfferCubit>().loadOffersByPharmacy(widget.pharmacyId);
+    await context.read<MedicineOfferCubit>().loadOffersByPharmacy(
+      widget.pharmacyId,
+    );
   }
 
   @override
@@ -44,7 +47,10 @@ class _PharmacyOffersScreenState extends State<PharmacyOffersScreen> {
               ),
               Text(
                 widget.pharmacyName,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
             ],
           ),
@@ -67,9 +73,7 @@ class _PharmacyOffersScreenState extends State<PharmacyOffersScreen> {
           builder: (context, state) {
             if (state is MedicineOfferLoading) {
               return const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF1A5F7A),
-                ),
+                child: AppLoadingIndicator(color: Color(0xFF1A5F7A)),
               );
             }
 

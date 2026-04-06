@@ -1,16 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../../../core/theme/app_theme.dart';
+
 import '../../../../core/services/location_service.dart';
-import '../../../../core/widgets/gradient_appbar.dart';
-import '../cubit/gym_cubit.dart';
-import '../cubit/gym_state.dart';
+import '../../data/models/gym_model.dart';
 import '../widgets/gym_card.dart';
 import 'gym_details_screen.dart';
-import '../../data/models/gym_model.dart';
 
 class GymsListScreen extends StatefulWidget {
   const GymsListScreen({super.key});
@@ -20,70 +16,97 @@ class GymsListScreen extends StatefulWidget {
 }
 
 class _GymsListScreenState extends State<GymsListScreen> {
-  String _searchQuery = '';
-  
-  // Pagination fields
   final List<GymModel> _gyms = [];
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
+  bool _isInitializing = true;
   bool _hasMore = true;
-  static const int _pageSize = 10;
-  
-  // Location fields
+  String? _loadError;
+
+  String _searchQuery = '';
   Position? _userLocation;
-  String _sortBy = 'name'; // distance, rating, name (default to name)
+  String _sortBy = 'name'; // distance, rating, name
+  String _activeQuickFilter = 'all'; // all, distance, rating, open
+
+  static const int _pageSize = 10;
 
   @override
   void initState() {
     super.initState();
-    // Load gyms first without location
-    _loadGyms();
-    // Try to get location automatically and sort by distance if available
-    _tryAutoLocation();
     _scrollController.addListener(_onScroll);
+    _initializeData();
   }
-  
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      await _tryAutoLocation();
+      await _resetAndReload();
+    } finally {
+      if (mounted) {
+        setState(() => _isInitializing = false);
+      }
+    }
+  }
+
   Future<void> _tryAutoLocation() async {
-    final position = await LocationService.getCurrentLocation();
+    Position? position;
+    try {
+      position = await LocationService.getCurrentLocation().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      );
+    } catch (_) {
+      position = null;
+    }
+
     if (position != null && mounted) {
       setState(() {
         _userLocation = position;
-        // Auto switch to distance sort
         _sortBy = 'distance';
-        _gyms.clear();
-        _lastDocument = null;
-        _hasMore = true;
       });
-      _loadGyms();
     }
-    // If location not available, keep default 'name' sort
   }
-  
+
   Future<void> _requestLocation() async {
-    // Reset permission denial to allow retry
     LocationService.resetPermissionDenial();
-    
+    LocationService.resetPosition();
+
     final position = await LocationService.getCurrentLocation();
-    if (position != null && mounted) {
-      setState(() {
-        _userLocation = position;
-        // Reload with distance sort
-        _changeSortOption('distance');
-      });
-    } else if (mounted) {
-      // Show dialog if location is not available
-      _showLocationPermissionDialog();
+    if (!mounted) {
+      return;
     }
+
+    if (position == null) {
+      _showLocationPermissionDialog();
+      return;
+    }
+
+    setState(() {
+      _userLocation = position;
+      _sortBy = 'distance';
+      _activeQuickFilter = 'distance';
+    });
+
+    await _resetAndReload();
   }
-  
+
   void _showLocationPermissionDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('تفعيل الموقع'),
         content: const Text(
-          'لترتيب الجيمات حسب الأقرب، يجب تفعيل خدمة الموقع والسماح للتطبيق بالوصول إليه.\n\nيمكنك تفعيله من إعدادات الجهاز.',
+          'لترتيب الجيمات حسب الأقرب، فعّل خدمة الموقع ومنح إذن الوصول للتطبيق.',
         ),
         actions: [
           TextButton(
@@ -94,32 +117,7 @@ class _GymsListScreenState extends State<GymsListScreen> {
       ),
     );
   }
-  
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-  
-  // تحديث جيم واحد بعد الرجوع من صفحة التفاصيل
-  Future<void> _refreshSingleGym(String gymId, int index) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('gyms')
-          .doc(gymId)
-          .get();
-      
-      if (doc.exists && mounted) {
-        final updatedGym = GymModel.fromFirestore(doc);
-        setState(() {
-          _gyms[index] = updatedGym;
-        });
-      }
-    } catch (e) {
-      // Ignore errors
-    }
-  }
-  
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
@@ -128,35 +126,44 @@ class _GymsListScreenState extends State<GymsListScreen> {
       }
     }
   }
-  
+
+  void _resetPagination() {
+    _gyms.clear();
+    _lastDocument = null;
+    _hasMore = true;
+  }
+
+  Future<void> _resetAndReload() async {
+    if (!mounted) return;
+    setState(() {
+      _resetPagination();
+      _loadError = null;
+    });
+    await _loadGyms();
+  }
+
   Future<void> _loadGyms() async {
-    if (_isLoading) return;
+    if (_isLoading || !_hasMore) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
+      _loadError = null;
     });
 
     try {
       Query query = FirebaseFirestore.instance
           .collection('gyms')
-          .where('isApproved', isEqualTo: true);
-      
-      // Add orderBy based on sort option to get data from DB in correct order
-      switch (_sortBy) {
-        case 'rating':
-          query = query.orderBy('averageRating', descending: true);
-          break;
-        case 'name':
-          query = query.orderBy('name');
-          break;
-        case 'distance':
-        default:
-          // For distance, we'll sort client-side after fetching
-          // Use 'name' as orderBy to avoid missing field errors
-          query = query.orderBy('name');
-          break;
+          .where('isApproved', isEqualTo: true)
+          .where('isActive', isEqualTo: true);
+
+      if (_sortBy == 'rating') {
+        query = query.orderBy('averageRating', descending: true);
+      } else {
+        query = query.orderBy('name');
       }
-      
+
       query = query.limit(_pageSize);
 
       if (_lastDocument != null) {
@@ -164,52 +171,42 @@ class _GymsListScreenState extends State<GymsListScreen> {
       }
 
       final snapshot = await query.get();
+      if (!mounted) {
+        return;
+      }
 
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-        var newGyms = snapshot.docs
-            .map((doc) => GymModel.fromFirestore(doc))
-            .toList();
-
-        // Only sort client-side for distance (requires location calculation)
-        if (_sortBy == 'distance' && _userLocation != null) {
-          _sortGyms(newGyms);
-        }
-
-        setState(() {
-          _gyms.addAll(newGyms);
-          _hasMore = snapshot.docs.length == _pageSize;
-          _isLoading = false;
-        });
-      } else {
+      if (snapshot.docs.isEmpty) {
         setState(() {
           _hasMore = false;
           _isLoading = false;
         });
+        return;
       }
-    } catch (e) {
+
+      _lastDocument = snapshot.docs.last;
+      final fetched = snapshot.docs
+          .map((doc) => GymModel.fromFirestore(doc))
+          .toList();
+
+      if (_sortBy == 'distance') {
+        _sortGyms(fetched);
+      }
+
+      setState(() {
+        _gyms.addAll(fetched);
+        _hasMore = snapshot.docs.length == _pageSize;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
+        _loadError = 'تعذر تحميل الجيمات حالياً';
       });
     }
   }
-
-  void _onSearch(String query) {
-    setState(() {
-      _searchQuery = query;
-    });
-    if (query.isEmpty) {
-      // Reload pagination data
-      _gyms.clear();
-      _lastDocument = null;
-      _hasMore = true;
-      _loadGyms();
-    } else {
-      context.read<GymCubit>().searchGyms(query);
-    }
-  }
-
-
 
   void _sortGyms(List<GymModel> gyms) {
     switch (_sortBy) {
@@ -238,411 +235,439 @@ class _GymsListScreenState extends State<GymsListScreen> {
         gyms.sort((a, b) => b.averageRating.compareTo(a.averageRating));
         break;
       case 'name':
+      default:
         gyms.sort((a, b) => a.name.compareTo(b.name));
         break;
     }
   }
 
-  void _changeSortOption(String sortOption) {
-    // If sorting by distance but location not available, request it
+  void _applySearch() {
+    setState(() {
+      _searchQuery = _searchController.text.trim();
+    });
+  }
+
+  List<GymModel> _getDisplayedGyms() {
+    final q = _searchQuery.trim().toLowerCase();
+
+    return _gyms.where((gym) {
+      final matchesSearch =
+          q.isEmpty ||
+          gym.name.toLowerCase().contains(q) ||
+          gym.description.toLowerCase().contains(q);
+
+      return matchesSearch;
+    }).toList();
+  }
+
+  Future<void> _changeSortOption(String sortOption) async {
     if (sortOption == 'distance' && _userLocation == null) {
-      _requestLocation();
+      await _requestLocation();
       return;
     }
-    
-    if (mounted) {
-      setState(() {
-        _sortBy = sortOption;
-        // Clear existing data and reload from database with new sort order
-        _gyms.clear();
-        _lastDocument = null;
-        _hasMore = true;
-      });
-      _loadGyms();
+
+    if (!mounted) {
+      return;
     }
+
+    setState(() {
+      _sortBy = sortOption;
+    });
+
+    await _resetAndReload();
+  }
+
+  Future<void> _refreshSingleGym(String gymId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('gyms')
+          .doc(gymId)
+          .get();
+
+      if (!doc.exists || !mounted) {
+        return;
+      }
+
+      final i = _gyms.indexWhere((item) => item.id == gymId);
+      if (i == -1) {
+        return;
+      }
+
+      setState(() {
+        _gyms[i] = GymModel.fromFirestore(doc);
+      });
+    } catch (_) {
+      // Ignore single-item refresh failures.
+    }
+  }
+
+  void _onQuickFilterSelected(String filterId) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _activeQuickFilter = filterId;
+    });
+
+    if (filterId == 'all') {
+      _changeSortOption('name');
+      return;
+    }
+
+    if (filterId == 'distance') {
+      _changeSortOption('distance');
+      return;
+    }
+
+    if (filterId == 'rating') {
+      _changeSortOption('rating');
+      return;
+    }
+
+    if (filterId == 'open') {
+      _changeSortOption('name');
+    }
+  }
+
+  bool _isGymOpenNow(GymModel gym) {
+    final now = DateTime.now();
+    String dayKey;
+    switch (now.weekday) {
+      case DateTime.monday:
+        dayKey = 'monday';
+        break;
+      case DateTime.tuesday:
+        dayKey = 'tuesday';
+        break;
+      case DateTime.wednesday:
+        dayKey = 'wednesday';
+        break;
+      case DateTime.thursday:
+        dayKey = 'thursday';
+        break;
+      case DateTime.friday:
+        dayKey = 'friday';
+        break;
+      case DateTime.saturday:
+        dayKey = 'saturday';
+        break;
+      case DateTime.sunday:
+      default:
+        dayKey = 'sunday';
+        break;
+    }
+
+    Map<String, WorkingHours> hours = {};
+    if (gym.hasMaleSection && gym.maleWorkingHours.isNotEmpty) {
+      hours = gym.maleWorkingHours;
+    } else if (gym.hasFemaleSection && gym.femaleWorkingHours.isNotEmpty) {
+      hours = gym.femaleWorkingHours;
+    } else if (gym.maleWorkingHours.isNotEmpty) {
+      hours = gym.maleWorkingHours;
+    } else if (gym.femaleWorkingHours.isNotEmpty) {
+      hours = gym.femaleWorkingHours;
+    }
+
+    final working = hours[dayKey];
+    if (working == null || working.isHoliday) {
+      return false;
+    }
+
+    int parse(String t) {
+      final p = t.split(':');
+      if (p.length != 2) return -1;
+      final h = int.tryParse(p[0]) ?? -1;
+      final m = int.tryParse(p[1]) ?? -1;
+      if (h < 0 || m < 0) return -1;
+      return (h * 60) + m;
+    }
+
+    final open = parse(working.openTime);
+    final close = parse(working.closeTime);
+    if (open < 0 || close < 0) {
+      return false;
+    }
+
+    final nowMinutes = (now.hour * 60) + now.minute;
+    if (close >= open) {
+      return nowMinutes >= open && nowMinutes <= close;
+    }
+
+    return nowMinutes >= open || nowMinutes <= close;
+  }
+
+  Widget _buildFilterChip({
+    required String id,
+    required String label,
+    IconData? icon,
+  }) {
+    final selected = _activeQuickFilter == id;
+
+    return InkWell(
+      onTap: () => _onQuickFilterSelected(id),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF0B8293) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? const Color(0xFF0B8293) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 13,
+                color: selected ? Colors.white : const Color(0xFF334155),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: selected ? Colors.white : const Color(0xFF1E293B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final displayed = _getDisplayedGyms();
+    final showInitialLoading = (_isInitializing || _isLoading) && _gyms.isEmpty;
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: GradientAppBar(
-        title: 'الجيمات',
-        gradient: AppTheme.gymGradient,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort, color: Colors.white),
-            tooltip: 'ترتيب حسب',
-            onSelected: _changeSortOption,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'distance',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.near_me,
-                      color: _sortBy == 'distance' ? const Color(0xFFEF4444) : Colors.grey,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'الأقرب',
-                      style: TextStyle(
-                        color: _sortBy == 'distance' ? const Color(0xFFEF4444) : const Color(0xFF0F172A),
-                        fontWeight: _sortBy == 'distance' ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'rating',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.star,
-                      color: _sortBy == 'rating' ? const Color(0xFFEF4444) : Colors.grey,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'الأعلى تقييماً',
-                      style: TextStyle(
-                        color: _sortBy == 'rating' ? const Color(0xFFEF4444) : const Color(0xFF0F172A),
-                        fontWeight: _sortBy == 'rating' ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'name',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.sort_by_alpha,
-                      color: _sortBy == 'name' ? const Color(0xFFEF4444) : Colors.grey,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'الاسم',
-                      style: TextStyle(
-                        color: _sortBy == 'name' ? const Color(0xFFEF4444) : const Color(0xFF0F172A),
-                        fontWeight: _sortBy == 'name' ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      backgroundColor: const Color(0xFFFAFBFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'الجيمات',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
           ),
-        ],
+        ),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Color(0xFF0891B2),
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFE5E7EB)),
+        ),
       ),
       body: Column(
         children: [
-          // Search Bar
-          Container(
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.gymGradient.colors[0].withValues(alpha: 0.1),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => _applySearch(),
+                    decoration: InputDecoration(
+                      hintText: 'ابحث باسم الجيم',
+                      hintStyle: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF94A3B8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 20,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 11,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF0B8293),
+                          width: 1.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: _applySearch,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF0B8293),
+                      elevation: 0,
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: Color(0xFF0B8293),
+                    ),
+                  ),
                 ),
               ],
             ),
-            child: TextField(
-              onChanged: _onSearch,
-              decoration: InputDecoration(
-                hintText: 'ابحث عن جيم...',
-                hintStyle: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 15,
+          ),
+          SizedBox(
+            height: 52,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+              children: [
+                _buildFilterChip(
+                  id: 'all',
+                  label: 'الكل',
+                  icon: Icons.grid_view_rounded,
                 ),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: AppTheme.gymGradient.colors[0],
-                  size: 24,
+                const SizedBox(width: 3),
+                _buildFilterChip(
+                  id: 'open',
+                  label: 'متاح الآن',
+                  icon: Icons.access_time_rounded,
                 ),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear_rounded),
-                        onPressed: () {
-                          _onSearch('');
-                        },
-                        color: Colors.grey,
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none,
+                const SizedBox(width: 3),
+                _buildFilterChip(
+                  id: 'distance',
+                  label: 'الأقرب',
+                  icon: Icons.near_me_rounded,
                 ),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
+                const SizedBox(width: 3),
+                _buildFilterChip(
+                  id: 'rating',
+                  label: 'الأعلى تقييما',
+                  icon: Icons.star_rounded,
                 ),
-              ),
+              ],
             ),
           ),
-
-          // Gyms List
           Expanded(
-            child: _searchQuery.isNotEmpty
-                ? BlocBuilder<GymCubit, GymState>(
-                    builder: (context, state) {
-                      if (state is GymLoading) {
+            child: showInitialLoading
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SpinKitPulsingGrid(
+                          color: Color(0xFF0891B2),
+                          size: 44,
+                        ),
+                        const SizedBox(height: 14),
+                        const Text(
+                          'جاري تحميل الجيمات...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : displayed.isEmpty
+                ? Center(
+                    child: Text(
+                      _gyms.isEmpty
+                          ? (_loadError ?? 'لا توجد جيمات متاحة حاليا')
+                          : 'لا توجد نتائج مطابقة',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+                    itemCount: displayed.length + (_hasMore ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == displayed.length) {
                         return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SpinKitPulsingGrid(
-                                color: AppTheme.gymGradient.colors[0],
-                                size: 60,
-                              ),
-                              const SizedBox(height: 24),
-                              const Text(
-                                'جاري تحميل الجيمات...',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                            ],
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: _isLoading
+                                ? const SpinKitPulsingGrid(
+                                    color: Color(0xFF0891B2),
+                                    size: 20,
+                                  )
+                                : const SizedBox.shrink(),
                           ),
                         );
                       }
 
-                      if (state is GymError) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error_outline_rounded, size: 64, color: Colors.grey[400]),
-                              const SizedBox(height: 16),
-                              Text('حدث خطأ', style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 32),
-                                child: Text(state.message, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.grey[500])),
-                              ),
-                            ],
-                          ),
+                      final gym = displayed[index];
+                      final isOpen = _isGymOpenNow(gym);
+                      String? distance;
+                      if (_userLocation != null) {
+                        final dist = LocationService.calculateDistance(
+                          _userLocation!.latitude,
+                          _userLocation!.longitude,
+                          gym.latitude,
+                          gym.longitude,
                         );
+                        distance = '${dist.toStringAsFixed(1)} كم';
                       }
 
-                      final gyms = state is GymLoaded
-                          ? state.gyms
-                          : state is GymSearchLoaded
-                              ? state.searchResults
-                              : state is GymFilteredByType
-                                  ? state.gyms
-                                  : [];
-
-                      if (gyms.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.gymGradient.colors[0].withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.fitness_center_rounded,
-                                  size: 80,
-                                  color: AppTheme.gymGradient.colors[0].withValues(alpha: 0.5),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'لا توجد نتائج',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: Colors.grey[800],
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 40),
-                                child: Text(
-                                  'لم نجد جيمات تطابق بحثك',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: gyms.length,
-                        itemBuilder: (context, index) {
-                          final gym = gyms[index];
-                          String? distance;
-                          
-                          // Calculate distance if location available
-                          if (_userLocation != null) {
-                            final dist = LocationService.calculateDistance(
-                              _userLocation!.latitude,
-                              _userLocation!.longitude,
-                              gym.latitude,
-                              gym.longitude,
-                            );
-                            distance = '${dist.toStringAsFixed(1)} كم';
-                          }
-                          
-                          return GymCard(
-                            gym: gym,
-                            distance: distance,
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => GymDetailsScreen(gym: gym),
-                                ),
-                              );
-                              // Refresh the gym data when returning
-                              if (mounted) {
-                                context.read<GymCubit>().searchGyms(_searchQuery);
-                              }
-                            },
+                      return GymCard(
+                        gym: gym,
+                        isOpen: isOpen,
+                        distance: distance,
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => GymDetailsScreen(gym: gym),
+                            ),
                           );
+
+                          if (result == true || result == null) {
+                            _refreshSingleGym(gym.id);
+                          }
                         },
                       );
                     },
-                  )
-                : _isLoading && _gyms.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SpinKitPulsingGrid(
-                              color: AppTheme.gymGradient.colors[0],
-                              size: 60,
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              'جاري تحميل الجيمات...',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : _gyms.isEmpty && !_isLoading
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(32),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.gymGradient.colors[0].withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.fitness_center_rounded,
-                                    size: 80,
-                                    color: AppTheme.gymGradient.colors[0].withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                Text(
-                                  'لا توجد جيمات متاحة',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.grey[800],
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                                  child: Text(
-                                    'لا توجد جيمات مسجلة حالياً',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _gyms.length + ((_isLoading && _gyms.isNotEmpty) || _hasMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _gyms.length) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: _isLoading
-                                    ? SpinKitFadingCircle(
-                                        color: AppTheme.gymGradient.colors[0],
-                                        size: 40,
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
-                            );
-                          }
-
-                          final gym = _gyms[index];
-                          String? distance;
-                          
-                          // Calculate distance if location available
-                          if (_userLocation != null) {
-                            final dist = LocationService.calculateDistance(
-                              _userLocation!.latitude,
-                              _userLocation!.longitude,
-                              gym.latitude,
-                              gym.longitude,
-                            );
-                            distance = '${dist.toStringAsFixed(1)} كم';
-                          }
-                          
-                          return GymCard(
-                            gym: gym,
-                            distance: distance,
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => GymDetailsScreen(gym: gym),
-                                ),
-                              );
-                              // Refresh the gym data when returning
-                              if (mounted) {
-                                _refreshSingleGym(gym.id, index);
-                              }
-                            },
-                          );
-                        },
-                      ),
+                  ),
           ),
         ],
       ),
     );
   }
-
 }

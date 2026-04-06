@@ -335,7 +335,7 @@ Container(
 
 - [ ] `the_pharmacies_screen.dart` - قائمة الصيدليات
 - [ ] `pharmacy_details_screen.dart` - تفاصيل الصيدلية
-- [ ] `pharmacy_control_page.dart` - لوحة تحكم الصيدلية
+- [ ] `pharmacy_control_page.dart` - إدارة الصيدلية
 - [ ] `add_offer_screen.dart` - إضافة عرض
 - [ ] `edit_pharmacy_screen.dart` - تعديل الصيدلية
 

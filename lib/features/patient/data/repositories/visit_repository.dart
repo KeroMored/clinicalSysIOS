@@ -10,7 +10,9 @@ class VisitRepository {
   // إضافة كشف جديد
   Future<String> addVisit(VisitModel visit) async {
     try {
-      final docRef = await _firestore.collection('visits').add(visit.toFirestore());
+      final docRef = await _firestore
+          .collection('visits')
+          .add(visit.toFirestore());
       return docRef.id;
     } catch (e) {
       throw Exception('فشل في إضافة الكشف: ${e.toString()}');
@@ -25,9 +27,11 @@ class VisitRepository {
         .orderBy('date', descending: true)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => VisitModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => VisitModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // جلب كشوفات عيادة معينة
@@ -38,9 +42,11 @@ class VisitRepository {
         .orderBy('date', descending: true)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => VisitModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => VisitModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // جلب كشف واحد
@@ -81,7 +87,7 @@ class VisitRepository {
           }
         }
       }
-      
+
       // حذف الكشف
       await _firestore.collection('visits').doc(visitId).delete();
     } catch (e) {
@@ -92,12 +98,13 @@ class VisitRepository {
   // رفع صورة الروشتة
   Future<String> uploadPrescriptionImage(File imageFile, String visitId) async {
     try {
-      final fileName = 'prescriptions/${visitId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName =
+          'prescriptions/${visitId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = _storage.ref().child(fileName);
-      
+
       await ref.putFile(imageFile);
       final downloadUrl = await ref.getDownloadURL();
-      
+
       return downloadUrl;
     } catch (e) {
       throw Exception('فشل في رفع صورة الروشتة: ${e.toString()}');
@@ -151,7 +158,7 @@ class VisitRepository {
           .orderBy('createdAt', descending: true)
           .limit(1)
           .get();
-      
+
       if (snapshot.docs.isEmpty) return null;
       return VisitModel.fromFirestore(snapshot.docs.first);
     } catch (e) {

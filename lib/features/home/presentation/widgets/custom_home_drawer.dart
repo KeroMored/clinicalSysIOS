@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import '../../../../core/theme/app_theme.dart';
 import 'home_drawer_item.dart';
 import 'about_app_dialog.dart';
 import 'whatsapp_helper.dart';
@@ -15,73 +14,71 @@ class CustomHomeDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.white,
-            ],
-          ),
-        ),
+        color: Colors.white,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             // Drawer Header
             Container(
-              height: 200,
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-              ),
+              height: 210,
+              decoration: BoxDecoration(color: Color(0xFF0E7787)),
               child: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.16),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: const Icon(
+                            Icons.medical_services_rounded,
+                            size: 34,
+                            color: Color(0xFF0E7787),
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.medical_services_rounded,
-                        size: 50,
-                        color: Color(0xFF26A69A),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Mallawy Care || ملوي كير',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'النظام الطبي المتكامل',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 4),
+                      const Text(
+                        'خدماتك الصحية في مكان واحد',
+                        style: TextStyle(
+                          color: Color.fromRGBO(255, 255, 255, 1),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'خدماتك الصحية في مكان واحد',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
-            // من نحن
             HomeDrawerItem(
               icon: Icons.info_outline_rounded,
               title: 'من نحن',
@@ -91,9 +88,8 @@ class CustomHomeDrawer extends StatelessWidget {
               },
             ),
 
-            const Divider(height: 1, indent: 16, endIndent: 16),
+            const Divider(height: 1, indent: 22, endIndent: 22),
 
-            // تواصل معنا
             HomeDrawerItem(
               icon: MdiIcons.whatsapp,
               title: 'تواصل معنا',
@@ -103,9 +99,8 @@ class CustomHomeDrawer extends StatelessWidget {
               },
             ),
 
-            const Divider(height: 1, indent: 16, endIndent: 16),
+            const Divider(height: 1, indent: 22, endIndent: 22),
 
-            // مشاركة التطبيق
             HomeDrawerItem(
               icon: Icons.share_rounded,
               title: 'مشاركة التطبيق',
@@ -115,21 +110,10 @@ class CustomHomeDrawer extends StatelessWidget {
               },
             ),
 
-            const Divider(height: 1, indent: 16, endIndent: 16),
+            const SizedBox(height: 4),
+            const Divider(height: 1, indent: 22, endIndent: 22),
+            const SizedBox(height: 4),
 
-            // تقييم التطبيق (commented out in original)
-            // HomeDrawerItem(
-            //   icon: Icons.star_outline_rounded,
-            //   title: 'تقييم التطبيق',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     RateAppDialog.show(context);
-            //   },
-            // ),
-            //
-            // const Divider(height: 1, indent: 16, endIndent: 16),
-
-            // سياسة الخصوصية
             HomeDrawerItem(
               icon: Icons.privacy_tip_outlined,
               title: 'سياسة الخصوصية',
@@ -139,9 +123,8 @@ class CustomHomeDrawer extends StatelessWidget {
               },
             ),
 
-            const Divider(height: 1, indent: 16, endIndent: 16),
+            const Divider(height: 1, indent: 22, endIndent: 22),
 
-            // الشروط والأحكام
             HomeDrawerItem(
               icon: Icons.description_outlined,
               title: 'الشروط والأحكام',
@@ -151,7 +134,8 @@ class CustomHomeDrawer extends StatelessWidget {
               },
             ),
 
-            const Divider(height: 1, indent: 16, endIndent: 16),
+            const Divider(height: 1, indent: 22, endIndent: 22),
+            const SizedBox(height: 12),
           ],
         ),
       ),

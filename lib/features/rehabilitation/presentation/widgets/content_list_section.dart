@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screens/center_content_model.dart';
 import 'content_management_card.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class ContentListSection extends StatelessWidget {
   final String centerId;
@@ -25,12 +26,15 @@ class ContentListSection extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: AppLoadingIndicator());
         }
 
         final contents = snapshot.data!.docs
-            .map((doc) => CenterContentModel.fromMap(
-                doc.data() as Map<String, dynamic>))
+            .map(
+              (doc) => CenterContentModel.fromMap(
+                doc.data() as Map<String, dynamic>,
+              ),
+            )
             .toList();
 
         if (contents.isEmpty) {

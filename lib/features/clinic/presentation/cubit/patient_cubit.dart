@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/patient_model.dart';
 import '../../data/models/medical_visit_model.dart';
@@ -8,20 +9,88 @@ import 'patient_state.dart';
 
 class PatientCubit extends Cubit<PatientState> {
   final PatientRepository _repository;
-  StreamSubscription? _patientsSubscription;
   StreamSubscription? _patientSubscription;
   StreamSubscription? _visitsSubscription;
   StreamSubscription? _visitsCountSubscription;
+  static const int _pageSize = 10;
+
+  String? _currentClinicId;
+  DocumentSnapshot? _lastPatientsDocument;
+  bool _hasMorePatients = true;
+  bool _isLoadingMore = false;
+  final List<PatientModel> _patients = [];
 
   PatientCubit(this._repository) : super(PatientInitial());
 
-  void loadClinicPatients(String clinicId) {
+  Future<void> loadClinicPatients(String clinicId) async {
+    _currentClinicId = clinicId;
+    _lastPatientsDocument = null;
+    _hasMorePatients = true;
+    _isLoadingMore = false;
+    _patients.clear();
+
     emit(PatientLoading());
-    _patientsSubscription?.cancel();
-    _patientsSubscription = _repository.getClinicPatients(clinicId).listen(
-      (patients) => emit(PatientsLoaded(patients)),
-      onError: (e) => emit(PatientError('فشل في تحميل المرضى: ${e.toString()}')),
-    );
+
+    try {
+      final page = await _repository.getClinicPatientsPage(
+        clinicId,
+        limit: _pageSize,
+      );
+      _patients
+        ..clear()
+        ..addAll(page.patients);
+      _lastPatientsDocument = page.lastDocument;
+      _hasMorePatients = page.hasMore;
+
+      emit(
+        PatientsLoaded(
+          List<PatientModel>.from(_patients),
+          hasMore: _hasMorePatients,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (e) {
+      emit(PatientError('فشل في تحميل المرضى: ${e.toString()}'));
+    }
+  }
+
+  Future<void> loadMoreClinicPatients() async {
+    if (_currentClinicId == null || _isLoadingMore || !_hasMorePatients) {
+      return;
+    }
+
+    final currentState = state;
+    if (currentState is! PatientsLoaded) {
+      return;
+    }
+
+    _isLoadingMore = true;
+    emit(currentState.copyWith(isLoadingMore: true));
+
+    try {
+      final page = await _repository.getClinicPatientsPage(
+        _currentClinicId!,
+        limit: _pageSize,
+        lastDocument: _lastPatientsDocument,
+      );
+
+      _patients.addAll(page.patients);
+      _lastPatientsDocument = page.lastDocument;
+      _hasMorePatients = page.hasMore;
+      _isLoadingMore = false;
+
+      emit(
+        PatientsLoaded(
+          List<PatientModel>.from(_patients),
+          hasMore: _hasMorePatients,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (e) {
+      _isLoadingMore = false;
+      emit(PatientError('فشل في تحميل المزيد من المرضى: ${e.toString()}'));
+      emit(currentState.copyWith(isLoadingMore: false));
+    }
   }
 
   void loadPatientDetails(String patientId) {
@@ -35,12 +104,16 @@ class PatientCubit extends Cubit<PatientState> {
     int? currentCount;
 
     void tryEmit() {
-      if (currentPatient != null && currentVisits != null && currentCount != null) {
-        emit(PatientDetailsLoaded(
-          patient: currentPatient!,
-          visits: currentVisits!,
-          visitsCount: currentCount!,
-        ));
+      if (currentPatient != null &&
+          currentVisits != null &&
+          currentCount != null) {
+        emit(
+          PatientDetailsLoaded(
+            patient: currentPatient!,
+            visits: currentVisits!,
+            visitsCount: currentCount!,
+          ),
+        );
       }
     }
 
@@ -49,7 +122,8 @@ class PatientCubit extends Cubit<PatientState> {
         currentPatient = patient;
         tryEmit();
       },
-      onError: (e) => emit(PatientError('فشل في تحميل بيانات المريض: ${e.toString()}')),
+      onError: (e) =>
+          emit(PatientError('فشل في تحميل بيانات المريض: ${e.toString()}')),
     );
 
     _visitsSubscription = _repository.getPatientVisits(patientId).listen(
@@ -57,15 +131,16 @@ class PatientCubit extends Cubit<PatientState> {
         currentVisits = visits;
         tryEmit();
       },
-      onError: (e) => emit(PatientError('فشل في تحميل الكشوفات: ${e.toString()}')),
+      onError: (e) =>
+          emit(PatientError('فشل في تحميل الكشوفات: ${e.toString()}')),
     );
 
-    _visitsCountSubscription = _repository.getPatientVisitsCount(patientId).listen(
-      (count) {
-        currentCount = count;
-        tryEmit();
-      },
-    );
+    _visitsCountSubscription = _repository
+        .getPatientVisitsCount(patientId)
+        .listen((count) {
+          currentCount = count;
+          tryEmit();
+        });
   }
 
   Future<void> addPatient({
@@ -121,7 +196,7 @@ class PatientCubit extends Cubit<PatientState> {
   }) async {
     try {
       emit(PatientActionLoading());
-      
+
       // رفع جميع الصور بشكل متوازي للسرعة
       List<String> imageUrls = [];
       if (prescriptionImages != null && prescriptionImages.isNotEmpty) {
@@ -135,7 +210,7 @@ class PatientCubit extends Cubit<PatientState> {
             image,
           );
         });
-        
+
         final results = await Future.wait(uploadFutures);
         imageUrls = results.whereType<String>().toList();
       }
@@ -157,16 +232,21 @@ class PatientCubit extends Cubit<PatientState> {
     }
   }
 
-  Future<void> updateVisit(MedicalVisitModel visit, {List<File>? newPrescriptionImages}) async {
+  Future<void> updateVisit(
+    MedicalVisitModel visit, {
+    List<File>? newPrescriptionImages,
+  }) async {
     try {
       emit(PatientActionLoading());
-      
+
       List<String> imageUrls = List.from(visit.prescriptionImageUrls);
-      
+
       // رفع الصور الجديدة بشكل متوازي
       if (newPrescriptionImages != null && newPrescriptionImages.isNotEmpty) {
         final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-        final uploadFutures = newPrescriptionImages.asMap().entries.map((entry) {
+        final uploadFutures = newPrescriptionImages.asMap().entries.map((
+          entry,
+        ) {
           final index = entry.key;
           final image = entry.value;
           return _repository.uploadPrescriptionImage(
@@ -175,7 +255,7 @@ class PatientCubit extends Cubit<PatientState> {
             image,
           );
         });
-        
+
         final results = await Future.wait(uploadFutures);
         final newUrls = results.whereType<String>().toList();
         imageUrls.addAll(newUrls);
@@ -201,7 +281,6 @@ class PatientCubit extends Cubit<PatientState> {
 
   @override
   Future<void> close() {
-    _patientsSubscription?.cancel();
     _patientSubscription?.cancel();
     _visitsSubscription?.cancel();
     _visitsCountSubscription?.cancel();

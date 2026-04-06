@@ -57,28 +57,32 @@ class GymCubit extends Cubit<GymState> {
   void searchGyms(String query) {
     emit(GymLoading());
     _gymsSubscription?.cancel();
-    _gymsSubscription = _repository.searchGyms(query).listen(
-      (gyms) {
-        emit(GymSearchLoaded(gyms));
-      },
-      onError: (error) {
-        emit(GymError('فشل في البحث: ${error.toString()}'));
-      },
-    );
+    _gymsSubscription = _repository
+        .searchGyms(query)
+        .listen(
+          (gyms) {
+            emit(GymSearchLoaded(gyms));
+          },
+          onError: (error) {
+            emit(GymError('فشل في البحث: ${error.toString()}'));
+          },
+        );
   }
 
   // Filter by gender
   void filterByGender(bool male, bool female) {
     emit(GymLoading());
     _gymsSubscription?.cancel();
-    _gymsSubscription = _repository.filterByGender(male, female).listen(
-      (gyms) {
-        emit(GymFilteredByGender(gyms));
-      },
-      onError: (error) {
-        emit(GymError('فشل في التصفية: ${error.toString()}'));
-      },
-    );
+    _gymsSubscription = _repository
+        .filterByGender(male, female)
+        .listen(
+          (gyms) {
+            emit(GymFilteredByGender(gyms));
+          },
+          onError: (error) {
+            emit(GymError('فشل في التصفية: ${error.toString()}'));
+          },
+        );
   }
 
   // Alias for backward compatibility
@@ -88,14 +92,16 @@ class GymCubit extends Cubit<GymState> {
   void filterByGovernorate(String governorate) {
     emit(GymLoading());
     _gymsSubscription?.cancel();
-    _gymsSubscription = _repository.filterByGovernorate(governorate).listen(
-      (gyms) {
-        emit(GymFilteredByGovernorate(gyms));
-      },
-      onError: (error) {
-        emit(GymError('فشل في التصفية: ${error.toString()}'));
-      },
-    );
+    _gymsSubscription = _repository
+        .filterByGovernorate(governorate)
+        .listen(
+          (gyms) {
+            emit(GymFilteredByGovernorate(gyms));
+          },
+          onError: (error) {
+            emit(GymError('فشل في التصفية: ${error.toString()}'));
+          },
+        );
   }
 
   // Add new gym

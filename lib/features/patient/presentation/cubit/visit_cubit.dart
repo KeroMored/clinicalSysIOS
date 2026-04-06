@@ -17,9 +17,9 @@ class VisitLoading extends VisitState {}
 
 class VisitLoaded extends VisitState {
   final List<VisitModel> visits;
-  
+
   VisitLoaded(this.visits);
-  
+
   @override
   List<Object?> get props => [visits];
 }
@@ -28,9 +28,9 @@ class VisitActionLoading extends VisitState {}
 
 class VisitActionSuccess extends VisitState {
   final String message;
-  
+
   VisitActionSuccess(this.message);
-  
+
   @override
   List<Object?> get props => [message];
 }
@@ -39,18 +39,18 @@ class VisitImageUploading extends VisitState {}
 
 class VisitImageUploaded extends VisitState {
   final String imageUrl;
-  
+
   VisitImageUploaded(this.imageUrl);
-  
+
   @override
   List<Object?> get props => [imageUrl];
 }
 
 class VisitError extends VisitState {
   final String message;
-  
+
   VisitError(this.message);
-  
+
   @override
   List<Object?> get props => [message];
 }
@@ -66,20 +66,26 @@ class VisitCubit extends Cubit<VisitState> {
   void loadVisitsByPatient(String patientId) {
     emit(VisitLoading());
     _visitsSubscription?.cancel();
-    _visitsSubscription = _repository.getVisitsByPatient(patientId).listen(
-      (visits) => emit(VisitLoaded(visits)),
-      onError: (e) => emit(VisitError('فشل في تحميل الكشوفات: ${e.toString()}')),
-    );
+    _visitsSubscription = _repository
+        .getVisitsByPatient(patientId)
+        .listen(
+          (visits) => emit(VisitLoaded(visits)),
+          onError: (e) =>
+              emit(VisitError('فشل في تحميل الكشوفات: ${e.toString()}')),
+        );
   }
 
   // تحميل كشوفات عيادة معينة
   void loadVisitsByClinic(String clinicId) {
     emit(VisitLoading());
     _visitsSubscription?.cancel();
-    _visitsSubscription = _repository.getVisitsByClinic(clinicId).listen(
-      (visits) => emit(VisitLoaded(visits)),
-      onError: (e) => emit(VisitError('فشل في تحميل الكشوفات: ${e.toString()}')),
-    );
+    _visitsSubscription = _repository
+        .getVisitsByClinic(clinicId)
+        .listen(
+          (visits) => emit(VisitLoaded(visits)),
+          onError: (e) =>
+              emit(VisitError('فشل في تحميل الكشوفات: ${e.toString()}')),
+        );
   }
 
   // إضافة كشف جديد
@@ -116,10 +122,16 @@ class VisitCubit extends Cubit<VisitState> {
   }
 
   // رفع صورة الروشتة
-  Future<String?> uploadPrescriptionImage(File imageFile, String visitId) async {
+  Future<String?> uploadPrescriptionImage(
+    File imageFile,
+    String visitId,
+  ) async {
     try {
       emit(VisitImageUploading());
-      final imageUrl = await _repository.uploadPrescriptionImage(imageFile, visitId);
+      final imageUrl = await _repository.uploadPrescriptionImage(
+        imageFile,
+        visitId,
+      );
       emit(VisitImageUploaded(imageUrl));
       return imageUrl;
     } catch (e) {

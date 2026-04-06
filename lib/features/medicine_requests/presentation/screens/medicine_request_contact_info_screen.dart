@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../../features/medicine_reminders/services/medicine_notification_service.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class MedicineRequestContactInfoScreen extends StatefulWidget {
   final List<Map<String, dynamic>> medicinesData;
@@ -20,6 +23,9 @@ class MedicineRequestContactInfoScreen extends StatefulWidget {
 
 class _MedicineRequestContactInfoScreenState
     extends State<MedicineRequestContactInfoScreen> {
+  static const Color _brandColor = Color(0xFF0E7787);
+  static const Color _brandColorDark = Color(0xFF0B6572);
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -66,8 +72,9 @@ class _MedicineRequestContactInfoScreenState
     try {
       final String fileName =
           'medicine_requests/${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final Reference storageRef =
-          FirebaseStorage.instance.ref().child(fileName);
+      final Reference storageRef = FirebaseStorage.instance.ref().child(
+        fileName,
+      );
       final UploadTask uploadTask = storageRef.putFile(imageFile);
       final TaskSnapshot snapshot = await uploadTask;
       final String downloadUrl = await snapshot.ref.getDownloadURL();
@@ -92,7 +99,7 @@ class _MedicineRequestContactInfoScreenState
       final List<Map<String, dynamic>> finalMedicinesData = [];
       for (final medicine in widget.medicinesData) {
         final medicineCopy = Map<String, dynamic>.from(medicine);
-        
+
         // Upload image if exists and is a File
         if (medicineCopy['imageFile'] != null) {
           final imageFile = medicineCopy['imageFile'] as File;
@@ -100,7 +107,7 @@ class _MedicineRequestContactInfoScreenState
           medicineCopy['imageUrl'] = imageUrl;
           medicineCopy.remove('imageFile'); // Remove file reference
         }
-        
+
         finalMedicinesData.add(medicineCopy);
       }
 
@@ -120,16 +127,21 @@ class _MedicineRequestContactInfoScreenState
         'status': 'pending',
       };
 
-      await FirebaseFirestore.instance
+      final docRef = await FirebaseFirestore.instance
           .collection('medicine_requests')
           .add(requestData);
+
+      // جدولة إشعار تذكير بعد 24 ساعة (مرة واحدة فقط)
+      MedicineNotificationService.scheduleMedicineRequestFollowUp(docRef.id);
 
       // Save contact info to user profile
       final name = _nameController.text.trim();
       final phoneNumber = _phoneController.text.trim();
       final whatsappNumber = _whatsappController.text.trim();
-      
-      if (name.isNotEmpty || phoneNumber.isNotEmpty || whatsappNumber.isNotEmpty) {
+
+      if (name.isNotEmpty ||
+          phoneNumber.isNotEmpty ||
+          whatsappNumber.isNotEmpty) {
         try {
           final updateData = <String, dynamic>{};
           if (name.isNotEmpty) {
@@ -141,13 +153,13 @@ class _MedicineRequestContactInfoScreenState
           if (whatsappNumber.isNotEmpty) {
             updateData['whatsappNumber'] = whatsappNumber;
           }
-          
+
           if (updateData.isNotEmpty) {
             await FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
                 .update(updateData);
-            
+
             // Refresh user data in AuthCubit
             if (mounted) {
               context.read<AuthCubit>().refreshUser();
@@ -166,12 +178,15 @@ class _MedicineRequestContactInfoScreenState
           builder: (dialogContext) => AlertDialog(
             title: Row(
               children: [
-                const Icon(Icons.check_circle,
-                    color: Color(0xFF06B6D4), size: 28),
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF0E7787),
+                  size: 28,
+                ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'تم نشر الطلب بنجاح!',
+                    'تم إرسال الطلب بنجاح!',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -184,10 +199,7 @@ class _MedicineRequestContactInfoScreenState
                 children: [
                   const Text(
                     '✅ ستتواصل معك الصيدليات قريباً',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   Container(
@@ -202,7 +214,11 @@ class _MedicineRequestContactInfoScreenState
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.orange[900], size: 20),
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.orange[900],
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'مهم جداً:',
@@ -227,11 +243,20 @@ class _MedicineRequestContactInfoScreenState
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('1. ', style: TextStyle(color: Colors.orange[900], fontSize: 13)),
+                            Text(
+                              '1. ',
+                              style: TextStyle(
+                                color: Colors.orange[900],
+                                fontSize: 13,
+                              ),
+                            ),
                             Expanded(
                               child: Text(
                                 'افتح صفحة الصيدليات',
-                                style: TextStyle(color: Colors.orange[900], fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.orange[900],
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -240,11 +265,20 @@ class _MedicineRequestContactInfoScreenState
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('2. ', style: TextStyle(color: Colors.orange[900], fontSize: 13)),
+                            Text(
+                              '2. ',
+                              style: TextStyle(
+                                color: Colors.orange[900],
+                                fontSize: 13,
+                              ),
+                            ),
                             Expanded(
                               child: Text(
                                 'اضغط على أيقونة السلة 🛒',
-                                style: TextStyle(color: Colors.orange[900], fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.orange[900],
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -253,11 +287,20 @@ class _MedicineRequestContactInfoScreenState
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('3. ', style: TextStyle(color: Colors.orange[900], fontSize: 13)),
+                            Text(
+                              '3. ',
+                              style: TextStyle(
+                                color: Colors.orange[900],
+                                fontSize: 13,
+                              ),
+                            ),
                             Expanded(
                               child: Text(
                                 'اضغط "تم التواصل" على طلبك',
-                                style: TextStyle(color: Colors.orange[900], fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.orange[900],
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
@@ -272,7 +315,11 @@ class _MedicineRequestContactInfoScreenState
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 18),
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.red[700],
+                                size: 18,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -298,7 +345,9 @@ class _MedicineRequestContactInfoScreenState
                 onPressed: () {
                   Navigator.of(dialogContext).pop(); // Close dialog
                   Navigator.of(context).pop(); // Go back to medicines screen
-                  Navigator.of(context).pop(); // Go back to home/previous screen
+                  Navigator.of(
+                    context,
+                  ).pop(); // Go back to home/previous screen
                 },
                 child: const Text('حسناً'),
               ),
@@ -310,7 +359,7 @@ class _MedicineRequestContactInfoScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ أثناء نشر الطلب: $e'),
+            content: Text('حدث خطأ أثناء إرسال الطلب: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -331,30 +380,79 @@ class _MedicineRequestContactInfoScreenState
     }
   }
 
+  String _compactMedicineTitle(Map<String, dynamic> medicine) {
+    final name = (medicine['medicineName'] ?? '').toString().trim();
+    if (name.isNotEmpty) {
+      return name;
+    }
+    return 'صورة الدواء';
+  }
+
+  File? _medicineImageFile(Map<String, dynamic> medicine) {
+    final imageFile = medicine['imageFile'];
+    if (imageFile is File) {
+      return imageFile;
+    }
+    return null;
+  }
+
+  String? _medicineImageUrl(Map<String, dynamic> medicine) {
+    final imageUrl = (medicine['imageUrl'] ?? '').toString().trim();
+    if (imageUrl.isEmpty) {
+      return null;
+    }
+    return imageUrl;
+  }
+
+  String _compactMedicineDetails(Map<String, dynamic> medicine) {
+    final type = (medicine['medicineType'] ?? '').toString().trim();
+    final quantity = (medicine['quantity'] ?? '').toString().trim();
+    final unit = (medicine['quantityUnit'] ?? '').toString().trim();
+
+    if (type == 'روشتة') {
+      return type;
+    }
+
+    final qty = [quantity, unit].where((value) => value.isNotEmpty).join(' ');
+    if (type.isEmpty) {
+      return qty.isEmpty ? 'تفاصيل غير متاحة' : qty;
+    }
+    if (qty.isEmpty) {
+      return type;
+    }
+    return '$type • $qty';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFFAFBFC),
+        backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
           title: const Text(
             'معلومات التواصل',
             style: TextStyle(
               color: Color(0xFF0F172A),
-              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          centerTitle: true,
-          backgroundColor: Colors.white,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
-            child: Container(
-              height: 1,
-              color: const Color(0xFFE2E8F0),
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: _brandColor,
+              size: 20,
             ),
+            onPressed: () => Navigator.maybePop(context),
+          ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(1),
+            child: Divider(height: 1, color: Color(0xFFE5E7EB)),
           ),
         ),
         body: SingleChildScrollView(
@@ -369,37 +467,69 @@ class _MedicineRequestContactInfoScreenState
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [_brandColor, _brandColorDark],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(11),
+                            ),
+                            child: const Icon(
+                              Icons.contact_phone_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.phone_outlined,
-                            color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'الخطوة 2 من 2',
+                              style: TextStyle(
+                                color: Color(0xFF0F172A),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'إرسال الطلب',
+                              style: TextStyle(
+                                color: Color(0xFF0369A1),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'أدخل معلومات التواصل ليتمكن الصيادلة من الرد على طلبك',
-                          style: TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'أدخل معلومات التواصل ليتمكن الصيادلة من الرد على طلبك',
+                        style: TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -413,8 +543,10 @@ class _MedicineRequestContactInfoScreenState
                   decoration: InputDecoration(
                     labelText: 'الاسم *',
                     hintText: 'أدخل اسمك',
-                    prefixIcon:
-                        const Icon(Icons.person, color: Color(0xFF06B6D4)),
+                    prefixIcon: const Icon(
+                      Icons.person,
+                      color: Color(0xFF0E7787),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -427,8 +559,10 @@ class _MedicineRequestContactInfoScreenState
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0E7787),
+                        width: 2,
+                      ),
                     ),
                   ),
                   validator: (value) {
@@ -447,8 +581,10 @@ class _MedicineRequestContactInfoScreenState
                   decoration: InputDecoration(
                     labelText: 'رقم الهاتف *',
                     hintText: 'أدخل رقم هاتفك',
-                    prefixIcon:
-                        const Icon(Icons.phone, color: Color(0xFF06B6D4)),
+                    prefixIcon: const Icon(
+                      Icons.phone,
+                      color: Color(0xFF0E7787),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -461,8 +597,10 @@ class _MedicineRequestContactInfoScreenState
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0E7787),
+                        width: 2,
+                      ),
                     ),
                   ),
                   validator: (value) {
@@ -484,8 +622,10 @@ class _MedicineRequestContactInfoScreenState
                   decoration: InputDecoration(
                     labelText: 'رقم الواتساب (اختياري)',
                     hintText: 'أدخل رقم الواتساب (إن وجد)',
-                    prefixIcon: const Icon(Icons.chat_bubble_outline,
-                        color: Color(0xFF06B6D4)),
+                    prefixIcon: Icon(
+                      MdiIcons.whatsapp,
+                      color: Color(0xFF0E7787),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -498,8 +638,10 @@ class _MedicineRequestContactInfoScreenState
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0E7787),
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -508,12 +650,16 @@ class _MedicineRequestContactInfoScreenState
                 // Notes Field
                 TextFormField(
                   controller: _notesController,
-                  maxLines: 4,
+                  minLines: 1,
+                  maxLines: 1,
                   decoration: InputDecoration(
                     labelText: 'ملاحظات (اختياري)',
                     hintText: 'أي معلومات إضافية تساعد الصيادلة...',
-                    prefixIcon:
-                        const Icon(Icons.note_outlined, color: Color(0xFF06B6D4)),
+                    prefixIcon: const Icon(
+                      Icons.note_outlined,
+                      color: Color(0xFF0E7787),
+                    ),
+                    isDense: true,
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
@@ -526,30 +672,147 @@ class _MedicineRequestContactInfoScreenState
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0E7787),
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'تفاصيل الطلب',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF334155),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'عدد الأدوية: ${widget.medicinesData.length}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      ...widget.medicinesData.asMap().entries.map((entry) {
+                        final medicine = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${entry.key + 1}) ',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF475569),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
+                                  color: const Color(0xFFF8FAFC),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(7),
+                                  child: _medicineImageFile(medicine) != null
+                                      ? Image.file(
+                                          _medicineImageFile(medicine)!,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : (_medicineImageUrl(medicine) != null
+                                            ? Image.network(
+                                                _medicineImageUrl(medicine)!,
+                                                fit: BoxFit.cover,
+                                              )
+                                            : const Icon(
+                                                Icons.medication_outlined,
+                                                size: 16,
+                                                color: Color(0xFF94A3B8),
+                                              )),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _compactMedicineTitle(medicine),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF0F172A),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      _compactMedicineDetails(medicine),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFF64748B),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
 
                 // Submit Button
                 SizedBox(
                   child: ElevatedButton(
-                    onPressed: _isSubmitting ? null : () => _handleSubmit(context),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _handleSubmit(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF06B6D4),
+                      backgroundColor: _brandColor,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 2,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: _isSubmitting
                         ? const SizedBox(
                             height: 24,
                             width: 24,
-                            child: CircularProgressIndicator(
+                            child: AppLoadingIndicator(
                               color: Colors.white,
                               strokeWidth: 2,
                             ),
@@ -557,16 +820,14 @@ class _MedicineRequestContactInfoScreenState
                         : const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              
                               Text(
-                                'نشر الطلب',
+                                'إرسال الطلب',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               SizedBox(width: 8),
-
                               Icon(Icons.send, size: 20),
                             ],
                           ),

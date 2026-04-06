@@ -1,11 +1,11 @@
 enum ClinicDepartment {
-  pediatrics('أطفال', 'pediatrics'),
+  pediatrics('أطفال وحضّانات', 'pediatrics'),
   dentistry('أسنان', 'dentistry'),
   internalMedicine('باطنة', 'internal_medicine'),
   dermatology('جلدية', 'dermatology'),
   orthopedics('عظام', 'orthopedics'),
   cardiology('قلب', 'cardiology'),
-  ophthalmology('عيون', 'ophthalmology'),
+  ophthalmology('رمد', 'ophthalmology'),
   ent('أنف وأذن وحنجرة', 'ent'),
   obstetrics('نساء وولادة', 'obstetrics'),
   urology('مسالك بولية', 'urology'),

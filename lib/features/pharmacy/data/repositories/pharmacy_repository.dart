@@ -12,21 +12,19 @@ class PharmacyRepository {
           .collection('pharmacies')
           .where('status', isEqualTo: 'approved')
           .get();
-      return snapshot.docs
-          .map((doc) {
-            final data = doc.data();
-            // Calculate isOpen dynamically
-            final isOpen = _calculateIsOpen(
-              data['workingHours'] ?? '',
-              data['holidays'] ?? '',
-            );
-            return PharmacyModel.fromJson({
-              ...data,
-              'id': doc.id,
-              'isOpen': isOpen,
-            });
-          })
-          .toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        // Calculate isOpen dynamically
+        final isOpen = _calculateIsOpen(
+          data['workingHours'] ?? '',
+          data['holidays'] ?? '',
+        );
+        return PharmacyModel.fromJson({
+          ...data,
+          'id': doc.id,
+          'isOpen': isOpen,
+        });
+      }).toList();
     } catch (e) {
       throw Exception('Failed to fetch pharmacies: $e');
     }
@@ -45,11 +43,7 @@ class PharmacyRepository {
         data['workingHours'] ?? '',
         data['holidays'] ?? '',
       );
-      return PharmacyModel.fromJson({
-        ...data,
-        'id': doc.id,
-        'isOpen': isOpen,
-      });
+      return PharmacyModel.fromJson({...data, 'id': doc.id, 'isOpen': isOpen});
     } catch (e) {
       throw Exception('Failed to fetch pharmacy: $e');
     }
@@ -63,10 +57,9 @@ class PharmacyRepository {
           .where('isActive', isEqualTo: true)
           .get();
       return snapshot.docs
-          .map((doc) => PharmacyOfferModel.fromJson({
-                ...doc.data(),
-                'id': doc.id,
-              }))
+          .map(
+            (doc) => PharmacyOfferModel.fromJson({...doc.data(), 'id': doc.id}),
+          )
           .toList();
     } catch (e) {
       throw Exception('Failed to fetch offers: $e');
@@ -75,7 +68,8 @@ class PharmacyRepository {
 
   // Get offers by pharmacy ID
   Future<List<PharmacyOfferModel>> getOffersByPharmacyId(
-      String pharmacyId) async {
+    String pharmacyId,
+  ) async {
     try {
       final snapshot = await _firestore
           .collection('offers')
@@ -83,10 +77,9 @@ class PharmacyRepository {
           .where('isActive', isEqualTo: true)
           .get();
       return snapshot.docs
-          .map((doc) => PharmacyOfferModel.fromJson({
-                ...doc.data(),
-                'id': doc.id,
-              }))
+          .map(
+            (doc) => PharmacyOfferModel.fromJson({...doc.data(), 'id': doc.id}),
+          )
           .toList();
     } catch (e) {
       throw Exception('Failed to fetch pharmacy offers: $e');
@@ -99,9 +92,9 @@ class PharmacyRepository {
       if (query.trim().isEmpty) {
         return [];
       }
-      
+
       final lowerQuery = query.toLowerCase().trim();
-      
+
       // Search by name using Firestore range query
       final nameSnapshot = await _firestore
           .collection('pharmacies')
@@ -111,7 +104,7 @@ class PharmacyRepository {
           .endAt(['$lowerQuery\uf8ff'])
           .limit(20)
           .get();
-      
+
       // Also search by address
       final addressSnapshot = await _firestore
           .collection('pharmacies')
@@ -121,10 +114,10 @@ class PharmacyRepository {
           .endAt(['$lowerQuery\uf8ff'])
           .limit(20)
           .get();
-      
+
       // Combine results and remove duplicates
       final Map<String, PharmacyModel> pharmaciesMap = {};
-      
+
       for (final doc in nameSnapshot.docs) {
         final data = doc.data();
         final isOpen = _calculateIsOpen(
@@ -137,7 +130,7 @@ class PharmacyRepository {
           'isOpen': isOpen,
         });
       }
-      
+
       for (final doc in addressSnapshot.docs) {
         if (!pharmaciesMap.containsKey(doc.id)) {
           final data = doc.data();
@@ -152,7 +145,7 @@ class PharmacyRepository {
           });
         }
       }
-      
+
       return pharmaciesMap.values.toList();
     } catch (e) {
       // Fallback: if indexes are not set up, search all and filter
@@ -161,7 +154,7 @@ class PharmacyRepository {
           .collection('pharmacies')
           .where('status', isEqualTo: 'approved')
           .get();
-      
+
       final lowerQuery = query.toLowerCase().trim();
       return snapshot.docs
           .map((doc) {
@@ -176,9 +169,11 @@ class PharmacyRepository {
               'isOpen': isOpen,
             });
           })
-          .where((pharmacy) =>
-              pharmacy.name.toLowerCase().contains(lowerQuery) ||
-              pharmacy.address.toLowerCase().contains(lowerQuery))
+          .where(
+            (pharmacy) =>
+                pharmacy.name.toLowerCase().contains(lowerQuery) ||
+                pharmacy.address.toLowerCase().contains(lowerQuery),
+          )
           .toList();
     }
   }
@@ -188,7 +183,7 @@ class PharmacyRepository {
     try {
       final now = DateTime.now();
       final currentDay = _getDayName(now.weekday);
-      
+
       // Check if today is a holiday
       if (holidays.contains(currentDay)) {
         return false;
@@ -208,7 +203,7 @@ class PharmacyRepository {
       }
 
       final currentMinutes = now.hour * 60 + now.minute;
-      
+
       // Handle cases where closing time is after midnight
       if (closeTime < openTime) {
         return currentMinutes >= openTime || currentMinutes <= closeTime;
@@ -237,7 +232,7 @@ class PharmacyRepository {
     try {
       // Remove any extra spaces
       time = time.trim();
-      
+
       final parts = time.split(':');
       if (parts.length != 2) return null;
 

@@ -54,15 +54,11 @@ class ModernServiceCard extends StatelessWidget {
                   gradient: gradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 28,
-                ),
+                child: Icon(icon, color: Colors.white, size: 28),
               ),
-            
+
             const SizedBox(width: 16),
-            
+
             // Content
             Expanded(
               child: Column(
@@ -94,7 +90,7 @@ class ModernServiceCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Trailing widget
             if (trailing != null) ...[
               const SizedBox(width: 8),
@@ -149,10 +145,7 @@ class StatusBadge extends StatelessWidget {
 class DistanceBadge extends StatelessWidget {
   final String distance;
 
-  const DistanceBadge({
-    super.key,
-    required this.distance,
-  });
+  const DistanceBadge({super.key, required this.distance});
 
   @override
   Widget build(BuildContext context) {
@@ -169,11 +162,7 @@ class DistanceBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.location_on,
-            size: 14,
-            color: Color(0xFF00BCD4),
-          ),
+          const Icon(Icons.location_on, size: 14, color: Color(0xFF00BCD4)),
           const SizedBox(width: 4),
           Text(
             distance,

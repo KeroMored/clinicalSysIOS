@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class ContentFormSection extends StatelessWidget {
   final GlobalKey<FormState> formKey;
@@ -87,12 +88,12 @@ class ContentFormSection extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onPickVideo,
                 icon: const Icon(Icons.video_library),
-                label: Text(selectedVideo == null
-                    ? 'اختر فيديو (حد أقصى 100 ميجا)'
-                    : 'تم اختيار الفيديو'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.purple,
+                label: Text(
+                  selectedVideo == null
+                      ? 'اختر فيديو (حد أقصى 100 ميجا)'
+                      : 'تم اختيار الفيديو',
                 ),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.purple),
               ),
               if (selectedVideo != null)
                 Padding(
@@ -108,9 +109,9 @@ class ContentFormSection extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onPickImage,
                 icon: const Icon(Icons.image),
-                label: Text(selectedImage == null
-                    ? 'اختر صورة'
-                    : 'تم اختيار الصورة'),
+                label: Text(
+                  selectedImage == null ? 'اختر صورة' : 'تم اختيار الصورة',
+                ),
               ),
             ],
             const SizedBox(height: 16),
@@ -126,9 +127,15 @@ class ContentFormSection extends StatelessWidget {
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : const Text('إضافة', style: TextStyle(color: Colors.white)),
+                        child: AppLoadingIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'إضافة',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
             ),
           ],

@@ -17,9 +17,7 @@ class LaboratoryInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -29,7 +27,10 @@ class LaboratoryInfoCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _getStatusColor(laboratory.status),
                     borderRadius: BorderRadius.circular(20),
@@ -59,9 +60,8 @@ class LaboratoryInfoCard extends StatelessWidget {
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EditLaboratoryScreen(
-                          laboratory: laboratory,
-                        ),
+                        builder: (context) =>
+                            EditLaboratoryScreen(laboratory: laboratory),
                       ),
                     );
                     if (result == true) {
@@ -75,41 +75,43 @@ class LaboratoryInfoCard extends StatelessWidget {
               ],
             ),
             const Divider(height: 30),
-            
+
             InfoRow(
               icon: Icons.science,
               label: 'اسم المعمل',
               value: laboratory.name,
             ),
             const SizedBox(height: 16),
-            
+
             InfoRow(
               icon: Icons.person,
               label: 'اسم المالك',
               value: laboratory.ownerName,
             ),
             const SizedBox(height: 16),
-            
+
             InfoRow(
               icon: Icons.location_on,
               label: 'العنوان',
               value: laboratory.address,
             ),
             const SizedBox(height: 16),
-            
+
             InfoRow(
               icon: Icons.phone,
-              label: 'رقم الهاتف',
-              value: laboratory.ownerPhone,
+              label: laboratory.phones.length > 1
+                  ? 'أرقام التليفون'
+                  : 'رقم الهاتف',
+              value: laboratory.phones.join(' • '),
             ),
             const SizedBox(height: 16),
-            
+
             InfoRow(
               icon: Icons.biotech,
               label: 'عدد التحاليل المتاحة',
               value: '${laboratory.availableTests.length} تحليل',
             ),
-            
+
             if (laboratory.hasHomeService) ...[
               const SizedBox(height: 16),
               InfoRow(
@@ -121,8 +123,9 @@ class LaboratoryInfoCard extends StatelessWidget {
                 valueColor: Colors.blue,
               ),
             ],
-            
-            if (laboratory.description != null && laboratory.description!.isNotEmpty) ...[
+
+            if (laboratory.description != null &&
+                laboratory.description!.isNotEmpty) ...[
               const SizedBox(height: 16),
               InfoRow(
                 icon: Icons.description,

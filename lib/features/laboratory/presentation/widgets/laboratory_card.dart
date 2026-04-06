@@ -1,338 +1,230 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../data/models/laboratory_model.dart';
 
 class LaboratoryCard extends StatelessWidget {
   final LaboratoryModel laboratory;
   final VoidCallback onTap;
   final bool isOpen;
+  final String? distanceText;
 
   const LaboratoryCard({
     super.key,
     required this.laboratory,
     required this.onTap,
     required this.isOpen,
+    this.distanceText,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.laboratoryGradient.colors[0].withValues(alpha: 0.12),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+            padding: const EdgeInsets.all(10),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    // Laboratory Logo with Gradient Background
-                    Container(
-                      width: 70,
-                      height: 70,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.laboratoryGradient,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.laboratoryGradient.colors[0].withValues(alpha: 0.25),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.science_rounded,
-                        color: Colors.white,
-                        size: 38,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    // Laboratory Info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          // Name
-                          Text(
-                            laboratory.name,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.darkColor,
-                              fontSize: 16,
-                              height: 1.3,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          // Address
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_rounded,
-                                size: 16,
-                                color: Colors.grey[600],
+                            decoration: BoxDecoration(
+                              color: isOpen
+                                  ? const Color(0xFFDCFCE7)
+                                  : const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              isOpen ? 'متاح الآن' : 'مغلق الآن',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isOpen
+                                    ? const Color(0xFF16A34A)
+                                    : const Color(0xFFDC2626),
+                                fontWeight: FontWeight.w700,
                               ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  laboratory.address,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey[600],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (distanceText != null &&
+                              distanceText!.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE0F2FE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'يبعد $distanceText',
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Color(0xFF0369A1),
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ],
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        laboratory.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        laboratory.city,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0F766E),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        laboratory.description?.trim().isNotEmpty == true
+                            ? laboratory.description!
+                            : 'تحاليل دقيقة وسريعة',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 13,
+                            color: Color(0xFFF59E0B),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            laboratory.averageRating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.favorite_rounded,
+                            size: 12,
+                            color: Color(0xFFE11D48),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${laboratory.totalLikes}',
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF334155),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    // Open/Closed Status Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isOpen
-                            ? const Color(0xFF10B981).withValues(alpha: 0.1)
-                            : const Color(0xFFEF4444).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isOpen
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Text(
-                        isOpen ? 'متاح' : 'مغلق',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isOpen
-                              ? const Color(0xFF10B981)
-                              : const Color(0xFFEF4444),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Divider
-                Container(
-                  height: 1,
-                  color: Colors.grey[200],
-                ),
-                const SizedBox(height: 12),
-                // Bottom Info Row
-                Row(
-                  children: [
-
-                                  Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Colors.red.withValues(alpha: 0.3),
-                            width: 1,
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 12,
+                            color: Color(0xFF0B8293),
                           ),
-                        ),
-                        child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.favorite, color: Colors.red, size: 13),
-                            const SizedBox(width: 2),
-                            Flexible(
-                              child: Text(
-                                '${laboratory.totalLikes}',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              laboratory.address,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF475569),
+                                fontWeight: FontWeight.w600,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-               
-
-
-                    // Tests Count
-                    const SizedBox(width: 4),
-
-                    // Rating
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Colors.amber.withValues(alpha: 0.3),
-                            width: 1,
                           ),
-                        ),
-                        child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 13),
-                            const SizedBox(width: 2),
-                            Flexible(
-                              child: Text(
-                                laboratory.averageRating.toStringAsFixed(1),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    
-                    // Likes
-      
-  Expanded(
-                      flex: 2,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.laboratoryGradient,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.laboratoryGradient.colors[0].withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.biotech_rounded,
-                              size: 15,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                '${laboratory.availableTests.length} تحليل',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  
-
-
-
-
-
-
-
-
-
-
-                    // Home Service Badge
-                    if (laboratory.hasHomeService) ...[
-                      const SizedBox(width: 4),
-                      Expanded(
-                        flex: 2,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                                                     gradient: AppTheme.laboratoryGradient,
-
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF667EEA).withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.home_rounded,
-                                size: 15,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  'خدمة منزلية',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ],
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFF0F172A),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _buildLaboratoryImage(),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLaboratoryImage() {
+    final imageUrl = laboratory.logoUrl;
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return _buildLaboratoryImagePlaceholder();
+    }
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded || frame != null) {
+          return child;
+        }
+        return _buildLaboratoryImagePlaceholder();
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return _buildLaboratoryImagePlaceholder();
+      },
+    );
+  }
+
+  Widget _buildLaboratoryImagePlaceholder() {
+    return Container(
+      color: const Color(0xFF0B8293),
+      child: const Center(
+        child: Icon(Icons.science_rounded, color: Colors.white, size: 28),
       ),
     );
   }

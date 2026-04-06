@@ -16,7 +16,8 @@ class RadiologyModel {
   final String city;
   final String center; // المركز (مثلاً: ملوي)
   final String? description; // وصف مركز الأشعة
-  final List<String> services; // X-Ray, CT Scan, MRI, Ultrasound, Mammography, DEXA Scan, etc.
+  final List<String>
+  services; // X-Ray, CT Scan, MRI, Ultrasound, Mammography, DEXA Scan, etc.
   final bool homeVisit; // Mobile radiology service
   final String? licenseNumber;
   final String? licenseImageUrl;
@@ -26,7 +27,8 @@ class RadiologyModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final String? notes; // Admin notes
-  final double? rating; // Average rating (old field - keep for backward compatibility)
+  final double?
+  rating; // Average rating (old field - keep for backward compatibility)
   final int? reviewCount; // old field
   final double averageRating; // متوسط التقييم (0.0 - 5.0) - new field
   final int totalRatings; // عدد التقييمات
@@ -85,7 +87,9 @@ class RadiologyModel {
       'homeVisit': homeVisit,
       'licenseNumber': licenseNumber,
       'licenseImageUrl': licenseImageUrl,
-      'workingHours': workingHours.map((key, value) => MapEntry(key, value.toMap())),
+      'workingHours': workingHours.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ),
       'isApproved': isApproved,
       'isActive': isActive,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -122,14 +126,20 @@ class RadiologyModel {
       homeVisit: map['homeVisit'] ?? false,
       licenseNumber: map['licenseNumber'],
       licenseImageUrl: map['licenseImageUrl'],
-      workingHours: (map['workingHours'] as Map<String, dynamic>?)?.map(
-            (key, value) => MapEntry(key, WorkingHours.fromMap(value as Map<String, dynamic>)),
+      workingHours:
+          (map['workingHours'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(
+              key,
+              WorkingHours.fromMap(value as Map<String, dynamic>),
+            ),
           ) ??
           {},
       isApproved: map['isApproved'] ?? false,
       isActive: map['isActive'] ?? true,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: map['updatedAt'] != null ? (map['updatedAt'] as Timestamp).toDate() : null,
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] as Timestamp).toDate()
+          : null,
       notes: map['notes'],
       rating: map['rating']?.toDouble(),
       reviewCount: map['reviewCount'],

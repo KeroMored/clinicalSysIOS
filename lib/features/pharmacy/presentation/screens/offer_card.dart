@@ -1,3 +1,4 @@
+import 'package:clinicalsystem/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/repositories/pharmacy_repository.dart';
 import '../screens/pharmacy_details_screen.dart';
+import '../screens/pharmacy_offer_detail_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class OfferCard extends StatelessWidget {
   final String offerId;
@@ -17,6 +20,9 @@ class OfferCard extends StatelessWidget {
   final DateTime? createdAt;
   final bool isOwnerView; // لإظهار menu button في لوحة التحكم فقط
   final bool isActive; // حالة العرض (متاح/مخفي)
+  final bool showViewsCount; // إظهار عدد المشاهدات
+  final int viewsCount; // عدد المشاهدات
+  final String category; // تصنيف العرض
 
   const OfferCard({
     super.key,
@@ -30,6 +36,9 @@ class OfferCard extends StatelessWidget {
     this.createdAt,
     this.isOwnerView = false, // افتراضياً للمستخدمين العاديين
     this.isActive = true, // افتراضياً العرض متاح
+    this.showViewsCount = false, // افتراضياً مخفي
+    this.viewsCount = 0,
+    this.category = 'عام',
   });
 
   String _formatDate(DateTime? date) {
@@ -55,13 +64,14 @@ class OfferCard extends StatelessWidget {
   }
 
   String _formatWhatsAppNumber(String input) {
+    // خد الرقم زي ما هو وضيفله +20 فقط
     String n = input.trim();
-    n = n.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    // لو بيبدأ بـ + شيله
     if (n.startsWith('+')) n = n.substring(1);
-    if (n.startsWith('00')) n = n.substring(2);
-    if (n.startsWith('0')) n = n.substring(1);
-    n = n.replaceAll(RegExp(r'[^0-9]'), '');
-    return n;
+    // لو بيبدأ بـ 20 يبقى خلاص
+    if (n.startsWith('20')) return '20$n';
+    // ضيف +20 قدام الرقم
+    return '20$n';
   }
 
   Future<void> _openWhatsApp(BuildContext context) async {
@@ -72,7 +82,7 @@ class OfferCard extends StatelessWidget {
 
       final pharmacyRepo = PharmacyRepository();
       final pharmacy = await pharmacyRepo.getPharmacyById(pharmacyId);
-      
+
       if (pharmacy.whatsapp.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -97,16 +107,18 @@ class OfferCard extends StatelessWidget {
         }
         return;
       }
-      
-      final message = 'مرحباً 👋\nأنا مهتم بالعرض الخاص بـ [ $title ]\n [ $description ]\n\nهل العرض لا زال متاحاً؟';
-      final url = 'https://wa.me/$formatted?text=${Uri.encodeComponent(message)}';
-      
+
+      final message =
+          'مرحباً 👋\nأنا مهتم بالعرض الخاص بـ [ $title ]\n [ $description ]\n\nهل العرض لا زال متاحاً؟';
+      final url =
+          'https://wa.me/$formatted?text=${Uri.encodeComponent(message)}';
+
       final uri = Uri.parse(url);
       bool launched = await launchUrl(
         uri,
         mode: LaunchMode.externalApplication,
       );
-      
+
       if (!launched) {
         throw Exception('فشل فتح تطبيق واتساب');
       }
@@ -131,7 +143,7 @@ class OfferCard extends StatelessWidget {
 
       final pharmacyRepo = PharmacyRepository();
       final pharmacy = await pharmacyRepo.getPharmacyById(pharmacyId);
-      
+
       if (pharmacy.phones.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -148,12 +160,12 @@ class OfferCard extends StatelessWidget {
         scheme: 'tel',
         path: pharmacy.phones[0], // استخدام أول رقم متاح
       );
-      
+
       bool launched = await launchUrl(
         launchUri,
         mode: LaunchMode.externalApplication,
       );
-      
+
       if (!launched) {
         throw Exception('فشل فتح تطبيق الاتصال');
       }
@@ -177,16 +189,12 @@ class OfferCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: !isActive ? Colors.grey[100] : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: !isActive 
-            ? Border.all(color: Colors.grey[400]!, width: 1.5)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
+        border: Border.merge(
+          Border(right: BorderSide(color: AppTheme.secondaryColor, width: 0.5)),
+          Border(
+            bottom: BorderSide(color: AppTheme.secondaryColor, width: 1.5),
           ),
-        ],
+        ),
       ),
       child: Stack(
         children: [
@@ -194,7 +202,7 @@ class OfferCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Images Section (if available) - مصغر
-              if (images.isNotEmpty) _buildCompactImagesSection(),
+              if (images.isNotEmpty) _buildOfferMediaSection(),
 
               // Content Section - مصغر
               Padding(
@@ -202,251 +210,281 @@ class OfferCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                // Pharmacy Name Header - مصغر
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PharmacyDetailsScreen(
-                          pharmacyId: pharmacyId,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00BCD4), Color(0xFF4DD0E1)],
+                    // Pharmacy Name Header - مصغر
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PharmacyDetailsScreen(pharmacyId: pharmacyId),
                           ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.local_pharmacy_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              pharmacyName,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E3A5F),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.secondaryColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.local_pharmacy_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  pharmacyName,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF1E3A5F),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (createdAt != null)
+                                  Text(
+                                    _formatDate(createdAt),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          // Menu button - يظهر فقط في لوحة التحكم
+                          if (isOwnerView)
+                            PopupMenuButton<String>(
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.grey,
                               ),
-                              maxLines: 1,
+                              onSelected: (value) {
+                                if (value == 'toggle') {
+                                  _toggleOfferVisibility(context);
+                                } else if (value == 'delete') {
+                                  _deleteOffer(context);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'toggle',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isActive
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                        size: 20,
+                                        color: isActive
+                                            ? Colors.orange
+                                            : Colors.green,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        isActive
+                                            ? 'إخفاء العرض'
+                                            : 'إظهار العرض',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete,
+                                        size: 20,
+                                        color: Colors.red,
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text('حذف العرض'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: Colors.grey,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+
+                    // Title + Description + Notes - الضغط عليها يفتح صفحة التفاصيل
+                    GestureDetector(
+                      onTap: () => _openOfferDetails(context),
+                      behavior: HitTestBehavior.opaque,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Description
+                          if (description.isNotEmpty) ...[
+                            Text(
+                              description,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: const Color.fromARGB(255, 12, 8, 63),
+                                height: 1.2,
+                              ),
+                              maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if (createdAt != null)
-                              Text(
-                                _formatDate(createdAt),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
+                            const SizedBox(height: 4),
+                          ],
+
+                          // Notes
+                          if (notes.isNotEmpty) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF7ED),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFFFBBF24),
+                                  width: 1,
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                      // Menu button - يظهر فقط في لوحة التحكم
-                      if (isOwnerView)
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_vert, color: Colors.grey),
-                          onSelected: (value) {
-                            if (value == 'toggle') {
-                              _toggleOfferVisibility(context);
-                            } else if (value == 'delete') {
-                              _deleteOffer(context);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'toggle',
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    isActive ? Icons.visibility_off : Icons.visibility,
-                                    size: 20,
-                                    color: isActive ? Colors.orange : Colors.green,
+                                  const Icon(
+                                    Icons.info_outline,
+                                    color: Color(0xFFF59E0B),
+                                    size: 16,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Text(isActive ? 'إخفاء العرض' : 'إظهار العرض'),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      notes,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFFB45309),
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            const PopupMenuItem(
-                              value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete, size: 20, color: Colors.red),
-                                  SizedBox(width: 12),
-                                  Text('حذف العرض'),
-                                ],
-                              ),
-                            ),
+                            const SizedBox(height: 4),
                           ],
-                        )
-                      else
-                        const Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Title
-                if (title.isNotEmpty) ...[
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E3A5F),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-
-                // Description
-                if (description.isNotEmpty) ...[
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[700],
-                      height: 1.4,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-
-                // Notes
-                if (notes.isNotEmpty) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFFBBF24), width: 1),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.info_outline, color: Color(0xFFF59E0B), size: 16),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            notes,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFFB45309),
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-
-                // Contact Buttons - Only for non-owners - مصغرة
-                if (!isOwnerView) ...[
-                  const Divider(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _openWhatsApp(context),
-                          icon: Icon(MdiIcons.whatsapp, size: 16),
-                          label: const Text('واتساب', style: TextStyle(fontSize: 13)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF25D366),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => _makePhoneCall(context),
-                          icon: const Icon(Icons.phone_rounded, size: 16),
-                          label: const Text('اتصال', style: TextStyle(fontSize: 13)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E3A5F),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                    ), // GestureDetector
+                    // Contact Buttons - Only for non-owners - مصغرة
+                    if (!isOwnerView) ...[
+                      //   const Divider(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _openWhatsApp(context),
+                              icon: Icon(MdiIcons.whatsapp, size: 16),
+                              label: const Text(
+                                'واتساب',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.teal,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
                             ),
-                            elevation: 0,
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _makePhoneCall(context),
+                              icon: const Icon(Icons.phone_rounded, size: 16),
+                              label: const Text(
+                                'اتصال',
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.secondaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-      // Badge للعروض المخفية - مصغر
-      if (!isActive && isOwnerView)
-        Positioned(
-          top: 6,
-          left: 6,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey[700],
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  ],
                 ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.visibility_off_rounded, color: Colors.white, size: 12),
-                SizedBox(width: 4),
-                Text(
-                  'مخفي',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
+          // Badge للعروض المخفية - مصغر
+          if (!isActive && isOwnerView)
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey[700],
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.visibility_off_rounded,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'مخفي',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -456,7 +494,7 @@ class OfferCard extends StatelessWidget {
     final imageWidget = images.length == 1
         ? _buildCompactSingleImage()
         : _buildCompactMultipleImages();
-    
+
     if (!isActive) {
       return ColorFiltered(
         colorFilter: ColorFilter.mode(
@@ -466,35 +504,102 @@ class OfferCard extends StatelessWidget {
         child: imageWidget,
       );
     }
-    
+
     return imageWidget;
+  }
+
+  Widget _buildOfferMediaSection() {
+    final media = _buildCompactImagesSection();
+
+    // بادج "عرض خاص" يظهر في واجهة المستخدم فقط
+    if (isOwnerView || !isActive) {
+      return media;
+    }
+
+    return Stack(
+      children: [
+        media,
+        Positioned(
+          top: 10,
+          left: 10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD84315),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Text(
+              'عرض خاص',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildCompactSingleImage() {
     return Builder(
       builder: (context) {
         return GestureDetector(
-          onTap: () {
-            _showImageViewer(context, images[0], 0);
-          },
+          onTap: () => _openOfferDetails(context),
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.all(Radius.circular(16)),
             child: Hero(
               tag: 'offer_image_${offerId}_0',
               child: Image.network(
                 images[0],
-                height: 160,
+                height: 140,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 140,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.grey[100]!, Colors.grey[50]!],
+                      ),
+                    ),
+                    child: Center(
+                      child: AppLoadingIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                            : null,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.teal,
+                        ),
+                        strokeWidth: 3,
+                      ),
+                    ),
+                  );
+                },
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    height: 160,
+                    height: 140,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.grey[300]!, Colors.grey[200]!],
                       ),
                     ),
-                    child: Icon(Icons.image_outlined, size: 48, color: Colors.grey[500]),
+                    child: Icon(
+                      Icons.image_outlined,
+                      size: 48,
+                      color: Colors.grey[500],
+                    ),
                   );
                 },
               ),
@@ -519,9 +624,7 @@ class OfferCard extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: GestureDetector(
-                  onTap: () {
-                    _showImageViewer(context, images[index], index);
-                  },
+                  onTap: () => _openOfferDetails(context),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Hero(
@@ -530,6 +633,31 @@ class OfferCard extends StatelessWidget {
                         images[index],
                         width: 200,
                         fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 200,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.grey[100]!, Colors.grey[50]!],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: AppLoadingIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.teal,
+                                ),
+                                strokeWidth: 2.5,
+                              ),
+                            ),
+                          );
+                        },
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             width: 200,
@@ -539,7 +667,11 @@ class OfferCard extends StatelessWidget {
                               ),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Icon(Icons.image_outlined, size: 40, color: Colors.grey[500]),
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 40,
+                              color: Colors.grey[500],
+                            ),
                           );
                         },
                       ),
@@ -554,14 +686,33 @@ class OfferCard extends StatelessWidget {
     );
   }
 
+  void _openOfferDetails(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PharmacyOfferDetailScreen(
+          offerId: offerId,
+          pharmacyId: pharmacyId,
+          pharmacyName: pharmacyName,
+          title: title,
+          description: description,
+          notes: notes,
+          images: images,
+          createdAt: createdAt,
+          category: category,
+        ),
+      ),
+    );
+  }
+
   // Toggle offer visibility (show/hide)
   void _toggleOfferVisibility(BuildContext context) {
     final newStatus = !isActive;
     final actionText = newStatus ? 'إظهار' : 'إخفاء';
-    final confirmText = newStatus 
+    final confirmText = newStatus
         ? 'هل أنت متأكد من إظهار هذا العرض؟\nسيصبح متاحاً للعملاء.'
         : 'هل أنت متأكد من إخفاء هذا العرض؟\nسيتم إخفاؤه من العملاء ويمكنك إعادة تفعيله لاحقاً.';
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -580,7 +731,7 @@ class OfferCard extends StatelessWidget {
                     .collection('offers')
                     .doc(offerId)
                     .update({'isActive': newStatus});
-                
+
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -617,7 +768,9 @@ class OfferCard extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('حذف العرض'),
-        content: const Text('هل أنت متأكد من حذف هذا العرض نهائياً؟\nلا يمكن التراجع عن هذا الإجراء.'),
+        content: const Text(
+          'هل أنت متأكد من حذف هذا العرض نهائياً؟\nلا يمكن التراجع عن هذا الإجراء.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -631,7 +784,7 @@ class OfferCard extends StatelessWidget {
                     .collection('offers')
                     .doc(offerId)
                     .delete();
-                
+
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -663,7 +816,11 @@ class OfferCard extends StatelessWidget {
   }
 
   // Show full screen image viewer with Hero animation
-  void _showImageViewer(BuildContext context, String imageUrl, int initialIndex) {
+  void _showImageViewer(
+    BuildContext context,
+    String imageUrl,
+    int initialIndex,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -738,10 +895,10 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return Center(
-                          child: CircularProgressIndicator(
+                          child: AppLoadingIndicator(
                             value: loadingProgress.expectedTotalBytes != null
                                 ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
+                                      loadingProgress.expectedTotalBytes!
                                 : null,
                             color: Colors.white,
                           ),
@@ -762,7 +919,7 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
               );
             },
           ),
-          
+
           // Top bar with close button
           Positioned(
             top: 0,
@@ -779,10 +936,7 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.7),
-                    Colors.transparent,
-                  ],
+                  colors: [Colors.black.withOpacity(0.7), Colors.transparent],
                 ),
               ),
               child: Row(
@@ -794,13 +948,20 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
                   if (widget.images.length > 1)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(20),
@@ -818,7 +979,7 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
               ),
             ),
           ),
-          
+
           // Navigation arrows for multiple images
           if (widget.images.length > 1) ...[
             // Previous button
@@ -834,7 +995,10 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
+                      ),
                       onPressed: () {
                         _pageController.previousPage(
                           duration: const Duration(milliseconds: 300),
@@ -858,7 +1022,10 @@ class _ImageViewerScreenState extends State<_ImageViewerScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                      icon: const Icon(
+                        Icons.arrow_back_ios,
+                        color: Colors.white,
+                      ),
                       onPressed: () {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 300),

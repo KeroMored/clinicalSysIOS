@@ -9,11 +9,13 @@ import '../../data/models/visit_model.dart';
 import '../cubit/visit_cubit.dart';
 import 'add_edit_visit_screen.dart';
 import 'visit_details_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PatientDetailsScreen extends StatefulWidget {
   final PatientModel patient;
 
-  const PatientDetailsScreen({Key? key, required this.patient}) : super(key: key);
+  const PatientDetailsScreen({Key? key, required this.patient})
+    : super(key: key);
 
   @override
   State<PatientDetailsScreen> createState() => _PatientDetailsScreenState();
@@ -90,10 +92,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                       const SizedBox(width: 8),
                       Text(
                         widget.patient.phoneNumber,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
                     ],
                   ),
@@ -111,10 +110,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                       const SizedBox(width: 8),
                       Text(
                         'مسجل منذ: ${DateFormat('dd/MM/yyyy', 'ar').format(widget.patient.createdAt)}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -164,7 +160,9 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                       backgroundColor: Colors.green,
                     ),
                   );
-                  context.read<VisitCubit>().loadVisitsByPatient(widget.patient.id);
+                  context.read<VisitCubit>().loadVisitsByPatient(
+                    widget.patient.id,
+                  );
                 } else if (state is VisitError) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -176,9 +174,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
               },
               builder: (context, state) {
                 if (state is VisitLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: AppLoadingIndicator());
                 } else if (state is VisitLoaded) {
                   if (state.visits.isEmpty) {
                     return Center(
@@ -221,9 +217,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                     },
                   );
                 } else if (state is VisitActionLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: AppLoadingIndicator());
                 }
 
                 return const SizedBox.shrink();
@@ -237,9 +231,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddEditVisitScreen(
-                patient: widget.patient,
-              ),
+              builder: (context) => AddEditVisitScreen(patient: widget.patient),
             ),
           );
         },
@@ -256,10 +248,8 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VisitDetailsScreen(
-              visit: visit,
-              patient: widget.patient,
-            ),
+            builder: (context) =>
+                VisitDetailsScreen(visit: visit, patient: widget.patient),
           ),
         );
       },
@@ -296,10 +286,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                     ),
                     Text(
                       'الوقت: ${visit.time}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -328,10 +315,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                 Expanded(
                   child: Text(
                     visit.diagnosis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -353,10 +337,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
                 const SizedBox(width: 8),
                 Text(
                   '${visit.medicines.length} دواء',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ],
             ),
@@ -364,21 +345,15 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
           ],
 
           // صورة الروشتة
-          if (visit.prescriptionImageUrl != null && visit.prescriptionImageUrl!.isNotEmpty)
+          if (visit.prescriptionImageUrl != null &&
+              visit.prescriptionImageUrl!.isNotEmpty)
             Row(
               children: [
-                const Icon(
-                  Icons.image,
-                  size: 18,
-                  color: AppTheme.primaryColor,
-                ),
+                const Icon(Icons.image, size: 18, color: AppTheme.primaryColor),
                 const SizedBox(width: 8),
                 Text(
                   'يحتوي على صورة روشتة',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ],
             ),

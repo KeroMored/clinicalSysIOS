@@ -11,6 +11,7 @@ import '../../../../core/widgets/gradient_button.dart';
 import '../../data/models/gym_model.dart';
 import '../cubit/gym_cubit.dart';
 import '../cubit/gym_state.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddGymScreen extends StatefulWidget {
   const AddGymScreen({super.key});
@@ -21,44 +22,44 @@ class AddGymScreen extends StatefulWidget {
 
 class _AddGymScreenState extends State<AddGymScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Basic Info
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   final _whatsappController = TextEditingController();
-  
+
   // Location
   double? _latitude;
   double? _longitude;
   bool _isLoadingLocation = false;
-  
+
   // Images
   File? _logoImage;
   String? _uploadedLogoUrl;
   final List<File> _selectedImages = [];
   final List<String> _uploadedImageUrls = [];
   final ImagePicker _imagePicker = ImagePicker();
-  
+
   // Pricing
   final _monthlyController = TextEditingController();
   final _yearlyController = TextEditingController();
   final _singleSessionController = TextEditingController();
-  
+
   // Owner Info
   final _ownerNameController = TextEditingController();
   final _ownerEmailController = TextEditingController();
   final _ownerPhoneController = TextEditingController();
-  
+
   // Gender Sections
   bool _hasMaleSection = false;
   bool _hasFemaleSection = false;
-  
+
   // Working Hours
   final Map<String, WorkingHours> _maleWorkingHours = {};
   final Map<String, WorkingHours> _femaleWorkingHours = {};
-  
+
   // Days of week
   final List<String> _daysOfWeek = [
     'saturday',
@@ -69,7 +70,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
     'thursday',
     'friday',
   ];
-  
+
   final Map<String, String> _dayNamesArabic = {
     'saturday': 'السبت',
     'sunday': 'الأحد',
@@ -79,13 +80,15 @@ class _AddGymScreenState extends State<AddGymScreen> {
     'thursday': 'الخميس',
     'friday': 'الجمعة',
   };
-  
+
   // Working hours controllers for each day
-  final Map<String, Map<String, TextEditingController>> _maleTimeControllers = {};
-  final Map<String, Map<String, TextEditingController>> _femaleTimeControllers = {};
+  final Map<String, Map<String, TextEditingController>> _maleTimeControllers =
+      {};
+  final Map<String, Map<String, TextEditingController>> _femaleTimeControllers =
+      {};
   final Map<String, bool> _maleDayClosed = {};
   final Map<String, bool> _femaleDayClosed = {};
-  
+
   // Features
   bool _hasPersonalTraining = false;
   bool _hasNutritionConsultation = false;
@@ -95,14 +98,14 @@ class _AddGymScreenState extends State<AddGymScreen> {
   bool _hasYogaClasses = false;
   bool _hasCrossFit = false;
   bool _hasMartialArts = false;
-  
+
   // Training Types (أنواع التدريب)
   bool _hasCardio = false;
   bool _hasWeightLifting = false;
   bool _hasBodybuilding = false;
   bool _hasFunctionalTraining = false;
   bool _hasGroupClasses = false;
-  
+
   // Lists
   final List<String> _equipment = [];
   final List<String> _facilities = [];
@@ -149,7 +152,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
     _equipmentController.dispose();
     _facilitiesController.dispose();
     _classesController.dispose();
-    
+
     // Dispose time controllers
     for (var controllers in _maleTimeControllers.values) {
       controllers['start']?.dispose();
@@ -159,7 +162,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
       controllers['start']?.dispose();
       controllers['end']?.dispose();
     }
-    
+
     super.dispose();
   }
 
@@ -176,7 +179,9 @@ class _AddGymScreenState extends State<AddGymScreen> {
           if (state is GymAdded) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('تم إضافة الجيم بنجاح ✓\nسيتم مراجعته من قبل الإدارة قبل النشر'),
+                content: Text(
+                  'تم إضافة الجيم بنجاح ✓\nسيتم مراجعته من قبل الإدارة قبل النشر',
+                ),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 4),
               ),
@@ -204,7 +209,8 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     controller: _nameController,
                     label: 'اسم الجيم',
                     icon: Icons.fitness_center_rounded,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -212,14 +218,16 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     label: 'الوصف',
                     icon: Icons.description_rounded,
                     maxLines: 3,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
                     controller: _addressController,
                     label: 'العنوان التفصيلي',
                     icon: Icons.location_on_rounded,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
                   // Location Button
@@ -238,19 +246,31 @@ class _AddGymScreenState extends State<AddGymScreen> {
                       children: [
                         if (_latitude == null)
                           ElevatedButton.icon(
-                            onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+                            onPressed: _isLoadingLocation
+                                ? null
+                                : _getCurrentLocation,
                             icon: _isLoadingLocation
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    child: AppLoadingIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
                                   )
                                 : const Icon(Icons.touch_app),
-                            label: Text(_isLoadingLocation ? 'جاري تحديد الموقع...' : 'تحديد موقع الجيم الحالي *'),
+                            label: Text(
+                              _isLoadingLocation
+                                  ? 'جاري تحديد الموقع...'
+                                  : 'تحديد موقع الجيم الحالي *',
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
                             ),
                           )
                         else
@@ -258,7 +278,11 @@ class _AddGymScreenState extends State<AddGymScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.check_circle, color: Colors.green, size: 24),
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                    size: 24,
+                                  ),
                                   const SizedBox(width: 8),
                                   const Expanded(
                                     child: Text(
@@ -274,7 +298,10 @@ class _AddGymScreenState extends State<AddGymScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 'Lat: ${_latitude!.toStringAsFixed(6)}, Long: ${_longitude!.toStringAsFixed(6)}',
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
                               ),
                               const SizedBox(height: 8),
                               TextButton.icon(
@@ -301,7 +328,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     ),
                   ),
                 ]),
-                
+
                 const SizedBox(height: 20),
                 _buildCard([
                   _buildTextField(
@@ -309,7 +336,8 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     label: 'رقم الهاتف',
                     icon: Icons.phone_rounded,
                     keyboardType: TextInputType.phone,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -317,10 +345,11 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     label: 'واتساب',
                     icon: MdiIcons.whatsapp,
                     keyboardType: TextInputType.phone,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                 ]),
-                
+
                 const SizedBox(height: 20),
                 _buildSectionTitle('صورة اللوجو'),
                 _buildCard([
@@ -377,10 +406,16 @@ class _AddGymScreenState extends State<AddGymScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _pickLogo,
                           icon: const Icon(Icons.image_rounded),
-                          label: Text(_logoImage == null ? 'اختر صورة اللوجو' : 'تغيير صورة اللوجو'),
+                          label: Text(
+                            _logoImage == null
+                                ? 'اختر صورة اللوجو'
+                                : 'تغيير صورة اللوجو',
+                          ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.gymGradient.colors[0],
-                            side: BorderSide(color: AppTheme.gymGradient.colors[0]),
+                            side: BorderSide(
+                              color: AppTheme.gymGradient.colors[0],
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
@@ -388,7 +423,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     ],
                   ),
                 ]),
-                
+
                 const SizedBox(height: 20),
                 _buildSectionTitle('صور الجيم'),
                 _buildCard([
@@ -458,7 +493,9 @@ class _AddGymScreenState extends State<AddGymScreen> {
                           label: Text('إضافة صور (${_selectedImages.length})'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.gymGradient.colors[0],
-                            side: BorderSide(color: AppTheme.gymGradient.colors[0]),
+                            side: BorderSide(
+                              color: AppTheme.gymGradient.colors[0],
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
@@ -466,7 +503,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     ],
                   ),
                 ]),
-                
+
                 const SizedBox(height: 20),
                 _buildSectionTitle('الأقسام المتاحة'),
                 _buildCard([
@@ -478,8 +515,11 @@ class _AddGymScreenState extends State<AddGymScreen> {
                       }
                     },
                     title: const Text('قسم رجالي'),
-                    secondary: const Icon(Icons.male_rounded, color: Color(0xFF3B82F6)),
-                    activeColor: const Color(0xFF3B82F6),
+                    secondary: const Icon(
+                      Icons.male_rounded,
+                      color: Color(0xFF06B6D4),
+                    ),
+                    activeColor: const Color(0xFF06B6D4),
                   ),
                   if (_hasMaleSection) ...[
                     const Divider(),
@@ -487,7 +527,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                       'مواعيد القسم الرجالي',
                       _maleTimeControllers,
                       _maleDayClosed,
-                      const Color(0xFF3B82F6),
+                      const Color(0xFF06B6D4),
                     ),
                   ],
                   const SizedBox(height: 12),
@@ -499,7 +539,10 @@ class _AddGymScreenState extends State<AddGymScreen> {
                       }
                     },
                     title: const Text('قسم نسائي'),
-                    secondary: const Icon(Icons.female_rounded, color: Color(0xFFEC4899)),
+                    secondary: const Icon(
+                      Icons.female_rounded,
+                      color: Color(0xFFEC4899),
+                    ),
                     activeColor: const Color(0xFFEC4899),
                   ),
                   if (_hasFemaleSection) ...[
@@ -511,8 +554,8 @@ class _AddGymScreenState extends State<AddGymScreen> {
                       const Color(0xFFEC4899),
                     ),
                   ],
-               ] ),
-                
+                ]),
+
                 const SizedBox(height: 20),
                 _buildSectionTitle('الأسعار (اختياري)'),
                 _buildCard([
@@ -537,56 +580,123 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     keyboardType: TextInputType.number,
                   ),
                 ]),
-                
+
                 const SizedBox(height: 20),
                 _buildSectionTitle('أنواع التدريب'),
                 _buildCard([
-                  _buildFeatureCheckbox('كارديو (تمارين التخسيس)', _hasCardio, Icons.directions_run_rounded, (value) {
-                    if (mounted) setState(() => _hasCardio = value);
-                  }),
-                  _buildFeatureCheckbox('رفع الأثقال', _hasWeightLifting, Icons.fitness_center_rounded, (value) {
-                    if (mounted) setState(() => _hasWeightLifting = value);
-                  }),
-                  _buildFeatureCheckbox('كمال أجسام', _hasBodybuilding, Icons.sports_gymnastics_rounded, (value) {
-                    if (mounted) setState(() => _hasBodybuilding = value);
-                  }),
-                  _buildFeatureCheckbox('تدريب وظيفي', _hasFunctionalTraining, Icons.sports_rounded, (value) {
-                    if (mounted) setState(() => _hasFunctionalTraining = value);
-                  }),
-                  _buildFeatureCheckbox('حصص جماعية', _hasGroupClasses, Icons.groups_rounded, (value) {
-                    if (mounted) setState(() => _hasGroupClasses = value);
-                  }),
+                  _buildFeatureCheckbox(
+                    'كارديو (تمارين التخسيس)',
+                    _hasCardio,
+                    Icons.directions_run_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasCardio = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'رفع الأثقال',
+                    _hasWeightLifting,
+                    Icons.fitness_center_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasWeightLifting = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'كمال أجسام',
+                    _hasBodybuilding,
+                    Icons.sports_gymnastics_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasBodybuilding = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'تدريب وظيفي',
+                    _hasFunctionalTraining,
+                    Icons.sports_rounded,
+                    (value) {
+                      if (mounted)
+                        setState(() => _hasFunctionalTraining = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'حصص جماعية',
+                    _hasGroupClasses,
+                    Icons.groups_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasGroupClasses = value);
+                    },
+                  ),
                 ]),
-                
+
                 const SizedBox(height: 20),
                 _buildSectionTitle('المميزات'),
                 _buildCard([
-                  _buildFeatureCheckbox('تدريب شخصي', _hasPersonalTraining, Icons.person_rounded, (value) {
-                    if (mounted) setState(() => _hasPersonalTraining = value);
-                  }),
-                  _buildFeatureCheckbox('استشارات تغذية', _hasNutritionConsultation, Icons.restaurant_rounded, (value) {
-                    if (mounted) setState(() => _hasNutritionConsultation = value);
-                  }),
-                  _buildFeatureCheckbox('حمام سباحة', _hasSwimmingPool, Icons.pool_rounded, (value) {
-                    if (mounted) setState(() => _hasSwimmingPool = value);
-                  }),
-                  _buildFeatureCheckbox('ساونا', _hasSauna, Icons.hot_tub_rounded, (value) {
-                    if (mounted) setState(() => _hasSauna = value);
-                  }),
-                  _buildFeatureCheckbox('غرفة بخار', _hasSteamRoom, Icons.cloud_rounded, (value) {
-                    if (mounted) setState(() => _hasSteamRoom = value);
-                  }),
-                  _buildFeatureCheckbox('حصص يوجا', _hasYogaClasses, Icons.self_improvement_rounded, (value) {
-                    if (mounted) setState(() => _hasYogaClasses = value);
-                  }),
-                  _buildFeatureCheckbox('كروس فيت', _hasCrossFit, Icons.sports_gymnastics_rounded, (value) {
-                    if (mounted) setState(() => _hasCrossFit = value);
-                  }),
-                  _buildFeatureCheckbox('فنون قتالية', _hasMartialArts, Icons.sports_martial_arts_rounded, (value) {
-                    if (mounted) setState(() => _hasMartialArts = value);
-                  }),
+                  _buildFeatureCheckbox(
+                    'تدريب شخصي',
+                    _hasPersonalTraining,
+                    Icons.person_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasPersonalTraining = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'استشارات تغذية',
+                    _hasNutritionConsultation,
+                    Icons.restaurant_rounded,
+                    (value) {
+                      if (mounted)
+                        setState(() => _hasNutritionConsultation = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'حمام سباحة',
+                    _hasSwimmingPool,
+                    Icons.pool_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasSwimmingPool = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'ساونا',
+                    _hasSauna,
+                    Icons.hot_tub_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasSauna = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'غرفة بخار',
+                    _hasSteamRoom,
+                    Icons.cloud_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasSteamRoom = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'حصص يوجا',
+                    _hasYogaClasses,
+                    Icons.self_improvement_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasYogaClasses = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'كروس فيت',
+                    _hasCrossFit,
+                    Icons.sports_gymnastics_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasCrossFit = value);
+                    },
+                  ),
+                  _buildFeatureCheckbox(
+                    'فنون قتالية',
+                    _hasMartialArts,
+                    Icons.sports_martial_arts_rounded,
+                    (value) {
+                      if (mounted) setState(() => _hasMartialArts = value);
+                    },
+                  ),
                 ]),
-                
+
                 const SizedBox(height: 20),
                 _buildSectionTitle('بيانات المالك'),
                 _buildCard([
@@ -594,7 +704,8 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     controller: _ownerNameController,
                     label: 'اسم المالك',
                     icon: Icons.person_rounded,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -602,7 +713,8 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     label: 'البريد الإلكتروني',
                     icon: Icons.email_rounded,
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -610,15 +722,16 @@ class _AddGymScreenState extends State<AddGymScreen> {
                     label: 'رقم الهاتف',
                     icon: Icons.phone_rounded,
                     keyboardType: TextInputType.phone,
-                    validator: (value) => value?.isEmpty ?? true ? 'مطلوب' : null,
+                    validator: (value) =>
+                        value?.isEmpty ?? true ? 'مطلوب' : null,
                   ),
                 ]),
-                
+
                 const SizedBox(height: 30),
                 BlocBuilder<GymCubit, GymState>(
                   builder: (context, state) {
                     if (state is GymLoading) {
-                      return const Center(child: CircularProgressIndicator());
+                      return const Center(child: AppLoadingIndicator());
                     }
                     return GradientButton(
                       text: 'إضافة الجيم',
@@ -663,7 +776,11 @@ class _AddGymScreenState extends State<AddGymScreen> {
             if (title != null) ...[
               Text(
                 title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepOrange,
+                ),
               ),
               const Divider(),
             ],
@@ -772,9 +889,16 @@ class _AddGymScreenState extends State<AddGymScreen> {
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText: 'من',
-                          prefixIcon: Icon(Icons.access_time, color: themeColor, size: 20),
+                          prefixIcon: Icon(
+                            Icons.access_time,
+                            color: themeColor,
+                            size: 20,
+                          ),
                           border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                         child: Text(
                           controllers['start']!.text,
@@ -790,9 +914,16 @@ class _AddGymScreenState extends State<AddGymScreen> {
                       child: InputDecorator(
                         decoration: InputDecoration(
                           labelText: 'إلى',
-                          prefixIcon: Icon(Icons.access_time, color: themeColor, size: 20),
+                          prefixIcon: Icon(
+                            Icons.access_time,
+                            color: themeColor,
+                            size: 20,
+                          ),
                           border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                         ),
                         child: Text(
                           controllers['end']!.text,
@@ -820,16 +951,14 @@ class _AddGymScreenState extends State<AddGymScreen> {
       context: context,
       initialTime: currentTime,
       builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
+        return Directionality(textDirection: TextDirection.rtl, child: child!);
       },
     );
 
     if (picked != null && mounted) {
       setState(() {
-        controller.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+        controller.text =
+            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
       });
     }
   }
@@ -860,7 +989,10 @@ class _AddGymScreenState extends State<AddGymScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppTheme.gymGradient.colors[0], width: 2),
+          borderSide: BorderSide(
+            color: AppTheme.gymGradient.colors[0],
+            width: 2,
+          ),
         ),
         filled: true,
         fillColor: Colors.grey[50],
@@ -868,7 +1000,12 @@ class _AddGymScreenState extends State<AddGymScreen> {
     );
   }
 
-  Widget _buildFeatureCheckbox(String title, bool value, IconData icon, Function(bool) onChanged) {
+  Widget _buildFeatureCheckbox(
+    String title,
+    bool value,
+    IconData icon,
+    Function(bool) onChanged,
+  ) {
     return CheckboxListTile(
       value: value,
       onChanged: (val) => onChanged(val ?? false),
@@ -897,7 +1034,9 @@ class _AddGymScreenState extends State<AddGymScreen> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw Exception('أذونات الموقع مغلقة بشكل دائم. افتح الإعدادات لتفعيلها.');
+        throw Exception(
+          'أذونات الموقع مغلقة بشكل دائم. افتح الإعدادات لتفعيلها.',
+        );
       }
 
       // Get position
@@ -913,11 +1052,11 @@ class _AddGymScreenState extends State<AddGymScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تم تحديد الموقع بنجاح'),
-          backgroundColor: Colors.green,
-        ),
-      );
+          const SnackBar(
+            content: Text('تم تحديد الموقع بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -925,11 +1064,11 @@ class _AddGymScreenState extends State<AddGymScreen> {
           _isLoadingLocation = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('فشل تحديد الموقع: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+          SnackBar(
+            content: Text('فشل تحديد الموقع: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -984,7 +1123,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
   // Upload images to Firebase Storage
   Future<List<String>> _uploadImages() async {
     List<String> imageUrls = [];
-    
+
     try {
       if (!mounted) return imageUrls;
 
@@ -992,7 +1131,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
         final file = _selectedImages[i];
         final fileName = 'gyms/${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
         final ref = FirebaseStorage.instance.ref().child(fileName);
-        
+
         await ref.putFile(file);
         final url = await ref.getDownloadURL();
         imageUrls.add(url);
@@ -1014,14 +1153,15 @@ class _AddGymScreenState extends State<AddGymScreen> {
   // Upload logo to Firebase Storage
   Future<String?> _uploadLogo() async {
     if (_logoImage == null) return null;
-    
+
     try {
-      final fileName = 'gyms/logos/${DateTime.now().millisecondsSinceEpoch}_logo.jpg';
+      final fileName =
+          'gyms/logos/${DateTime.now().millisecondsSinceEpoch}_logo.jpg';
       final ref = FirebaseStorage.instance.ref().child(fileName);
-      
+
       await ref.putFile(_logoImage!);
       final url = await ref.getDownloadURL();
-      
+
       if (mounted) {
         setState(() {
           _uploadedLogoUrl = url;
@@ -1071,7 +1211,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
           );
         }
       }
-      
+
       if (_maleWorkingHours.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1094,7 +1234,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
           );
         }
       }
-      
+
       if (_femaleWorkingHours.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1112,9 +1252,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(),
-          ),
+          builder: (context) => const Center(child: AppLoadingIndicator()),
         );
       }
 
@@ -1168,7 +1306,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
         monthlySubscription: double.tryParse(_monthlyController.text),
         yearlySubscription: double.tryParse(_yearlyController.text),
         singleSessionPrice: double.tryParse(_singleSessionController.text),
-    
+
         rating: 0.0,
         reviewsCount: 0,
         ownerId: '',
@@ -1185,12 +1323,9 @@ class _AddGymScreenState extends State<AddGymScreen> {
       if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
       );
     }
   }

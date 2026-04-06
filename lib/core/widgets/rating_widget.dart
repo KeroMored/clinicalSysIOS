@@ -5,6 +5,7 @@ import '../models/rating_model.dart';
 import '../services/rating_service.dart';
 import '../utils/auth_helpers.dart';
 import '../theme/app_theme.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class RatingWidget extends StatefulWidget {
   final String serviceId;
@@ -129,18 +130,21 @@ class _RatingWidgetState extends State<RatingWidget> {
       context,
       message: 'يجب تسجيل الدخول لتقييم المكان',
     );
-    
+
     if (!isAuthenticated) return;
-    
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    
+
     int selectedRating = 0;
     String comment = '';
 
     // Load existing rating if any
     try {
-      final existingRating = await _ratingService.getUserRating(widget.serviceId, user.uid);
+      final existingRating = await _ratingService.getUserRating(
+        widget.serviceId,
+        user.uid,
+      );
       if (existingRating != null) {
         selectedRating = existingRating.rating;
         comment = existingRating.comment ?? '';
@@ -152,60 +156,62 @@ class _RatingWidgetState extends State<RatingWidget> {
     if (!context.mounted) return;
 
     bool isSubmitting = false;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 550),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 550),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Icon Header
-                      Container(
-                        width: 70,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Icon Header
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFFFBBF24,
+                            ).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
                           ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFBBF24).withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.star_rounded,
-                          size: 36,
-                          color: Colors.white,
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
+                      child: const Icon(
+                        Icons.star_rounded,
+                        size: 36,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     // Title
                     const Text(
                       'قيّم تجربتك',
@@ -220,15 +226,15 @@ class _RatingWidgetState extends State<RatingWidget> {
                     Text(
                       'رأيك يهمنا ويساعد الآخرين',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 16),
                     // Star rating selector with animation
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(16),
@@ -244,10 +250,14 @@ class _RatingWidgetState extends State<RatingWidget> {
                               });
                             },
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 3,
+                              ),
                               child: Icon(
-                                index < selectedRating ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: index < selectedRating 
+                                index < selectedRating
+                                    ? Icons.star_rounded
+                                    : Icons.star_outline_rounded,
+                                color: index < selectedRating
                                     ? const Color(0xFFF59E0B)
                                     : Colors.grey[400],
                                 size: 34,
@@ -289,7 +299,10 @@ class _RatingWidgetState extends State<RatingWidget> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFF59E0B), width: 2),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF59E0B),
+                            width: 2,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.all(16),
                       ),
@@ -330,17 +343,20 @@ class _RatingWidgetState extends State<RatingWidget> {
                                     setDialogState(() {
                                       isSubmitting = true;
                                     });
-                                    
+
                                     try {
                                       // Get user name from Firestore
                                       String userName = 'مستخدم';
                                       try {
-                                        final userDoc = await FirebaseFirestore.instance
+                                        final userDoc = await FirebaseFirestore
+                                            .instance
                                             .collection('users')
                                             .doc(user.uid)
                                             .get();
                                         if (userDoc.exists) {
-                                          userName = userDoc.data()?['displayName'] ?? 'مستخدم';
+                                          userName =
+                                              userDoc.data()?['displayName'] ??
+                                              'مستخدم';
                                         }
                                       } catch (e) {
                                         // If Firestore fails, use Auth displayName
@@ -355,36 +371,47 @@ class _RatingWidgetState extends State<RatingWidget> {
                                         userEmail: user.email ?? '',
                                         userName: userName,
                                         rating: selectedRating,
-                                        comment: comment.isEmpty ? null : comment,
+                                        comment: comment.isEmpty
+                                            ? null
+                                            : comment,
                                         createdAt: DateTime.now(),
                                       );
 
                                       await _ratingService.addRating(rating);
-                                      
+
                                       if (!context.mounted) return;
                                       Navigator.pop(context);
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(
                                           content: const Row(
                                             children: [
-                                              Icon(Icons.check_circle, color: Colors.white),
+                                              Icon(
+                                                Icons.check_circle,
+                                                color: Colors.white,
+                                              ),
                                               SizedBox(width: 12),
                                               Text('تم إضافة التقييم بنجاح'),
                                             ],
                                           ),
-                                          backgroundColor: const Color(0xFF10B981),
+                                          backgroundColor: const Color(
+                                            0xFF10B981,
+                                          ),
                                           behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                         ),
                                       );
-                                      
+
                                       // Notify parent to refresh
                                       if (widget.onRatingAdded != null) {
                                         widget.onRatingAdded!();
                                       }
-                                      
+
                                       // Refresh this widget
                                       if (mounted) {
                                         setState(() {});
@@ -394,7 +421,9 @@ class _RatingWidgetState extends State<RatingWidget> {
                                         isSubmitting = false;
                                       });
                                       if (!context.mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(content: Text('حدث خطأ: $e')),
                                       );
                                     }
@@ -413,9 +442,11 @@ class _RatingWidgetState extends State<RatingWidget> {
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,
-                                    child: CircularProgressIndicator(
+                                    child: AppLoadingIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
                                   )
                                 : const Text(
@@ -430,16 +461,16 @@ class _RatingWidgetState extends State<RatingWidget> {
                         ),
                       ],
                     ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
-            );
-          },
-        ),
-      );
+            ),
+          );
+        },
+      ),
+    );
   }
-  
+
   String _getRatingText(int rating) {
     switch (rating) {
       case 1:
@@ -477,7 +508,7 @@ class RatingsListWidget extends StatelessWidget {
       future: ratingService.getServiceRatings(serviceId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: AppLoadingIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -512,7 +543,9 @@ class RatingsListWidget extends StatelessWidget {
                     Row(
                       children: [
                         CircleAvatar(
-                          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                          backgroundColor: AppTheme.primaryColor.withOpacity(
+                            0.1,
+                          ),
                           child: Icon(
                             Icons.person,
                             color: AppTheme.primaryColor,
@@ -533,7 +566,9 @@ class RatingsListWidget extends StatelessWidget {
                               Row(
                                 children: List.generate(5, (i) {
                                   return Icon(
-                                    i < rating.rating ? Icons.star : Icons.star_border,
+                                    i < rating.rating
+                                        ? Icons.star
+                                        : Icons.star_border,
                                     color: Colors.amber,
                                     size: starSize,
                                   );
@@ -551,7 +586,8 @@ class RatingsListWidget extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (rating.comment != null && rating.comment!.isNotEmpty) ...[
+                    if (rating.comment != null &&
+                        rating.comment!.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
                         rating.comment!,

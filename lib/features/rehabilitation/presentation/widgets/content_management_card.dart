@@ -24,7 +24,9 @@ class ContentManagementCard extends StatelessWidget {
           // Content Preview
           if (content.imageUrl != null)
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: Image.network(
                 content.imageUrl!,
                 height: 200,
@@ -51,8 +53,11 @@ class ContentManagementCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.video_library,
-                                size: 80, color: Colors.white),
+                            const Icon(
+                              Icons.video_library,
+                              size: 80,
+                              color: Colors.white,
+                            ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -60,8 +65,11 @@ class ContentManagementCard extends StatelessWidget {
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.play_arrow,
-                            color: Colors.white, size: 40),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 40,
+                        ),
                       ),
                     ],
                   ),
@@ -73,23 +81,30 @@ class ContentManagementCard extends StatelessWidget {
               content.type == 'video'
                   ? Icons.video_library
                   : content.type == 'image'
-                      ? Icons.image
-                      : Icons.local_offer,
+                  ? Icons.image
+                  : Icons.local_offer,
               color: Colors.purple,
             ),
-            title: Text(content.title,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              content.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(content.type == 'offer'
-                    ? 'عرض'
-                    : content.type == 'video'
-                        ? 'فيديو'
-                        : 'صورة'),
+                Text(
+                  content.type == 'offer'
+                      ? 'عرض'
+                      : content.type == 'video'
+                      ? 'فيديو'
+                      : 'صورة',
+                ),
                 if (content.description != null)
-                  Text(content.description!,
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(
+                    content.description!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
             trailing: IconButton(

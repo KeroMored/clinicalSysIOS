@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/subscribed_place_model.dart';
 import '../widgets/place_subscription_card.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PlacesListWidget extends StatelessWidget {
   final List<SubscribedPlaceModel> places;
@@ -67,11 +68,13 @@ class PlacesListWidget extends StatelessWidget {
                       isSelected: selectedType == null,
                       onTap: () => onTypeSelected(null),
                     ),
-                    ...PlaceType.values.map((type) => FilterChipWidget(
-                          label: type.arabicName,
-                          isSelected: selectedType == type,
-                          onTap: () => onTypeSelected(type),
-                        )),
+                    ...PlaceType.values.map(
+                      (type) => FilterChipWidget(
+                        label: type.arabicName,
+                        isSelected: selectedType == type,
+                        onTap: () => onTypeSelected(type),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -93,10 +96,7 @@ class PlacesListWidget extends StatelessWidget {
                       const SizedBox(height: 16),
                       Text(
                         'لا توجد أماكن مسجلة',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 8),
                       ElevatedButton.icon(
@@ -114,12 +114,10 @@ class PlacesListWidget extends StatelessWidget {
                     if (index == places.length) {
                       return const Padding(
                         padding: EdgeInsets.all(16.0),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                        child: Center(child: AppLoadingIndicator()),
                       );
                     }
-                    
+
                     final place = places[index];
                     return PlaceSubscriptionCard(
                       place: place,

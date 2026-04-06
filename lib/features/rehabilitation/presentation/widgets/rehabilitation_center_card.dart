@@ -88,12 +88,13 @@ class RehabilitationCenterCard extends StatelessWidget {
                           // Name
                           Text(
                             center.centerName,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.darkColor,
-                              fontSize: 16,
-                              height: 1.3,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkColor,
+                                  fontSize: 16,
+                                  height: 1.3,
+                                ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -127,14 +128,11 @@ class RehabilitationCenterCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 // Divider
-                Container(
-                  height: 1,
-                  color: Colors.grey[200],
-                ),
+                Container(height: 1, color: Colors.grey[200]),
                 const SizedBox(height: 12),
                 // Bottom Info Row
                 Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
 
                   children: [
                     // Distance Badge (if available)
@@ -148,7 +146,9 @@ class RehabilitationCenterCard extends StatelessWidget {
                           color: const Color(0xFF10B981).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -176,38 +176,47 @@ class RehabilitationCenterCard extends StatelessWidget {
                     ],
                     // Service Type Badge
                     if (center.serviceTypes.isNotEmpty)
-                 
-                    // Rating and Likes with compact styling
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                      // Rating and Likes with compact styling
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
 
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 13),
-                            const SizedBox(width: 2),
-                            Text(
-                              center.averageRating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 13,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 2),
+                              Text(
+                                center.averageRating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
@@ -216,7 +225,11 @@ class RehabilitationCenterCard extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.favorite, color: Colors.red, size: 13),
+                            const Icon(
+                              Icons.favorite,
+                              color: Colors.red,
+                              size: 13,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               '${center.totalLikes}',

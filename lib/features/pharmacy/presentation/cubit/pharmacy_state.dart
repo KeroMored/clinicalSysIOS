@@ -11,10 +11,7 @@ class PharmacyLoaded extends PharmacyState {
   final List<PharmacyModel> pharmacies;
   final List<PharmacyOfferModel> offers;
 
-  PharmacyLoaded({
-    required this.pharmacies,
-    required this.offers,
-  });
+  PharmacyLoaded({required this.pharmacies, required this.offers});
 }
 
 class PharmacyError extends PharmacyState {
@@ -29,10 +26,7 @@ class PharmacyDetailsLoaded extends PharmacyState {
   final PharmacyModel pharmacy;
   final List<PharmacyOfferModel> offers;
 
-  PharmacyDetailsLoaded({
-    required this.pharmacy,
-    required this.offers,
-  });
+  PharmacyDetailsLoaded({required this.pharmacy, required this.offers});
 }
 
 class PharmacySearchLoading extends PharmacyState {}

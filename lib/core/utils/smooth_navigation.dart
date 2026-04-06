@@ -12,10 +12,7 @@ class SmoothNavigation {
         reverseTransitionDuration: const Duration(milliseconds: 200),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           // Smooth fade transition
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
@@ -30,10 +27,7 @@ class SmoothNavigation {
         transitionDuration: const Duration(milliseconds: 250),
         reverseTransitionDuration: const Duration(milliseconds: 200),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
@@ -52,9 +46,10 @@ class SmoothNavigation {
           const end = Offset.zero;
           const curve = Curves.easeInOutCubic;
 
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
+          var tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
 
           return SlideTransition(
             position: animation.drive(tween),
@@ -76,12 +71,14 @@ class SmoothNavigation {
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const curve = Curves.easeInOutCubic;
 
-          var scaleTween = Tween(begin: 0.9, end: 1.0).chain(
-            CurveTween(curve: curve),
-          );
-          var fadeTween = Tween(begin: 0.0, end: 1.0).chain(
-            CurveTween(curve: curve),
-          );
+          var scaleTween = Tween(
+            begin: 0.9,
+            end: 1.0,
+          ).chain(CurveTween(curve: curve));
+          var fadeTween = Tween(
+            begin: 0.0,
+            end: 1.0,
+          ).chain(CurveTween(curve: curve));
 
           return ScaleTransition(
             scale: animation.drive(scaleTween),

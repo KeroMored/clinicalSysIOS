@@ -56,18 +56,20 @@ class RadiologyCubit extends Cubit<RadiologyState> {
   void loadRadiologyCenterByOwner(String email) {
     emit(RadiologyLoading());
     _radiologySubscription?.cancel();
-    _radiologySubscription = _repository.getRadiologyCenterByOwnerEmail(email).listen(
-      (center) {
-        if (center != null) {
-          emit(RadiologyCenterDetailLoaded(center));
-        } else {
-          emit(RadiologyError('لم يتم العثور على مركز الأشعة'));
-        }
-      },
-      onError: (error) {
-        emit(RadiologyError('فشل في تحميل بيانات مركز الأشعة: $error'));
-      },
-    );
+    _radiologySubscription = _repository
+        .getRadiologyCenterByOwnerEmail(email)
+        .listen(
+          (center) {
+            if (center != null) {
+              emit(RadiologyCenterDetailLoaded(center));
+            } else {
+              emit(RadiologyError('لم يتم العثور على مركز الأشعة'));
+            }
+          },
+          onError: (error) {
+            emit(RadiologyError('فشل في تحميل بيانات مركز الأشعة: $error'));
+          },
+        );
   }
 
   // Search radiology centers
@@ -90,28 +92,32 @@ class RadiologyCubit extends Cubit<RadiologyState> {
   void filterByGovernorate(String governorate) {
     emit(RadiologyLoading());
     _radiologySubscription?.cancel();
-    _radiologySubscription = _repository.getRadiologyCentersByGovernorate(governorate).listen(
-      (centers) {
-        emit(RadiologyFilteredByGovernorate(centers, governorate));
-      },
-      onError: (error) {
-        emit(RadiologyError('فشل في تصفية مراكز الأشعة: $error'));
-      },
-    );
+    _radiologySubscription = _repository
+        .getRadiologyCentersByGovernorate(governorate)
+        .listen(
+          (centers) {
+            emit(RadiologyFilteredByGovernorate(centers, governorate));
+          },
+          onError: (error) {
+            emit(RadiologyError('فشل في تصفية مراكز الأشعة: $error'));
+          },
+        );
   }
 
   // Filter by service
   void filterByService(String service) {
     emit(RadiologyLoading());
     _radiologySubscription?.cancel();
-    _radiologySubscription = _repository.getRadiologyCentersByService(service).listen(
-      (centers) {
-        emit(RadiologyFilteredByService(centers, service));
-      },
-      onError: (error) {
-        emit(RadiologyError('فشل في تصفية مراكز الأشعة: $error'));
-      },
-    );
+    _radiologySubscription = _repository
+        .getRadiologyCentersByService(service)
+        .listen(
+          (centers) {
+            emit(RadiologyFilteredByService(centers, service));
+          },
+          onError: (error) {
+            emit(RadiologyError('فشل في تصفية مراكز الأشعة: $error'));
+          },
+        );
   }
 
   // Load home visit radiology centers
@@ -191,7 +197,11 @@ class RadiologyCubit extends Cubit<RadiologyState> {
     try {
       emit(RadiologyActionLoading());
       await _repository.toggleActiveStatus(id, isActive);
-      emit(RadiologyActionSuccess(isActive ? 'تم تفعيل مركز الأشعة' : 'تم إيقاف مركز الأشعة'));
+      emit(
+        RadiologyActionSuccess(
+          isActive ? 'تم تفعيل مركز الأشعة' : 'تم إيقاف مركز الأشعة',
+        ),
+      );
     } catch (e) {
       emit(RadiologyError('فشل في تغيير حالة مركز الأشعة: $e'));
     }
@@ -213,14 +223,16 @@ class RadiologyCubit extends Cubit<RadiologyState> {
   void loadApprovedRadiologyCentersForAdmin() {
     emit(RadiologyLoading());
     _radiologySubscription?.cancel();
-    _radiologySubscription = _repository.getApprovedRadiologyCentersForAdmin().listen(
-      (centers) {
-        emit(RadiologyLoaded(centers));
-      },
-      onError: (error) {
-        emit(RadiologyError('فشل في تحميل مراكز الأشعة: $error'));
-      },
-    );
+    _radiologySubscription = _repository
+        .getApprovedRadiologyCentersForAdmin()
+        .listen(
+          (centers) {
+            emit(RadiologyLoaded(centers));
+          },
+          onError: (error) {
+            emit(RadiologyError('فشل في تحميل مراكز الأشعة: $error'));
+          },
+        );
   }
 
   @override

@@ -27,10 +27,7 @@ class NotesSectionWidget extends StatelessWidget {
                 const SizedBox(width: 8),
                 const Text(
                   'الملاحظات',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 TextButton.icon(

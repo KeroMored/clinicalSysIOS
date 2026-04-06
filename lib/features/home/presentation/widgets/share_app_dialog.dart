@@ -5,9 +5,11 @@ import '../../../../core/theme/app_theme.dart';
 class ShareAppDialog extends StatelessWidget {
   const ShareAppDialog({super.key});
 
-  static const String appLink = 'https://play.google.com/store/apps/details?id=com.mored.MallawyHealthCare';
-  
-  static String get shareMessage => '''
+  static const String appLink =
+      'https://play.google.com/store/apps/details?id=com.mored.MallawyHealthCare';
+
+  static String get shareMessage =>
+      '''
 🏥 النظام الطبي المتكامل لملوي 🏥
 
 اكتشف أفضل تطبيق طبي في ملوي!
@@ -27,18 +29,13 @@ $appLink
 ''';
 
   void _shareApp() {
-    Share.share(
-      shareMessage,
-      subject: 'النظام الطبي المتكامل - ملوي',
-    );
+    Share.share(shareMessage, subject: 'النظام الطبي المتكامل - ملوي');
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
         children: [
           Container(

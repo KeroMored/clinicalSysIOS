@@ -138,8 +138,12 @@ class SubscribedPlaceModel {
       'city': city,
       'isActive': isActive,
       'createdAt': Timestamp.fromDate(createdAt),
-      'lastPaymentDate': lastPaymentDate != null ? Timestamp.fromDate(lastPaymentDate!) : null,
-      'subscriptionEndDate': subscriptionEndDate != null ? Timestamp.fromDate(subscriptionEndDate!) : null,
+      'lastPaymentDate': lastPaymentDate != null
+          ? Timestamp.fromDate(lastPaymentDate!)
+          : null,
+      'subscriptionEndDate': subscriptionEndDate != null
+          ? Timestamp.fromDate(subscriptionEndDate!)
+          : null,
       'notes': notes,
       'totalPaid': totalPaid,
       'paymentCount': paymentCount,

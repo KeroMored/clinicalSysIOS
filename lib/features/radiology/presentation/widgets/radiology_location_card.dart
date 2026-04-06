@@ -7,10 +7,7 @@ import 'radiology_info_row.dart';
 class RadiologyLocationCard extends StatelessWidget {
   final RadiologyModel radiology;
 
-  const RadiologyLocationCard({
-    super.key,
-    required this.radiology,
-  });
+  const RadiologyLocationCard({super.key, required this.radiology});
 
   @override
   Widget build(BuildContext context) {
@@ -22,23 +19,41 @@ class RadiologyLocationCard extends StatelessWidget {
           children: [
             const Text(
               'الموقع',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
             ),
             const Divider(),
-            RadiologyInfoRow(icon: Icons.location_city, label: 'المحافظة', value: radiology.governorate),
-            RadiologyInfoRow(icon: Icons.location_on, label: 'المدينة', value: radiology.city),
-            RadiologyInfoRow(icon: Icons.map, label: 'العنوان', value: radiology.address),
+            RadiologyInfoRow(
+              icon: Icons.location_city,
+              label: 'المحافظة',
+              value: radiology.governorate,
+            ),
+            RadiologyInfoRow(
+              icon: Icons.location_on,
+              label: 'المدينة',
+              value: radiology.city,
+            ),
+            RadiologyInfoRow(
+              icon: Icons.map,
+              label: 'العنوان',
+              value: radiology.address,
+            ),
             RadiologyInfoRow(
               icon: Icons.gps_fixed,
               label: 'الإحداثيات',
-              value: '${radiology.latitude.toStringAsFixed(6)}, ${radiology.longitude.toStringAsFixed(6)}',
+              value:
+                  '${radiology.latitude.toStringAsFixed(6)}, ${radiology.longitude.toStringAsFixed(6)}',
             ),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _makePhoneCall(context, radiology.centerPhone),
+                    onPressed: () =>
+                        _makePhoneCall(context, radiology.centerPhone),
                     icon: const Icon(Icons.phone),
                     label: const Text('اتصال'),
                     style: ElevatedButton.styleFrom(
@@ -50,7 +65,8 @@ class RadiologyLocationCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _openWhatsApp(context, radiology.centerWhatsApp),
+                    onPressed: () =>
+                        _openWhatsApp(context, radiology.centerWhatsApp),
                     icon: Icon(MdiIcons.whatsapp),
                     label: const Text('واتساب'),
                     style: ElevatedButton.styleFrom(
@@ -65,7 +81,8 @@ class RadiologyLocationCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _openMap(context, radiology.latitude, radiology.longitude),
+                onPressed: () =>
+                    _openMap(context, radiology.latitude, radiology.longitude),
                 icon: const Icon(Icons.map),
                 label: const Text('فتح الموقع في الخريطة'),
                 style: ElevatedButton.styleFrom(
@@ -81,27 +98,25 @@ class RadiologyLocationCard extends StatelessWidget {
   }
 
   String _formatWhatsAppNumber(String input) {
+    // خد الرقم زي ما هو وضيفله +20 فقط
     String n = input.trim();
-    n = n.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    // لو بيبدأ بـ + شيله
     if (n.startsWith('+')) n = n.substring(1);
-    if (n.startsWith('00')) n = n.substring(2);
-    if (n.startsWith('0')) n = n.substring(1);
-    n = n.replaceAll(RegExp(r'[^0-9]'), '');
-    return n;
+    // لو بيبدأ بـ 20 يبقى خلاص
+    if (n.startsWith('20')) return '20$n';
+    // ضيف +20 قدام الرقم
+    return '20$n';
   }
 
   Future<void> _makePhoneCall(BuildContext context, String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     try {
       await launchUrl(launchUri);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا يمكن إجراء المكالمة')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('لا يمكن إجراء المكالمة')));
       }
     }
   }
@@ -110,9 +125,9 @@ class RadiologyLocationCard extends StatelessWidget {
     final formatted = _formatWhatsAppNumber(phoneNumber);
     if (formatted.isEmpty) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('رقم واتساب غير صحيح')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('رقم واتساب غير صحيح')));
       }
       return;
     }
@@ -124,30 +139,32 @@ class RadiologyLocationCard extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا يمكن فتح واتساب')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('لا يمكن فتح واتساب')));
       }
     }
   }
 
   Future<void> _openMap(BuildContext context, double lat, double lng) async {
-    final Uri mapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    final Uri mapUri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
     try {
       if (await canLaunchUrl(mapUri)) {
         await launchUrl(mapUri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('لا يمكن فتح الخريطة')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('لا يمكن فتح الخريطة')));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ: $e')));
       }
     }
   }

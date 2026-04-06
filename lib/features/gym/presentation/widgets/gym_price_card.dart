@@ -4,10 +4,7 @@ import '../../data/models/gym_model.dart';
 class GymPriceCard extends StatelessWidget {
   final GymModel gym;
 
-  const GymPriceCard({
-    super.key,
-    required this.gym,
-  });
+  const GymPriceCard({super.key, required this.gym});
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +26,7 @@ class GymPriceCard extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.credit_card_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
+              Icon(Icons.credit_card_rounded, color: Colors.white, size: 24),
               SizedBox(width: 10),
               Text(
                 'الاشتراك',
@@ -79,7 +72,8 @@ class GymPriceCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (gym.monthlySubscription != null && gym.yearlySubscription != null)
+              if (gym.monthlySubscription != null &&
+                  gym.yearlySubscription != null)
                 const SizedBox(width: 12),
               if (gym.yearlySubscription != null)
                 Expanded(

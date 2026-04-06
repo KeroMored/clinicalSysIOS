@@ -4,10 +4,7 @@ import '../../data/models/radiology_model.dart';
 class RadiologyWorkingHoursCard extends StatelessWidget {
   final RadiologyModel radiology;
 
-  const RadiologyWorkingHoursCard({
-    super.key,
-    required this.radiology,
-  });
+  const RadiologyWorkingHoursCard({super.key, required this.radiology});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +26,11 @@ class RadiologyWorkingHoursCard extends StatelessWidget {
           children: [
             const Text(
               'مواعيد العمل',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
             ),
             const Divider(),
             ...daysInArabic.entries.map((entry) {
@@ -43,10 +44,15 @@ class RadiologyWorkingHoursCard extends StatelessWidget {
                   children: [
                     Text(
                       entry.value,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     Text(
-                      hours.isHoliday ? 'مغلق' : '${hours.openTime} - ${hours.closeTime}',
+                      hours.isHoliday
+                          ? 'مغلق'
+                          : '${hours.openTime} - ${hours.closeTime}',
                       style: TextStyle(
                         fontSize: 14,
                         color: hours.isHoliday ? Colors.red : Colors.green,

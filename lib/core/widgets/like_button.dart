@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/like_service.dart';
 import '../utils/auth_helpers.dart';
 import '../theme/app_theme.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class LikeButton extends StatefulWidget {
   final String serviceId;
@@ -26,7 +27,8 @@ class LikeButton extends StatefulWidget {
   State<LikeButton> createState() => _LikeButtonState();
 }
 
-class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateMixin {
+class _LikeButtonState extends State<LikeButton>
+    with SingleTickerProviderStateMixin {
   final LikeService _likeService = LikeService();
   bool _isLiked = false;
   int _likesCount = 0;
@@ -56,13 +58,15 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
   }
 
   void _listenToLikesCount() {
-    _likeService.getLikesCountStream(widget.serviceId, widget.serviceType).listen((count) {
-      if (mounted) {
-        setState(() {
-          _likesCount = count;
+    _likeService
+        .getLikesCountStream(widget.serviceId, widget.serviceType)
+        .listen((count) {
+          if (mounted) {
+            setState(() {
+              _likesCount = count;
+            });
+          }
         });
-      }
-    });
   }
 
   Future<void> _checkIfLiked() async {
@@ -91,9 +95,9 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
       context,
       message: 'يجب تسجيل الدخول للإعجاب بالمكان',
     );
-    
+
     if (!isAuthenticated || !mounted) return;
-    
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -131,9 +135,9 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('حدث خطأ: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('حدث خطأ: $e')));
     }
   }
 
@@ -151,7 +155,7 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
               SizedBox(
                 width: widget.iconSize,
                 height: widget.iconSize,
-                child: CircularProgressIndicator(
+                child: AppLoadingIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     AppTheme.primaryColor,
@@ -201,11 +205,7 @@ class LikeCountDisplay extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.favorite,
-          color: Colors.red,
-          size: iconSize,
-        ),
+        Icon(Icons.favorite, color: Colors.red, size: iconSize),
         const SizedBox(width: 4),
         Text(
           '$likesCount',

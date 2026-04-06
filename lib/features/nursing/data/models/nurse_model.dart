@@ -7,9 +7,11 @@ class NurseModel {
   final String nurseWhatsApp;
   final String gender; // male, female
   final int yearsOfExperience;
-  final String specialization; // تمريض عام، تمريض أطفال، تمريض مسنين، رعاية ما بعد العمليات، إلخ
+  final String
+  specialization; // تمريض عام، تمريض أطفال، تمريض مسنين، رعاية ما بعد العمليات، إلخ
   final String about; // نبذة عن الممرض/ة
-  final List<String> services; // الخدمات المنزلية (حقن، قياس ضغط، تغيير جروح، إلخ)
+  final List<String>
+  services; // الخدمات المنزلية (حقن، قياس ضغط، تغيير جروح، إلخ)
   final double hourlyRate; // السعر بالساعة
   final String address;
   final String governorate;
@@ -17,22 +19,22 @@ class NurseModel {
   final String center; // المركز (مثلاً: ملوي)
   final double? latitude;
   final double? longitude;
-  
+
   // Nurse Personal Info
   final String? email;
   final String? nationalId;
   final String? licenseNumber;
-  
+
   // Images
   final String? profileImageUrl;
   final String? licenseImageUrl;
   final String? nationalIdImageUrl;
-  
+
   // Availability
   final bool availableNow;
   final bool available24Hours;
   final Map<String, WorkingHours>? workingHours;
-  
+
   // Status
   final bool isApproved;
   final bool isActive;
@@ -40,7 +42,7 @@ class NurseModel {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final String? notes; // Admin notes
-  
+
   // Rating
   final double? rating;
   final int? reviewCount;
@@ -108,7 +110,9 @@ class NurseModel {
       'nationalIdImageUrl': nationalIdImageUrl,
       'availableNow': availableNow,
       'available24Hours': available24Hours,
-      'workingHours': workingHours?.map((key, value) => MapEntry(key, value.toMap())),
+      'workingHours': workingHours?.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ),
       'isApproved': isApproved,
       'isActive': isActive,
       'status': status,
@@ -148,13 +152,16 @@ class NurseModel {
       availableNow: map['availableNow'] ?? false,
       available24Hours: map['available24Hours'] ?? false,
       workingHours: (map['workingHours'] as Map<String, dynamic>?)?.map(
-            (key, value) => MapEntry(key, WorkingHours.fromMap(value as Map<String, dynamic>)),
-          ),
+        (key, value) =>
+            MapEntry(key, WorkingHours.fromMap(value as Map<String, dynamic>)),
+      ),
       isApproved: map['isApproved'] ?? false,
       isActive: map['isActive'] ?? true,
       status: map['status'] ?? 'pending',
       createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: map['updatedAt'] != null ? (map['updatedAt'] as Timestamp).toDate() : null,
+      updatedAt: map['updatedAt'] != null
+          ? (map['updatedAt'] as Timestamp).toDate()
+          : null,
       notes: map['notes'],
       rating: map['rating']?.toDouble(),
       reviewCount: map['reviewCount'],
@@ -308,14 +315,6 @@ class NurseSpecializations {
   static const String maternity = 'تمريض نساء وولادة';
 
   static List<String> getAllSpecializations() {
-    return [
-      general,
-      pediatric,
-      geriatric,
-      surgical,
-      emergency,
-      icu,
-      maternity,
-    ];
+    return [general, pediatric, geriatric, surgical, emergency, icu, maternity];
   }
 }

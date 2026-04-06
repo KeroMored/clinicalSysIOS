@@ -7,6 +7,7 @@ import '../cubit/medicine_offer_cubit.dart';
 import '../../data/models/medicine_offer_model.dart';
 import '../../../pharmacy/data/repositories/pharmacy_repository.dart';
 import '../../../pharmacy/data/models/pharmacy_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddMedicineOfferScreen extends StatefulWidget {
   const AddMedicineOfferScreen({super.key});
@@ -48,9 +49,9 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
         _isLoadingPharmacies = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل في تحميل الصيدليات: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('فشل في تحميل الصيدليات: $e')));
       }
     }
   }
@@ -73,9 +74,9 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل في اختيار الصورة: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('فشل في اختيار الصورة: $e')));
       }
     }
   }
@@ -108,9 +109,9 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
         _isUploading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل في رفع الصورة: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('فشل في رفع الصورة: $e')));
       }
       return null;
     }
@@ -120,9 +121,9 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
   Future<void> _saveOffer() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedPharmacy == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى اختيار الصيدلية')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى اختيار الصيدلية')));
       return;
     }
 
@@ -199,9 +200,7 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
           },
           child: _isLoadingPharmacies
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF1A5F7A),
-                  ),
+                  child: AppLoadingIndicator(color: Color(0xFF1A5F7A)),
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -305,7 +304,8 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
                                       fillColor: Colors.grey[100],
                                     ),
                                     validator: (value) {
-                                      if (value == null || value.trim().isEmpty) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
                                         return 'مطلوب';
                                       }
                                       if (int.tryParse(value) == null) {
@@ -337,7 +337,10 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
                                   const SizedBox(height: 8),
                                   TextFormField(
                                     controller: _priceController,
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
                                     decoration: InputDecoration(
                                       hintText: '13',
                                       border: OutlineInputBorder(
@@ -347,7 +350,8 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
                                       fillColor: Colors.grey[100],
                                     ),
                                     validator: (value) {
-                                      if (value == null || value.trim().isEmpty) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
                                         return 'مطلوب';
                                       }
                                       if (double.tryParse(value) == null) {
@@ -459,7 +463,7 @@ class _AddMedicineOfferScreenState extends State<AddMedicineOfferScreen> {
                                 ? const SizedBox(
                                     height: 20,
                                     width: 20,
-                                    child: CircularProgressIndicator(
+                                    child: AppLoadingIndicator(
                                       color: Colors.white,
                                       strokeWidth: 2,
                                     ),

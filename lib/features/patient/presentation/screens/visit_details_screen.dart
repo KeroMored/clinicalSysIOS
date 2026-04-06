@@ -45,15 +45,14 @@ class VisitDetailsScreen extends StatelessWidget {
           ],
 
           // صورة الروشتة
-          if (visit.prescriptionImageUrl != null && visit.prescriptionImageUrl!.isNotEmpty) ...[
+          if (visit.prescriptionImageUrl != null &&
+              visit.prescriptionImageUrl!.isNotEmpty) ...[
             _buildPrescriptionImageCard(context),
             const SizedBox(height: 16),
           ],
 
           // ملاحظات
-          if (visit.notes.isNotEmpty) ...[
-            _buildNotesCard(),
-          ],
+          if (visit.notes.isNotEmpty) ...[_buildNotesCard()],
         ],
       ),
     );
@@ -70,11 +69,7 @@ class VisitDetailsScreen extends StatelessWidget {
               gradient: AppTheme.clinicGradient,
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 30,
-            ),
+            child: const Icon(Icons.person, color: Colors.white, size: 30),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -92,14 +87,15 @@ class VisitDetailsScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.phone, size: 16, color: AppTheme.primaryColor),
+                    const Icon(
+                      Icons.phone,
+                      size: 16,
+                      color: AppTheme.primaryColor,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       patient.phoneNumber,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -144,15 +140,16 @@ class VisitDetailsScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.date_range, color: AppTheme.primaryColor, size: 20),
+              const Icon(
+                Icons.date_range,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   DateFormat('EEEE، dd MMMM yyyy', 'ar').format(visit.date),
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                 ),
               ),
             ],
@@ -160,14 +157,15 @@ class VisitDetailsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.access_time, color: AppTheme.primaryColor, size: 20),
+              const Icon(
+                Icons.access_time,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 visit.time,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
             ],
           ),
@@ -265,7 +263,9 @@ class VisitDetailsScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+                border: Border.all(
+                  color: AppTheme.primaryColor.withOpacity(0.2),
+                ),
               ),
               child: Row(
                 children: [
@@ -290,10 +290,7 @@ class VisitDetailsScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       entry.value,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[800],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[800]),
                     ),
                   ),
                 ],
@@ -318,11 +315,7 @@ class VisitDetailsScreen extends StatelessWidget {
                   gradient: AppTheme.clinicGradient,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.image,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: const Icon(Icons.image, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               const Text(
@@ -421,11 +414,7 @@ class VisitDetailsScreen extends StatelessWidget {
                   gradient: AppTheme.clinicGradient,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.note,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: const Icon(Icons.note, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               const Text(

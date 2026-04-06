@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../data/models/patient_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../screens/patient_details_screen.dart';
@@ -9,19 +8,19 @@ class PatientCard extends StatelessWidget {
   final PatientModel patient;
   final String clinicId;
 
-  const PatientCard({
-    super.key,
-    required this.patient,
-    required this.clinicId,
-  });
+  static const Color _primaryColor = Color(0xFF0B8293);
+
+  const PatientCard({super.key, required this.patient, required this.clinicId});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFDDE7EF)),
       ),
       child: InkWell(
         onTap: () async {
@@ -37,7 +36,7 @@ class PatientCard extends StatelessWidget {
               ),
             ),
           );
-          
+
           // إعادة تحميل قائمة المرضى عند العودة
           if (result == true && context.mounted) {
             context.read<PatientCubit>().loadClinicPatients(clinicId);
@@ -49,18 +48,18 @@ class PatientCard extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                radius: 30,
-                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                radius: 25,
+                backgroundColor: _primaryColor.withOpacity(0.1),
                 child: Text(
                   patient.name.isNotEmpty ? patient.name[0] : '؟',
                   style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: _primaryColor,
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,23 +67,19 @@ class PatientCard extends StatelessWidget {
                     Text(
                       patient.name,
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.phone,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
+                        const Icon(Icons.phone, size: 16, color: Colors.grey),
                         const SizedBox(width: 4),
                         Text(
                           patient.phoneNumber,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             color: Colors.grey[600],
                           ),
                         ),
@@ -94,9 +89,9 @@ class PatientCard extends StatelessWidget {
                 ),
               ),
               const Icon(
-                Icons.arrow_forward_ios,
-                size: 18,
-                color: AppTheme.primaryColor,
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: _primaryColor,
               ),
             ],
           ),

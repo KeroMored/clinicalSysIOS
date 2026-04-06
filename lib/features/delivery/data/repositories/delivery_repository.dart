@@ -11,9 +11,11 @@ class DeliveryRepository {
         .where('isApproved', isEqualTo: true)
         .where('isActive', isEqualTo: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => DeliveryModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => DeliveryModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Get all pending deliveries for approval
@@ -23,9 +25,11 @@ class DeliveryRepository {
         .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => DeliveryModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => DeliveryModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Get all deliveries (for admin)
@@ -34,9 +38,11 @@ class DeliveryRepository {
         .collection('deliveries')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => DeliveryModel.fromMap(doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => DeliveryModel.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   // Get delivery by ID
@@ -129,12 +135,15 @@ class DeliveryRepository {
   // Update rating
   Future<void> updateRating(String deliveryId, double newRating) async {
     try {
-      final doc = await _firestore.collection('deliveries').doc(deliveryId).get();
+      final doc = await _firestore
+          .collection('deliveries')
+          .doc(deliveryId)
+          .get();
       if (doc.exists) {
         final data = doc.data()!;
         final currentRating = (data['rating'] ?? 0.0).toDouble();
         final currentCount = data['reviewCount'] ?? 0;
-        
+
         final totalRating = (currentRating * currentCount) + newRating;
         final newCount = currentCount + 1;
         final updatedRating = totalRating / newCount;

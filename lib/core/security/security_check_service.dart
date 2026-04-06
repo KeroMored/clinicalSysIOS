@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 
 /// خدمة كشف Root/Jailbreak والأجهزة غير الآمنة
 class SecurityCheckService {
-  static final SecurityCheckService _instance = SecurityCheckService._internal();
+  static final SecurityCheckService _instance =
+      SecurityCheckService._internal();
   factory SecurityCheckService() => _instance;
   SecurityCheckService._internal();
 
@@ -173,7 +174,7 @@ class SecurityCheckService {
 
     if (Platform.isAndroid) {
       final androidInfo = await _deviceInfo.androidInfo;
-      
+
       // فحص معلومات الجهاز
       final brand = androidInfo.brand.toLowerCase();
       final device = androidInfo.device.toLowerCase();
@@ -297,7 +298,7 @@ class SecurityCheckService {
     // - التحقق من التوقيع الرقمي
     // - فحص التعديلات على ملفات التطبيق
     // - التحقق من checksum للملفات المهمة
-    
+
     return true; // مؤقتاً
   }
 }

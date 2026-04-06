@@ -7,27 +7,27 @@ class LoyaltyPointsModel {
   final String userName; // اسم المستخدم
   final String userPhone; // رقم المستخدم
   final String? userEmail;
-  
+
   // النقاط
   final int totalPoints; // إجمالي النقاط المكتسبة
   final int usedPoints; // النقاط المستخدمة
   final int availablePoints; // النقاط المتاحة
-  
+
   // الإحصائيات
   final int totalBookings; // عدد الحجوزات الإجمالي
   final double totalSpent; // إجمالي المبلغ المنفق
   final int lastYearBookings; // حجوزات آخر سنة
   final double lastYearSpent; // المنفق في آخر سنة
-  
+
   // المستوى
   final String tier; // 'bronze', 'silver', 'gold', 'platinum'
   final DateTime? tierUpdatedAt;
-  
+
   // آخر تحديث
   final DateTime? lastBookingDate; // آخر حجز
   final DateTime? lastPointsEarnedDate; // آخر اكتساب نقاط
   final DateTime? lastPointsUsedDate; // آخر استخدام نقاط
-  
+
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -116,10 +116,18 @@ class LoyaltyPointsModel {
       'lastYearBookings': lastYearBookings,
       'lastYearSpent': lastYearSpent,
       'tier': tier,
-      'tierUpdatedAt': tierUpdatedAt != null ? Timestamp.fromDate(tierUpdatedAt!) : null,
-      'lastBookingDate': lastBookingDate != null ? Timestamp.fromDate(lastBookingDate!) : null,
-      'lastPointsEarnedDate': lastPointsEarnedDate != null ? Timestamp.fromDate(lastPointsEarnedDate!) : null,
-      'lastPointsUsedDate': lastPointsUsedDate != null ? Timestamp.fromDate(lastPointsUsedDate!) : null,
+      'tierUpdatedAt': tierUpdatedAt != null
+          ? Timestamp.fromDate(tierUpdatedAt!)
+          : null,
+      'lastBookingDate': lastBookingDate != null
+          ? Timestamp.fromDate(lastBookingDate!)
+          : null,
+      'lastPointsEarnedDate': lastPointsEarnedDate != null
+          ? Timestamp.fromDate(lastPointsEarnedDate!)
+          : null,
+      'lastPointsUsedDate': lastPointsUsedDate != null
+          ? Timestamp.fromDate(lastPointsUsedDate!)
+          : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
     };
@@ -145,7 +153,8 @@ class LoyaltyPointsModel {
       tier: data['tier'] ?? 'bronze',
       tierUpdatedAt: (data['tierUpdatedAt'] as Timestamp?)?.toDate(),
       lastBookingDate: (data['lastBookingDate'] as Timestamp?)?.toDate(),
-      lastPointsEarnedDate: (data['lastPointsEarnedDate'] as Timestamp?)?.toDate(),
+      lastPointsEarnedDate: (data['lastPointsEarnedDate'] as Timestamp?)
+          ?.toDate(),
       lastPointsUsedDate: (data['lastPointsUsedDate'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -203,20 +212,20 @@ class PointsTransactionModel {
   final String userId;
   final String laboratoryId;
   final String? bookingId; // إذا كانت مرتبطة بحجز
-  
+
   // تفاصيل المعاملة
   final String type; // 'earn' أو 'redeem' أو 'expire' أو 'bonus'
   final int points; // عدد النقاط (موجب للاكتساب، سالب للاستخدام)
   final String description; // وصف المعاملة
-  
+
   // قبل وبعد
   final int pointsBefore; // النقاط قبل المعاملة
   final int pointsAfter; // النقاط بعد المعاملة
-  
+
   // تفاصيل إضافية
   final double? relatedAmount; // المبلغ المرتبط (للحجز مثلاً)
   final String? referenceId; // معرف مرجعي
-  
+
   final DateTime createdAt;
 
   PointsTransactionModel({
@@ -276,17 +285,17 @@ class PointsTransactionModel {
 class PointsCalculator {
   // كل 10 جنيه = 1 نقطة
   static const double pointsPerAmount = 0.1;
-  
+
   // حساب النقاط المكتسبة من مبلغ
   static int calculateEarnedPoints(double amount) {
     return (amount * pointsPerAmount).floor();
   }
-  
+
   // حساب قيمة النقاط بالجنيه
   static double calculatePointsValue(int points) {
     return points / pointsPerAmount;
   }
-  
+
   // تحديد المستوى من النقاط المتاحة
   static String determineTier(int availablePoints) {
     if (availablePoints >= 5000) return 'platinum';
@@ -294,7 +303,7 @@ class PointsCalculator {
     if (availablePoints >= 1000) return 'silver';
     return 'bronze';
   }
-  
+
   // نسبة الخصم حسب المستوى
   static int getTierDiscount(String tier) {
     switch (tier) {

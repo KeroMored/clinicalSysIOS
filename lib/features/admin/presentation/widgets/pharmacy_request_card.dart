@@ -17,9 +17,7 @@ class PharmacyRequestCard extends StatelessWidget {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -84,7 +82,7 @@ class PharmacyRequestCard extends StatelessWidget {
                   const Icon(Icons.phone, size: 18, color: Colors.grey),
                   const SizedBox(width: 8),
                   Text(
-                    request.phone,
+                    request.phones.isNotEmpty ? request.phones[0] : 'لا يوجد',
                     style: const TextStyle(fontSize: 14),
                   ),
                 ],
@@ -98,10 +96,7 @@ class PharmacyRequestCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'تاريخ الطلب: ${DateFormat('yyyy-MM-dd hh:mm a').format(request.requestDate)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),

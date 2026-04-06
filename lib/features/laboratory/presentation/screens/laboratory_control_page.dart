@@ -9,10 +9,11 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/laboratory_model.dart';
 import '../../data/models/lab_booking_model.dart';
 import '../cubit/lab_tests_cubit.dart';
-import '../cubit/lab_tests_state.dart';
 import 'lab_bookings_management_screen.dart';
 import 'lab_bookings_history_screen.dart';
 import 'edit_laboratory_screen.dart';
+import 'send_lab_notification_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// صفحة التحكم الرئيسية لمعمل التحاليل
 class LaboratoryControlPage extends StatefulWidget {
@@ -26,15 +27,18 @@ class LaboratoryControlPage extends StatefulWidget {
 }
 
 class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
+  static const Color _primaryColor = Color(0xFF0B8293);
+  static const Color _secondaryColor = Color(0xFF179AAC);
+  static const Color _surfaceColor = Color(0xFFF3F8FB);
+  static const Color _textPrimary = Color(0xFF0F172A);
+
   late LabTestsCubit _cubit;
-  Map<String, dynamic>? _stats;
   final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
     super.initState();
     _cubit = LabTestsCubit();
-    _loadStatistics();
     _subscribeToNotifications();
   }
 
@@ -48,10 +52,6 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
     }
   }
 
-  Future<void> _loadStatistics() async {
-    await _cubit.loadStatistics(widget.laboratory.id);
-  }
-
   @override
   void dispose() {
     _cubit.close();
@@ -63,40 +63,58 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
     return BlocProvider.value(
       value: _cubit,
       child: Scaffold(
+        backgroundColor: _surfaceColor,
         body: CustomScrollView(
           slivers: [
-            // App Bar مع Gradient - تصميم محسن
             SliverAppBar(
+              expandedHeight: 120,
+              pinned: true,
+              elevation: 0,
               title: Text(
                 widget.laboratory.name,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
                 ),
               ),
               centerTitle: true,
-              floating: true,
-              snap: true,
-              elevation: 2,
-              backgroundColor: const Color(0xFF00BCD4),
+              backgroundColor: _primaryColor,
               iconTheme: const IconThemeData(color: Colors.white),
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [_primaryColor, _secondaryColor],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                    ),
+                  ),
+                  child: const Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 14),
+                      child: Text(
+                        'إدارة المعمل اليومية',
+                        style: TextStyle(
+                          color: Color(0xFFE2F7FB),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
 
-            // المحتوى
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  // Statistics Dashboard
-                  _buildStatisticsSection(),
-                  const SizedBox(height: 20),
+                  _buildQuickActionsGrid(),
+                  const SizedBox(height: 16),
 
-                  // Quick Actions
-                  _buildQuickActionsSection(),
-                  const SizedBox(height: 20),
-
-                  // Recent Activity
                   _buildRecentActivitySection(),
                 ]),
               ),
@@ -107,158 +125,76 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
     );
   }
 
-  /// قسم الإحصائيات
-  Widget _buildStatisticsSection() {
-    return BlocBuilder<LabTestsCubit, LabTestsState>(
-      builder: (context, state) {
-        if (state is StatisticsLoaded) {
-          _stats = state.stats;
-        }
-
-        if (_stats == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'إحصائيات المعمل',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    icon: Icons.event_note,
-                    title: 'الحجوزات اليوم',
-                    value: '${_stats!['todayBookings'] ?? 0}',
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    icon: Icons.calendar_month,
-                    title: 'الشهر الحالي',
-                    value: '${_stats!['monthBookings'] ?? 0}',
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return ModernCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const Spacer(),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(title, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
-
-  /// قسم الإجراءات السريعة
-  Widget _buildQuickActionsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  /// شبكة الإجراءات (بدون عنوان)
+  Widget _buildQuickActionsGrid() {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 1.35,
       children: [
-        const Text(
-          'الإجراءات السريعة',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.5,
-          children: [
-            _buildActionCard(
-              icon: Icons.calendar_today,
-              title: 'إدارة الحجوزات',
-              gradient: AppTheme.laboratoryGradient,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LabBookingsManagementScreen(
-                      laboratory: widget.laboratory,
-                    ),
-                  ),
-                );
-              },
-            ),
-            _buildActionCard(
-              icon: Icons.archive,
-              title: 'الأرشيف',
-              gradient: AppTheme.primaryGradient,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LabBookingsHistoryScreen(
-                      laboratoryId: widget.laboratory.id,
-                    ),
-                  ),
-                );
-              },
-            ),
-            _buildActionCard(
-              icon: Icons.edit,
-              title: 'تعديل بيانات المعمل',
-              gradient: LinearGradient(
-                colors: [Colors.orange[600]!, Colors.orange[400]!],
+        _buildActionCard(
+          icon: Icons.calendar_today,
+          title: 'إدارة الحجوزات',
+          gradient: AppTheme.laboratoryGradient,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    LabBookingsManagementScreen(laboratory: widget.laboratory),
               ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        EditLaboratoryScreen(laboratory: widget.laboratory),
-                  ),
-                );
-              },
-            ),
-          ],
+            );
+          },
+        ),
+        _buildActionCard(
+          icon: Icons.archive,
+          title: 'الأرشيف',
+          gradient: AppTheme.primaryGradient,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LabBookingsHistoryScreen(
+                  laboratoryId: widget.laboratory.id,
+                ),
+              ),
+            );
+          },
+        ),
+        _buildActionCard(
+          icon: Icons.notifications_active,
+          title: 'إرسال إشعارات',
+          gradient: LinearGradient(
+            colors: [Colors.purple[600]!, Colors.purple[400]!],
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    SendLabNotificationScreen(laboratory: widget.laboratory),
+              ),
+            );
+          },
+        ),
+        _buildActionCard(
+          icon: Icons.edit,
+          title: 'تعديل بيانات المعمل',
+          gradient: LinearGradient(
+            colors: [Colors.orange[600]!, Colors.orange[400]!],
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    EditLaboratoryScreen(laboratory: widget.laboratory),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -272,30 +208,31 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
         decoration: BoxDecoration(
           gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
-              color: gradient.colors.first.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: gradient.colors.first.withValues(alpha: 0.24),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 40),
-            const SizedBox(height: 8),
+            Icon(icon, color: Colors.white, size: 32),
+            const SizedBox(height: 6),
             Text(
               title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.center,
             ),
@@ -315,7 +252,11 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
           children: [
             const Text(
               'النشاطات الأخيرة',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: _textPrimary,
+              ),
             ),
             TextButton(
               onPressed: () {
@@ -328,11 +269,17 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
                   ),
                 );
               },
-              child: const Text('عرض الكل'),
+              child: const Text(
+                'عرض الكل',
+                style: TextStyle(
+                  color: _primaryColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('lab_bookings')
@@ -347,7 +294,7 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
                 child: Center(
                   child: Padding(
                     padding: EdgeInsets.all(40.0),
-                    child: CircularProgressIndicator(),
+                    child: AppLoadingIndicator(),
                   ),
                 ),
               );
@@ -424,16 +371,21 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
                     ),
                     title: Text(
                       booking.patientName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _textPrimary,
+                        fontSize: 14,
+                      ),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (booking.testType != null &&
-                            booking.testType!.isNotEmpty)
+                        if (booking.testTypes.isNotEmpty)
                           Text(
-                            booking.testType!,
-                            style: const TextStyle(fontSize: 13),
+                            booking.testTypes.join('، '),
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         Text(
                           DateFormat(

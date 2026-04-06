@@ -7,20 +7,19 @@ import '../cubit/subscription_state.dart';
 import '../widgets/subscription_detail_widgets.dart';
 import '../widgets/add_payment_dialog.dart';
 import 'edit_place_details_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PlaceSubscriptionDetailsScreen extends StatelessWidget {
   final String placeId;
 
-  const PlaceSubscriptionDetailsScreen({
-    super.key,
-    required this.placeId,
-  });
+  const PlaceSubscriptionDetailsScreen({super.key, required this.placeId});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          SubscriptionCubit(SubscriptionRepository())..loadPlaceDetails(placeId),
+          SubscriptionCubit(SubscriptionRepository())
+            ..loadPlaceDetails(placeId),
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: BlocConsumer<SubscriptionCubit, SubscriptionState>(
@@ -72,7 +71,7 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
                     colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                   ),
                 ),
-                body: const Center(child: CircularProgressIndicator()),
+                body: const Center(child: AppLoadingIndicator()),
               );
             }
 
@@ -85,7 +84,10 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
                   ),
                   actions: [
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.white),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                      ),
                       onPressed: () => _showDeleteConfirmation(context),
                       tooltip: 'حذف',
                     ),
@@ -112,11 +114,14 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => EditPlaceDetailsScreen(place: state.place),
+                                builder: (context) =>
+                                    EditPlaceDetailsScreen(place: state.place),
                               ),
                             ).then((updated) {
                               if (updated == true) {
-                                context.read<SubscriptionCubit>().loadPlaceDetails(placeId);
+                                context
+                                    .read<SubscriptionCubit>()
+                                    .loadPlaceDetails(placeId);
                               }
                             });
                           },
@@ -126,13 +131,16 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
 
                         NotesSectionWidget(
                           notes: state.place.notes,
-                          onEdit: () => _showEditNotesDialog(context, state.place.notes),
+                          onEdit: () =>
+                              _showEditNotesDialog(context, state.place.notes),
                         ),
 
                         PaymentHistorySectionWidget(
                           payments: state.payments,
                           onDeletePayment: (payment) {
-                            context.read<SubscriptionCubit>().deletePaymentRecord(
+                            context
+                                .read<SubscriptionCubit>()
+                                .deletePaymentRecord(
                                   payment.id,
                                   placeId,
                                   payment.amount,
@@ -173,12 +181,12 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
           placeName: state.place.placeName,
           onSubmit: (amount, type, date, notes) {
             context.read<SubscriptionCubit>().recordPayment(
-                  subscribedPlaceId: placeId,
-                  amount: amount,
-                  paymentType: type,
-                  paymentDate: date,
-                  notes: notes,
-                );
+              subscribedPlaceId: placeId,
+              amount: amount,
+              paymentType: type,
+              paymentDate: date,
+              notes: notes,
+            );
           },
         ),
       ),
@@ -197,9 +205,7 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
           maxLines: 5,
           decoration: InputDecoration(
             hintText: 'أضف ملاحظات...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         actions: [
@@ -210,9 +216,9 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               context.read<SubscriptionCubit>().updatePlaceNotes(
-                    placeId,
-                    controller.text,
-                  );
+                placeId,
+                controller.text,
+              );
               Navigator.pop(context);
             },
             child: const Text('حفظ'),

@@ -7,9 +7,12 @@ class SubscriptionRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Collection references
-  CollectionReference get _settingsCollection => _firestore.collection('subscription_settings');
-  CollectionReference get _subscribedPlacesCollection => _firestore.collection('subscribed_places');
-  CollectionReference get _paymentRecordsCollection => _firestore.collection('payment_records');
+  CollectionReference get _settingsCollection =>
+      _firestore.collection('subscription_settings');
+  CollectionReference get _subscribedPlacesCollection =>
+      _firestore.collection('subscribed_places');
+  CollectionReference get _paymentRecordsCollection =>
+      _firestore.collection('payment_records');
 
   // ==================== Settings ====================
 
@@ -18,10 +21,14 @@ class SubscriptionRepository {
     try {
       final doc = await _settingsCollection.doc('settings').get();
       if (doc.exists) {
-        return SubscriptionSettingsModel.fromMap(doc.data() as Map<String, dynamic>);
+        return SubscriptionSettingsModel.fromMap(
+          doc.data() as Map<String, dynamic>,
+        );
       }
       // Create default settings if not exists
-      await _settingsCollection.doc('settings').set(SubscriptionSettingsModel.defaultSettings.toMap());
+      await _settingsCollection
+          .doc('settings')
+          .set(SubscriptionSettingsModel.defaultSettings.toMap());
       return SubscriptionSettingsModel.defaultSettings;
     } catch (e) {
       throw Exception('فشل في تحميل إعدادات الاشتراك: $e');
@@ -44,20 +51,36 @@ class SubscriptionRepository {
     return _subscribedPlacesCollection
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => SubscribedPlaceModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList(),
+        );
   }
 
   // Get all subscribed places with pagination
-  Stream<List<SubscribedPlaceModel>> getAllSubscribedPlacesPaginated({required int limit}) {
+  Stream<List<SubscribedPlaceModel>> getAllSubscribedPlacesPaginated({
+    required int limit,
+  }) {
     return _subscribedPlacesCollection
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => SubscribedPlaceModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList(),
+        );
   }
 
   // Get more subscribed places (pagination)
@@ -66,10 +89,15 @@ class SubscriptionRepository {
     String? afterPlaceId,
   }) async {
     try {
-      Query query = _subscribedPlacesCollection.orderBy('createdAt', descending: true);
+      Query query = _subscribedPlacesCollection.orderBy(
+        'createdAt',
+        descending: true,
+      );
 
       if (afterPlaceId != null) {
-        final lastDoc = await _subscribedPlacesCollection.doc(afterPlaceId).get();
+        final lastDoc = await _subscribedPlacesCollection
+            .doc(afterPlaceId)
+            .get();
         if (lastDoc.exists) {
           query = query.startAfterDocument(lastDoc);
         }
@@ -77,7 +105,12 @@ class SubscriptionRepository {
 
       final snapshot = await query.limit(limit).get();
       return snapshot.docs
-          .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map(
+            (doc) => SubscribedPlaceModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('فشل في تحميل المزيد من الأماكن: $e');
@@ -90,25 +123,46 @@ class SubscriptionRepository {
         .where('placeType', isEqualTo: type.englishName)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => SubscribedPlaceModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList(),
+        );
   }
 
   // Get subscribed places by type with pagination
-  Stream<List<SubscribedPlaceModel>> getSubscribedPlacesByTypePaginated({required PlaceType type, int limit = 10}) {
+  Stream<List<SubscribedPlaceModel>> getSubscribedPlacesByTypePaginated({
+    required PlaceType type,
+    int limit = 10,
+  }) {
     return _subscribedPlacesCollection
         .where('placeType', isEqualTo: type.englishName)
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => SubscribedPlaceModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList(),
+        );
   }
 
   // Get more places by type (pagination)
-  Future<List<SubscribedPlaceModel>> getMorePlacesByType({required PlaceType type, int limit = 10, String? afterPlaceId}) async {
+  Future<List<SubscribedPlaceModel>> getMorePlacesByType({
+    required PlaceType type,
+    int limit = 10,
+    String? afterPlaceId,
+  }) async {
     try {
       Query query = _subscribedPlacesCollection
           .where('placeType', isEqualTo: type.englishName)
@@ -116,7 +170,9 @@ class SubscriptionRepository {
           .limit(limit);
 
       if (afterPlaceId != null) {
-        final lastDoc = await _subscribedPlacesCollection.doc(afterPlaceId).get();
+        final lastDoc = await _subscribedPlacesCollection
+            .doc(afterPlaceId)
+            .get();
         if (lastDoc.exists) {
           query = query.startAfterDocument(lastDoc);
         }
@@ -124,7 +180,12 @@ class SubscriptionRepository {
 
       final snapshot = await query.get();
       return snapshot.docs
-          .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map(
+            (doc) => SubscribedPlaceModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('فشل في تحميل المزيد من الأماكن: $e');
@@ -136,7 +197,10 @@ class SubscriptionRepository {
     try {
       final doc = await _subscribedPlacesCollection.doc(id).get();
       if (doc.exists) {
-        return SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+        return SubscribedPlaceModel.fromMap(
+          doc.data() as Map<String, dynamic>,
+          doc.id,
+        );
       }
       return null;
     } catch (e) {
@@ -145,14 +209,17 @@ class SubscriptionRepository {
   }
 
   // Check if place is already subscribed
-  Future<SubscribedPlaceModel?> getSubscribedPlaceByPlaceId(String placeId, PlaceType placeType) async {
+  Future<SubscribedPlaceModel?> getSubscribedPlaceByPlaceId(
+    String placeId,
+    PlaceType placeType,
+  ) async {
     try {
       final snapshot = await _subscribedPlacesCollection
           .where('placeId', isEqualTo: placeId)
           .where('placeType', isEqualTo: placeType.englishName)
           .limit(1)
           .get();
-      
+
       if (snapshot.docs.isNotEmpty) {
         return SubscribedPlaceModel.fromMap(
           snapshot.docs.first.data() as Map<String, dynamic>,
@@ -176,7 +243,10 @@ class SubscriptionRepository {
   }
 
   // Update subscribed place
-  Future<void> updateSubscribedPlace(String id, Map<String, dynamic> updates) async {
+  Future<void> updateSubscribedPlace(
+    String id,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       await _subscribedPlacesCollection.doc(id).update(updates);
     } catch (e) {
@@ -200,7 +270,7 @@ class SubscriptionRepository {
       final payments = await _paymentRecordsCollection
           .where('subscribedPlaceId', isEqualTo: id)
           .get();
-      
+
       for (final doc in payments.docs) {
         await doc.reference.delete();
       }
@@ -220,9 +290,16 @@ class SubscriptionRepository {
         .where('subscribedPlaceId', isEqualTo: subscribedPlaceId)
         .orderBy('paymentDate', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => PaymentRecordModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => PaymentRecordModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList(),
+        );
   }
 
   // Get all payment records (for statistics)
@@ -231,9 +308,14 @@ class SubscriptionRepository {
       final snapshot = await _paymentRecordsCollection
           .orderBy('paymentDate', descending: true)
           .get();
-      
+
       return snapshot.docs
-          .map((doc) => PaymentRecordModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map(
+            (doc) => PaymentRecordModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('فشل في تحميل سجلات الدفع: $e');
@@ -261,7 +343,11 @@ class SubscriptionRepository {
   }
 
   // Delete payment record
-  Future<void> deletePaymentRecord(String id, String subscribedPlaceId, double amount) async {
+  Future<void> deletePaymentRecord(
+    String id,
+    String subscribedPlaceId,
+    double amount,
+  ) async {
     try {
       await _paymentRecordsCollection.doc(id).delete();
 
@@ -293,7 +379,7 @@ class SubscriptionRepository {
   Future<void> syncPlacesOfType(PlaceType type) async {
     try {
       final collection = _firestore.collection(type.collectionName);
-      
+
       // Get all approved/active places
       QuerySnapshot snapshot;
       switch (type) {
@@ -325,7 +411,7 @@ class SubscriptionRepository {
       // Add each place if not already exists
       for (final doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        
+
         // Check if already exists
         final existing = await getSubscribedPlaceByPlaceId(doc.id, type);
         if (existing == null) {
@@ -445,13 +531,20 @@ class SubscriptionRepository {
       final paymentsSnapshot = await _paymentRecordsCollection.get();
 
       final places = placesSnapshot.docs
-          .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map(
+            (doc) => SubscribedPlaceModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
           .toList();
 
       int totalPlaces = places.length;
       int activePlaces = places.where((p) => !p.isSubscriptionExpired).length;
       int expiredPlaces = places.where((p) => p.isSubscriptionExpired).length;
-      int expiringPlaces = places.where((p) => p.subscriptionStatus == 'ينتهي قريباً').length;
+      int expiringPlaces = places
+          .where((p) => p.subscriptionStatus == 'ينتهي قريباً')
+          .length;
 
       double totalRevenue = 0;
       for (final doc in paymentsSnapshot.docs) {
@@ -484,15 +577,23 @@ class SubscriptionRepository {
     try {
       final lowerQuery = query.toLowerCase();
       final snapshot = await _subscribedPlacesCollection.get();
-      
+
       return snapshot.docs
-          .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-          .where((place) =>
-              place.placeName.toLowerCase().contains(lowerQuery) ||
-              place.ownerName.toLowerCase().contains(lowerQuery) ||
-              place.phone.contains(lowerQuery) ||
-              (place.governorate?.toLowerCase().contains(lowerQuery) ?? false) ||
-              (place.city?.toLowerCase().contains(lowerQuery) ?? false))
+          .map(
+            (doc) => SubscribedPlaceModel.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
+          .where(
+            (place) =>
+                place.placeName.toLowerCase().contains(lowerQuery) ||
+                place.ownerName.toLowerCase().contains(lowerQuery) ||
+                place.phone.contains(lowerQuery) ||
+                (place.governorate?.toLowerCase().contains(lowerQuery) ??
+                    false) ||
+                (place.city?.toLowerCase().contains(lowerQuery) ?? false),
+          )
           .toList();
     } catch (e) {
       throw Exception('فشل في البحث: $e');
@@ -505,8 +606,15 @@ class SubscriptionRepository {
         .where('subscriptionEndDate', isLessThan: Timestamp.now())
         .orderBy('subscriptionEndDate', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => SubscribedPlaceModel.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => SubscribedPlaceModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                ),
+              )
+              .toList(),
+        );
   }
 }

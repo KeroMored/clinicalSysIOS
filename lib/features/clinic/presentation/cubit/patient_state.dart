@@ -15,11 +15,29 @@ class PatientActionLoading extends PatientState {}
 
 class PatientsLoaded extends PatientState {
   final List<PatientModel> patients;
+  final bool hasMore;
+  final bool isLoadingMore;
 
-  PatientsLoaded(this.patients);
+  PatientsLoaded(
+    this.patients, {
+    this.hasMore = true,
+    this.isLoadingMore = false,
+  });
+
+  PatientsLoaded copyWith({
+    List<PatientModel>? patients,
+    bool? hasMore,
+    bool? isLoadingMore,
+  }) {
+    return PatientsLoaded(
+      patients ?? this.patients,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+    );
+  }
 
   @override
-  List<Object?> get props => [patients];
+  List<Object?> get props => [patients, hasMore, isLoadingMore];
 }
 
 class PatientDetailsLoaded extends PatientState {

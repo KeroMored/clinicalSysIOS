@@ -44,8 +44,9 @@ class WorksContentCard extends StatelessWidget {
               content.type != 'video' &&
               content.type != 'youtube')
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
               child: Image.network(
                 content.imageUrl!,
                 width: double.infinity,
@@ -61,8 +62,7 @@ class WorksContentCard extends StatelessWidget {
                 height: 200,
                 decoration: const BoxDecoration(
                   color: Colors.black,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
@@ -74,9 +74,12 @@ class WorksContentCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           const Center(
-                        child: Icon(Icons.video_library,
-                            size: 80, color: Colors.white),
-                      ),
+                            child: Icon(
+                              Icons.video_library,
+                              size: 80,
+                              color: Colors.white,
+                            ),
+                          ),
                     ),
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -84,8 +87,11 @@ class WorksContentCard extends StatelessWidget {
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.play_arrow,
-                          size: 40, color: Colors.white),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        size: 40,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -100,15 +106,13 @@ class WorksContentCard extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.purple.shade900,
-                      Colors.purple.shade700,
-                    ],
+                    colors: [Colors.purple.shade900, Colors.purple.shade700],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
@@ -133,8 +137,11 @@ class WorksContentCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.play_arrow,
-                          size: 50, color: Colors.white),
+                      child: const Icon(
+                        Icons.play_arrow,
+                        size: 50,
+                        color: Colors.white,
+                      ),
                     ),
                     // Video label
                     Positioned(
@@ -142,7 +149,9 @@ class WorksContentCard extends StatelessWidget {
                       left: 16,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.6),
                           borderRadius: BorderRadius.circular(20),
@@ -150,13 +159,18 @@ class WorksContentCard extends StatelessWidget {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.play_circle_fill,
-                                color: Colors.white, size: 16),
+                            Icon(
+                              Icons.play_circle_fill,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                             SizedBox(width: 6),
                             Text(
                               'اضغط للتشغيل',
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -177,8 +191,8 @@ class WorksContentCard extends StatelessWidget {
                       content.type == 'offer'
                           ? Icons.local_offer
                           : content.type == 'video'
-                              ? Icons.video_library
-                              : Icons.image,
+                          ? Icons.video_library
+                          : Icons.image,
                       color: Colors.purple,
                       size: 20,
                     ),
@@ -187,8 +201,8 @@ class WorksContentCard extends StatelessWidget {
                       content.type == 'offer'
                           ? 'عرض خاص'
                           : content.type == 'video' || content.type == 'youtube'
-                              ? 'فيديو'
-                              : 'معرض الأعمال',
+                          ? 'فيديو'
+                          : 'معرض الأعمال',
                       style: TextStyle(
                         color: Colors.purple[700],
                         fontSize: 12,
@@ -209,19 +223,13 @@ class WorksContentCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     content.description!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   ),
                 ],
                 const SizedBox(height: 8),
                 Text(
                   _formatDate(content.createdAt),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                 ),
               ],
             ),

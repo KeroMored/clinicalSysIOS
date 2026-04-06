@@ -39,7 +39,14 @@ class SubscriptionLoaded extends SubscriptionState {
   });
 
   @override
-  List<Object?> get props => [places, settings, statistics, filterType, searchQuery, hasMoreData];
+  List<Object?> get props => [
+    places,
+    settings,
+    statistics,
+    filterType,
+    searchQuery,
+    hasMoreData,
+  ];
 
   SubscriptionLoaded copyWith({
     List<SubscribedPlaceModel>? places,

@@ -6,24 +6,67 @@ import '../../../../core/widgets/modern_card.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/laboratory_model.dart';
 import 'laboratory_control_page.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
-/// لوحة تحكم مالك معمل التحاليل
+/// إدارة مالك معمل التحاليل
 /// يتم توجيه المالك إلى صفحة التحكم الخاصة بالمعمل
 class LaboratoryOwnerDashboard extends StatefulWidget {
   const LaboratoryOwnerDashboard({Key? key}) : super(key: key);
 
   @override
-  State<LaboratoryOwnerDashboard> createState() => _LaboratoryOwnerDashboardState();
+  State<LaboratoryOwnerDashboard> createState() =>
+      _LaboratoryOwnerDashboardState();
 }
 
 class _LaboratoryOwnerDashboardState extends State<LaboratoryOwnerDashboard> {
+  static const Color _primaryColor = Color(0xFF0B8293);
+
+  SliverAppBar _buildOwnerSliverAppBar(String title) {
+    return SliverAppBar(
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
+      ),
+      centerTitle: true,
+      pinned: true,
+      elevation: 0,
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0B8293), Color(0xFF179AAC)],
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = context.read<AuthCubit>().state;
-    
+
     if (authState is! Authenticated) {
       return Scaffold(
-        appBar: AppBar(title: const Text('لوحة التحكم')),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0.5,
+          centerTitle: true,
+          title: const Text(
+            'لوحة التحكم',
+            style: TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          iconTheme: const IconThemeData(color: _primaryColor),
+        ),
         body: const Center(child: Text('الرجاء تسجيل الدخول')),
       );
     }
@@ -38,22 +81,9 @@ class _LaboratoryOwnerDashboardState extends State<LaboratoryOwnerDashboard> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return CustomScrollView(
               slivers: [
-                SliverAppBar(
-                  title: const Text(
-                    'لوحة تحكم المعامل',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  centerTitle: true,
-                  pinned: true,
-                  elevation: 0,
-                  flexibleSpace: Container(
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.laboratoryGradient,
-                    ),
-                  ),
-                ),
+                _buildOwnerSliverAppBar('إدارة المعامل'),
                 const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: AppLoadingIndicator()),
                 ),
               ],
             );
@@ -62,24 +92,9 @@ class _LaboratoryOwnerDashboardState extends State<LaboratoryOwnerDashboard> {
           if (snapshot.hasError) {
             return CustomScrollView(
               slivers: [
-                SliverAppBar(
-                  title: const Text(
-                    'لوحة تحكم المعامل',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  centerTitle: true,
-                  pinned: true,
-                  elevation: 0,
-                  flexibleSpace: Container(
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.laboratoryGradient,
-                    ),
-                  ),
-                ),
+                _buildOwnerSliverAppBar('إدارة المعامل'),
                 SliverFillRemaining(
-                  child: Center(
-                    child: Text('حدث خطأ: ${snapshot.error}'),
-                  ),
+                  child: Center(child: Text('حدث خطأ: ${snapshot.error}')),
                 ),
               ],
             );
@@ -88,24 +103,9 @@ class _LaboratoryOwnerDashboardState extends State<LaboratoryOwnerDashboard> {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return CustomScrollView(
               slivers: [
-                SliverAppBar(
-                  title: const Text(
-                    'لوحة تحكم المعامل',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  centerTitle: true,
-                  pinned: true,
-                  elevation: 0,
-                  flexibleSpace: Container(
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.laboratoryGradient,
-                    ),
-                  ),
-                ),
+                _buildOwnerSliverAppBar('إدارة المعامل'),
                 const SliverFillRemaining(
-                  child: Center(
-                    child: Text('لا توجد معامل مسجلة باسمك'),
-                  ),
+                  child: Center(child: Text('لا توجد معامل مسجلة باسمك')),
                 ),
               ],
             );
@@ -113,36 +113,26 @@ class _LaboratoryOwnerDashboardState extends State<LaboratoryOwnerDashboard> {
 
           // If only one laboratory, navigate directly to its control page
           if (snapshot.data!.docs.length == 1) {
-            final laboratory = LaboratoryModel.fromFirestore(snapshot.data!.docs.first);
-            
+            final laboratory = LaboratoryModel.fromFirestore(
+              snapshot.data!.docs.first,
+            );
+
             // Navigate to control page immediately
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => LaboratoryControlPage(laboratory: laboratory),
+                  builder: (context) =>
+                      LaboratoryControlPage(laboratory: laboratory),
                 ),
               );
             });
 
             return CustomScrollView(
               slivers: [
-                SliverAppBar(
-                  title: const Text(
-                    'لوحة تحكم المعامل',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                  centerTitle: true,
-                  pinned: true,
-                  elevation: 0,
-                  flexibleSpace: Container(
-                    decoration: BoxDecoration(
-                      gradient: AppTheme.laboratoryGradient,
-                    ),
-                  ),
-                ),
+                _buildOwnerSliverAppBar('إدارة المعامل'),
                 const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: AppLoadingIndicator()),
                 ),
               ],
             );
@@ -155,109 +145,108 @@ class _LaboratoryOwnerDashboardState extends State<LaboratoryOwnerDashboard> {
 
           return CustomScrollView(
             slivers: [
-              SliverAppBar(
-                title: Text(
-                  'معاملك (${laboratories.length})',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                centerTitle: true,
-                pinned: true,
-                elevation: 0,
-                flexibleSpace: Container(
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.laboratoryGradient,
-                  ),
-                ),
-              ),
+              _buildOwnerSliverAppBar('معاملك (${laboratories.length})'),
               SliverPadding(
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final laboratory = laboratories[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: ModernCard(
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(16),
-                            leading: CircleAvatar(
-                              radius: 30,
-                              backgroundImage: laboratory.logoUrl != null && laboratory.logoUrl!.isNotEmpty
-                                  ? NetworkImage(laboratory.logoUrl!)
-                                  : null,
-                              child: laboratory.logoUrl == null || laboratory.logoUrl!.isEmpty
-                                  ? const Icon(Icons.biotech, size: 30)
-                                  : null,
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final laboratory = laboratories[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: ModernCard(
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          leading: CircleAvatar(
+                            radius: 30,
+                            backgroundImage:
+                                laboratory.logoUrl != null &&
+                                    laboratory.logoUrl!.isNotEmpty
+                                ? NetworkImage(laboratory.logoUrl!)
+                                : null,
+                            child:
+                                laboratory.logoUrl == null ||
+                                    laboratory.logoUrl!.isEmpty
+                                ? const Icon(Icons.biotech, size: 30)
+                                : null,
+                          ),
+                          title: Text(
+                            laboratory.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
-                            title: Text(
-                              laboratory.name,
-                              style: const TextStyle(
-                                fontSize: 18,
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      laboratory.address,
+                                      style: const TextStyle(fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.phone,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    laboratory.ownerPhone.isNotEmpty
+                                        ? laboratory.ownerPhone
+                                        : 'لا يوجد',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.laboratoryGradient,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'إدارة',
+                              style: TextStyle(
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        laboratory.address,
-                                        style: const TextStyle(fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.phone, size: 16, color: Colors.grey),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      laboratory.ownerPhone.isNotEmpty
-                                          ? laboratory.ownerPhone
-                                          : 'لا يوجد',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                gradient: AppTheme.laboratoryGradient,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                'إدارة',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => LaboratoryControlPage(
-                                    laboratory: laboratory,
-                                  ),
-                                ),
-                              );
-                            },
                           ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LaboratoryControlPage(
+                                  laboratory: laboratory,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                    childCount: laboratories.length,
-                  ),
+                      ),
+                    );
+                  }, childCount: laboratories.length),
                 ),
               ),
             ],

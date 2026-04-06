@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_visit_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../cubit/patient_state.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddVisitScreen extends StatefulWidget {
   final String patientId;
@@ -25,13 +25,16 @@ class AddVisitScreen extends StatefulWidget {
 }
 
 class _AddVisitScreenState extends State<AddVisitScreen> {
+  static const Color _primaryColor = Color(0xFF0B8293);
+  static const Color _backgroundColor = Color(0xFFF3F8FB);
+  static const Color _textPrimary = Color(0xFF0F172A);
+
   final _formKey = GlobalKey<FormState>();
   final _diagnosisController = TextEditingController();
   final _medicationController = TextEditingController();
-  
+
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
-  List<String> _medications = [];
   List<File> _prescriptionImages = []; // قائمة صور
   List<String> _existingImageUrls = []; // صور موجودة من قبل
   bool _isLoading = false;
@@ -43,7 +46,8 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       _diagnosisController.text = widget.visit!.diagnosis ?? '';
       _selectedDate = widget.visit!.visitDate;
       _selectedTime = TimeOfDay.fromDateTime(widget.visit!.visitDate);
-      _medications = List.from(widget.visit!.medications);
+      // تحويل قائمة الأدوية إلى نص متعدد الأسطر
+      _medicationController.text = widget.visit!.medications.join('\n');
       _existingImageUrls = List.from(widget.visit!.prescriptionImageUrls);
     }
   }
@@ -60,33 +64,31 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     final isEdit = widget.visit != null;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(gradient: AppTheme.clinicGradient),
-        child: SafeArea(
-          child: BlocListener<PatientCubit, PatientState>(
-            listener: (context, state) {
-              if (state is PatientActionLoading) {
-                setState(() => _isLoading = true);
-              } else {
-                setState(() => _isLoading = false);
-                if (state is PatientActionSuccess) {
-                  Navigator.pop(context, true);
-                } else if (state is PatientError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+      backgroundColor: _backgroundColor,
+      body: SafeArea(
+        child: BlocListener<PatientCubit, PatientState>(
+          listener: (context, state) {
+            if (state is PatientActionLoading) {
+              setState(() => _isLoading = true);
+            } else {
+              setState(() => _isLoading = false);
+              if (state is PatientActionSuccess) {
+                Navigator.pop(context, true);
+              } else if (state is PatientError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
-            },
-            child: Column(
-              children: [
-                _buildAppBar(isEdit),
-                Expanded(child: _buildForm()),
-              ],
-            ),
+            }
+          },
+          child: Column(
+            children: [
+              _buildAppBar(isEdit),
+              Expanded(child: _buildForm()),
+            ],
           ),
         ),
       ),
@@ -94,12 +96,20 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   }
 
   Widget _buildAppBar(bool isEdit) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+      ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: _textPrimary,
+              size: 18,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           const SizedBox(width: 8),
@@ -107,12 +117,35 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             child: Text(
               isEdit ? 'تعديل الكشف' : 'إضافة كشف جديد',
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                color: _textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: AppLoadingIndicator(
+                  color: _primaryColor,
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(
+                Icons.check_rounded,
+                color: _textPrimary,
+                size: 22,
+              ),
+              onPressed: _submitForm,
+              tooltip: isEdit ? 'تحديث الكشف' : 'حفظ الكشف',
+            ),
         ],
       ),
     );
@@ -123,18 +156,18 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
         ),
       ),
       child: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           children: [
             const SizedBox(height: 8),
-            _buildDateTimeSection(),
-            const SizedBox(height: 24),
+            //  _buildDateTimeSection(),
+            //    const SizedBox(height: 24),
             _buildDiagnosisField(),
             const SizedBox(height: 24),
             _buildMedicationsSection(),
@@ -155,9 +188,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         const Text(
           'تاريخ ووقت الكشف',
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -175,8 +208,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, 
-                        color: AppTheme.primaryColor, size: 20),
+                      const Icon(
+                        Icons.calendar_today,
+                        color: _primaryColor,
+                        size: 18,
+                      ),
                       const SizedBox(width: 12),
                       Text(
                         DateFormat('yyyy/MM/dd', 'ar').format(_selectedDate),
@@ -200,8 +236,11 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.access_time, 
-                        color: AppTheme.primaryColor, size: 20),
+                      const Icon(
+                        Icons.access_time,
+                        color: _primaryColor,
+                        size: 18,
+                      ),
                       const SizedBox(width: 12),
                       Text(
                         _selectedTime.format(context),
@@ -225,9 +264,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
         const Text(
           'التشخيص (اختياري)',
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -235,20 +274,20 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
           controller: _diagnosisController,
           maxLines: 4,
           decoration: InputDecoration(
-            hintText: 'اكتب تفاصيل التشخيص...',
+            hintText: ' التشخيص...',
             filled: true,
-            fillColor: Colors.grey[100],
+            fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+              borderSide: const BorderSide(color: _primaryColor, width: 1.8),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -265,70 +304,46 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'الأدوية المكتوبة',
+          'الأدوية المكتوبة (اختياري)',
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _medicationController,
-                decoration: InputDecoration(
-                  hintText: 'اسم الدواء',
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
-                  ),
-                ),
-                onSubmitted: (_) => _addMedication(),
-              ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _medicationController,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: 'الأدوية...',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: _addMedication,
-              icon: const Icon(Icons.add_circle, color: AppTheme.primaryColor),
-              iconSize: 40,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
             ),
-          ],
-        ),
-        if (_medications.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _medications.map((med) {
-              return Chip(
-                label: Text(med),
-                deleteIcon: const Icon(Icons.close, size: 18),
-                onDeleted: () => setState(() => _medications.remove(med)),
-                backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                labelStyle: const TextStyle(color: AppTheme.primaryColor),
-              );
-            }).toList(),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: _primaryColor, width: 1.8),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
           ),
-        ],
+        ),
       ],
     );
   }
 
   Widget _buildPrescriptionImageSection() {
     final totalImages = _prescriptionImages.length + _existingImageUrls.length;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -338,9 +353,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
             const Text(
               'صور الروشتة (اختياري)',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _textPrimary,
               ),
             ),
             if (totalImages > 0)
@@ -368,7 +383,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                   index,
                   isExisting,
                   isExisting ? _existingImageUrls[index] : null,
-                  isExisting ? null : _prescriptionImages[index - _existingImageUrls.length],
+                  isExisting
+                      ? null
+                      : _prescriptionImages[index - _existingImageUrls.length],
                 );
               },
             ),
@@ -383,9 +400,13 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 icon: const Icon(Icons.camera_alt),
                 label: const Text('التقاط صورة'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  side: const BorderSide(color: AppTheme.primaryColor),
-                  foregroundColor: AppTheme.primaryColor,
+                  padding: const EdgeInsets.all(14),
+                  side: const BorderSide(color: _primaryColor),
+                  foregroundColor: _primaryColor,
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -399,9 +420,13 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 icon: const Icon(Icons.photo_library),
                 label: const Text('من المعرض'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  side: const BorderSide(color: AppTheme.primaryColor),
-                  foregroundColor: AppTheme.primaryColor,
+                  padding: const EdgeInsets.all(14),
+                  side: const BorderSide(color: _primaryColor),
+                  foregroundColor: _primaryColor,
+                  textStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -417,38 +442,29 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
   Widget _buildSubmitButton() {
     final isEdit = widget.visit != null;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return ElevatedButton(
+      onPressed: _isLoading ? null : _submitForm,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: _primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        minimumSize: const Size.fromHeight(50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _submitForm,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Text(
-                isEdit ? 'تحديث الكشف' : 'حفظ الكشف',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+      child: _isLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: AppLoadingIndicator(color: Colors.white, strokeWidth: 2),
+            )
+          : Text(
+              isEdit ? 'تحديث الكشف' : 'حفظ الكشف',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
-      ),
+            ),
     );
   }
 
@@ -475,16 +491,6 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
     }
   }
 
-  void _addMedication() {
-    final medication = _medicationController.text.trim();
-    if (medication.isNotEmpty && !_medications.contains(medication)) {
-      setState(() {
-        _medications.add(medication);
-        _medicationController.clear();
-      });
-    }
-  }
-
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
@@ -500,8 +506,13 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       });
     }
   }
-  
-  Widget _buildImageThumbnail(int index, bool isExisting, String? url, File? file) {
+
+  Widget _buildImageThumbnail(
+    int index,
+    bool isExisting,
+    String? url,
+    File? file,
+  ) {
     return Container(
       width: 100,
       margin: const EdgeInsets.only(left: 8),
@@ -516,12 +527,7 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                     height: 120,
                     fit: BoxFit.cover,
                   )
-                : Image.file(
-                    file!,
-                    width: 100,
-                    height: 120,
-                    fit: BoxFit.cover,
-                  ),
+                : Image.file(file!, width: 100, height: 120, fit: BoxFit.cover),
           ),
           Positioned(
             top: 4,
@@ -531,7 +537,9 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
                 if (isExisting) {
                   _existingImageUrls.removeAt(index);
                 } else {
-                  _prescriptionImages.removeAt(index - _existingImageUrls.length);
+                  _prescriptionImages.removeAt(
+                    index - _existingImageUrls.length,
+                  );
                 }
               }),
               icon: const Icon(Icons.close, color: Colors.white, size: 18),
@@ -557,31 +565,41 @@ class _AddVisitScreenState extends State<AddVisitScreen> {
       _selectedTime.hour,
       _selectedTime.minute,
     );
-    
+
     final diagnosisText = _diagnosisController.text.trim();
+
+    // تحويل نص الأدوية إلى قائمة بفصل السطور وإزالة الفراغات
+    final medicationsText = _medicationController.text.trim();
+    final medications = medicationsText.isEmpty
+        ? <String>[]
+        : medicationsText
+              .split('\n')
+              .map((line) => line.trim())
+              .where((line) => line.isNotEmpty)
+              .toList();
 
     if (widget.visit != null) {
       // Update existing visit
       final updatedVisit = widget.visit!.copyWith(
         visitDate: visitDateTime,
         diagnosis: diagnosisText.isEmpty ? null : diagnosisText,
-        medications: _medications,
+        medications: medications,
         prescriptionImageUrls: _existingImageUrls,
       );
       context.read<PatientCubit>().updateVisit(
-            updatedVisit,
-            newPrescriptionImages: _prescriptionImages,
-          );
+        updatedVisit,
+        newPrescriptionImages: _prescriptionImages,
+      );
     } else {
       // Add new visit
       context.read<PatientCubit>().addVisit(
-            patientId: widget.patientId,
-            clinicId: widget.clinicId,
-            visitDate: visitDateTime,
-            diagnosis: diagnosisText.isEmpty ? null : diagnosisText,
-            medications: _medications,
-            prescriptionImages: _prescriptionImages,
-          );
+        patientId: widget.patientId,
+        clinicId: widget.clinicId,
+        visitDate: visitDateTime,
+        diagnosis: diagnosisText.isEmpty ? null : diagnosisText,
+        medications: medications,
+        prescriptionImages: _prescriptionImages,
+      );
     }
   }
 }

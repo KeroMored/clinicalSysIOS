@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/clinic_department.dart';
+import 'clinics_search_delegate.dart';
 import 'clinics_list_screen.dart';
 
 class ClinicHomePage extends StatelessWidget {
@@ -11,76 +12,102 @@ class ClinicHomePage extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFFAFBFC),
+        backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
-          backgroundColor: Color(0xFF0891B2),
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
           elevation: 0,
           centerTitle: true,
-          title: const Text(
-            'العيادات الطبية',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: Color(0xFF0B8293),
+            ),
+            onPressed: () => Navigator.maybePop(context),
+          ),
+          title: const Text(
+            'العيادات الطبيه',
+            style: TextStyle(
+              color: Color(0xFF0B8293),
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Premium Header Card
-              Container(
-
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Material(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-              
-
-                ),
-                child: Row(
-                  children: [
-                
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      showSearch(
+                        context: context,
+                        delegate: ClinicsSearchDelegate(),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 13,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
                         children: [
-                          const Text(
-                            'اختر التخصص المناسب',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
+                          const Icon(
+                            Icons.search_rounded,
+                            color: Color(0xFF94A3B8),
+                            size: 20,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(width: 8),
                           Text(
-                            'أفضل الأطباء في جميع التخصصات',
+                            'ابحث عن تخصص...',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
+                              color: Colors.grey[500],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                     ),
-                
-                  ],
+                  ),
                 ),
               ),
-
-              // Departments List
+              const SizedBox(height: 18),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'التخصصات الطبيه',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: ClinicDepartment.values.length - 1,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    mainAxisExtent: 120,
+                  ),
                   itemBuilder: (context, index) {
                     final department = ClinicDepartment.values[index];
                     return _buildDepartmentCard(context, department, index);
@@ -95,7 +122,11 @@ class ClinicHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildDepartmentCard(BuildContext context, ClinicDepartment department, int index) {
+  Widget _buildDepartmentCard(
+    BuildContext context,
+    ClinicDepartment department,
+    int index,
+  ) {
     final icons = {
       ClinicDepartment.pediatrics: MdiIcons.baby,
       ClinicDepartment.dentistry: MdiIcons.toothOutline,
@@ -134,128 +165,71 @@ class ClinicHomePage extends StatelessWidget {
     final color = colors[department] ?? const Color(0xFF0891B2);
 
     return Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: 0,
-            ),
-          ],
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.merge(
+          (index % 2 == 0)
+              ? Border(left: BorderSide(color: color, width: 0.5))
+              : Border(right: BorderSide(color: color, width: 0.5)),
+
+          Border(bottom: BorderSide(color: color, width: 1.5)),
         ),
-        child: Material(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      ClinicsListScreen(department: department),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    const begin = Offset(0.3, 0);
-                    const end = Offset.zero;
-                    const curve = Curves.easeOutCubic;
-                    var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                    var offsetAnimation = animation.drive(tween);
-                    return SlideTransition(
-                      position: offsetAnimation,
-                      child: FadeTransition(opacity: animation, child: child),
-                    );
-                  },
-                  transitionDuration: const Duration(milliseconds: 350),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  // Icon Container with Gradient
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color,
-                          color.withValues(alpha: 0.7),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 32,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  // Department Name
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          department.arabicName,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'متاح الآن',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: color,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 14,
-                              color: Colors.grey[400],
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        color: Colors.white,
+      ),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ClinicsListScreen(department: department),
               ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, size: 24, color: color),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  department.arabicName,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                    height: 1.2,
+                  ),
+                ),
+                // const SizedBox(height: 2),
+                // Text(
+                //   'متاح',
+                //   style: TextStyle(
+                //     fontSize: 11,
+                //     fontWeight: FontWeight.w600,
+                //     color: Colors.grey[500],
+                //   ),
+                // ),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
   }
 }

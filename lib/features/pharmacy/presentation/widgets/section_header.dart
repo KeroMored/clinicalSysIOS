@@ -4,11 +4,7 @@ class SectionHeader extends StatelessWidget {
   final String title;
   final VoidCallback? onSeeAll;
 
-  const SectionHeader({
-    super.key,
-    required this.title,
-    this.onSeeAll,
-  });
+  const SectionHeader({super.key, required this.title, this.onSeeAll});
 
   @override
   Widget build(BuildContext context) {
@@ -19,16 +15,10 @@ class SectionHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           if (onSeeAll != null)
-            TextButton(
-              onPressed: onSeeAll,
-              child: const Text('عرض الكل'),
-            ),
+            TextButton(onPressed: onSeeAll, child: const Text('عرض الكل')),
         ],
       ),
     );

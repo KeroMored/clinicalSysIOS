@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../cubit/patient_cubit.dart';
 import '../cubit/patient_state.dart';
 import '../widgets/patient_card.dart';
 import 'add_patient_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PatientsManagementScreen extends StatefulWidget {
   final String clinicId;
@@ -12,21 +12,38 @@ class PatientsManagementScreen extends StatefulWidget {
   const PatientsManagementScreen({super.key, required this.clinicId});
 
   @override
-  State<PatientsManagementScreen> createState() => _PatientsManagementScreenState();
+  State<PatientsManagementScreen> createState() =>
+      _PatientsManagementScreenState();
 }
 
 class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
+
+  static const Color _primaryColor = Color(0xFF0B8293);
+  static const Color _backgroundColor = Color(0xFFF3F8FB);
+  static const Color _textPrimary = Color(0xFF0F172A);
+  static const Color _textSecondary = Color(0xFF64748B);
 
   @override
   void initState() {
     super.initState();
     context.read<PatientCubit>().loadClinicPatients(widget.clinicId);
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    if (_scrollController.position.extentAfter < 240) {
+      context.read<PatientCubit>().loadMoreClinicPatients();
+    }
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -36,10 +53,9 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        backgroundColor: _backgroundColor,
         body: Container(
-          decoration: BoxDecoration(
-            gradient: AppTheme.clinicGradient,
-          ),
+          color: _backgroundColor,
           child: SafeArea(
             child: Column(
               children: [
@@ -64,7 +80,8 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
           },
           icon: const Icon(Icons.person_add),
           label: const Text('إضافة مريض'),
-          backgroundColor: AppTheme.primaryColor,
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
         ),
       ),
     );
@@ -72,36 +89,47 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
 
   Widget _buildAppBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDDE7EF)),
+      ),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: _textPrimary,
+              size: 18,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           const Expanded(
             child: Text(
               'متابعة المرضى',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                color: _textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              color: _primaryColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.people_rounded,
-              color: Colors.white,
-              size: 28,
+              color: _primaryColor,
+              size: 20,
             ),
           ),
+          const SizedBox(width: 6),
         ],
       ),
     );
@@ -113,16 +141,28 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: _textPrimary, fontSize: 13),
         decoration: InputDecoration(
           hintText: 'ابحث عن مريض...',
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-          prefixIcon: const Icon(Icons.search, color: Colors.white),
+          hintStyle: const TextStyle(color: _textSecondary, fontSize: 12),
+          prefixIcon: const Icon(Icons.search, color: _primaryColor, size: 20),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.2),
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 12,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFDDE7EF)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _primaryColor, width: 1.5),
           ),
         ),
       ),
@@ -142,18 +182,13 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
           context.read<PatientCubit>().loadClinicPatients(widget.clinicId);
         } else if (state is PatientError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
           );
         }
       },
       builder: (context, state) {
         if (state is PatientLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          );
+          return const Center(child: AppLoadingIndicator(color: _primaryColor));
         }
 
         if (state is PatientsLoaded) {
@@ -164,22 +199,37 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
                 patient.phoneNumber.contains(query);
           }).toList();
 
-          if (filteredPatients.isEmpty) {
+          if (filteredPatients.isEmpty && !state.isLoadingMore) {
             return _buildEmptyState();
           }
 
           return Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-              ),
+              border: Border(top: BorderSide(color: Color(0xFFDDE7EF))),
             ),
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: filteredPatients.length,
+              itemCount:
+                  filteredPatients.length + (state.isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
+                if (index == filteredPatients.length) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: AppLoadingIndicator(
+                          strokeWidth: 2.5,
+                          color: _primaryColor,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
                 return PatientCard(
                   patient: filteredPatients[index],
                   clinicId: widget.clinicId,
@@ -196,28 +246,21 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
 
   Widget _buildEmptyState() {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
+        border: Border(top: BorderSide(color: Color(0xFFDDE7EF))),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.person_search,
-              size: 100,
-              color: Colors.grey[300],
-            ),
+            Icon(Icons.person_search, size: 72, color: Colors.grey[350]),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isEmpty ? 'لا يوجد مرضى' : 'لم يتم العثور على نتائج',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
                 color: Colors.grey[700],
               ),
             ),
@@ -226,10 +269,7 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
               _searchQuery.isEmpty
                   ? 'ابدأ بإضافة المرضى من الزر أدناه'
                   : 'حاول البحث باسم أو رقم آخر',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),

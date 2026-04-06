@@ -41,15 +41,15 @@ class MedicineRequestModel {
   final String userId;
   final String userName;
   final String userEmail;
-  
+
   // New: support multiple medicines
   final List<MedicineMini> medicines;
-  
+
   // Legacy fields for backward compatibility
   final String? medicineName;
   final String? imageUrl;
   final int? quantity;
-  
+
   final String phoneNumber;
   final String? whatsappNumber;
   final String? notes;
@@ -74,7 +74,7 @@ class MedicineRequestModel {
 
   // Helper to check if this is old format (single medicine)
   bool get isLegacyFormat => medicineName != null && medicines.isEmpty;
-  
+
   // Helper to get all medicines (handles both old and new format)
   List<MedicineMini> get allMedicines {
     if (medicines.isNotEmpty) return medicines;
@@ -84,7 +84,7 @@ class MedicineRequestModel {
           medicineName: medicineName!,
           quantity: quantity ?? 1,
           imageUrl: imageUrl,
-        )
+        ),
       ];
     }
     return [];
@@ -92,14 +92,14 @@ class MedicineRequestModel {
 
   factory MedicineRequestModel.fromJson(Map<String, dynamic> json) {
     List<MedicineMini> medicinesList = [];
-    
+
     // Check if new format (medicines array)
     if (json['medicines'] != null && json['medicines'] is List) {
       medicinesList = (json['medicines'] as List)
           .map((m) => MedicineMini.fromJson(m as Map<String, dynamic>))
           .toList();
     }
-    
+
     return MedicineRequestModel(
       id: json['id'] ?? '',
       userId: json['userId'] ?? '',
@@ -131,7 +131,7 @@ class MedicineRequestModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'status': status,
     };
-    
+
     // Add medicines array if present
     if (medicines.isNotEmpty) {
       map['medicines'] = medicines.map((m) => m.toJson()).toList();
@@ -141,7 +141,7 @@ class MedicineRequestModel {
       map['imageUrl'] = imageUrl;
       map['quantity'] = quantity;
     }
-    
+
     return map;
   }
 

@@ -16,6 +16,9 @@
     
     <!-- Permission for Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Permission for step counter sensors -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     
     <!-- Permission for Exact Alarms (Android 12+) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -31,7 +34,7 @@
     <uses-permission android:name="android.permission.CALL_PHONE"/>
     
     <application
-        android:label="Mallawy Health Care"
+        android:label="Mallawy Care"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">

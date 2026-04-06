@@ -19,9 +19,11 @@ class RadiologyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Calculate if radiology center is currently open
     final isOpen = WorkingHoursHelper.isServiceOpen(
-      workingHours: radiology.workingHours.map((key, value) => MapEntry(key, value.toMap())),
+      workingHours: radiology.workingHours.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ),
     );
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -56,7 +58,8 @@ class RadiologyCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.radiologyGradient.colors[0].withValues(alpha: 0.25),
+                            color: AppTheme.radiologyGradient.colors[0]
+                                .withValues(alpha: 0.25),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -77,12 +80,13 @@ class RadiologyCard extends StatelessWidget {
                           // Name
                           Text(
                             radiology.centerName,
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.darkColor,
-                              fontSize: 16,
-                              height: 1.3,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkColor,
+                                  fontSize: 16,
+                                  height: 1.3,
+                                ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -145,10 +149,7 @@ class RadiologyCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 // Divider
-                Container(
-                  height: 1,
-                  color: Colors.grey[200],
-                ),
+                Container(height: 1, color: Colors.grey[200]),
                 const SizedBox(height: 12),
                 // Bottom Info Row
                 Row(
@@ -167,7 +168,9 @@ class RadiologyCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF667EEA).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFF667EEA,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -198,16 +201,25 @@ class RadiologyCard extends StatelessWidget {
                     Expanded(
                       flex: 1,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.amber.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
-mainAxisAlignment: MainAxisAlignment.center,         
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.star, color: Colors.amber, size: 16),
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
                             const SizedBox(width: 5),
                             Text(
                               radiology.averageRating.toStringAsFixed(1),
@@ -225,16 +237,25 @@ mainAxisAlignment: MainAxisAlignment.center,
                     Expanded(
                       flex: 1,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
-mainAxisAlignment: MainAxisAlignment.center,         
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.favorite, color: Colors.red, size: 16),
+                            const Icon(
+                              Icons.favorite,
+                              color: Colors.red,
+                              size: 16,
+                            ),
                             const SizedBox(width: 5),
                             Text(
                               '${radiology.totalLikes}',
@@ -253,16 +274,25 @@ mainAxisAlignment: MainAxisAlignment.center,
                       Expanded(
                         flex: 2,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.teal.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: Colors.teal.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Row(
-mainAxisAlignment: MainAxisAlignment.center,         
-                   children: [
-                              const Icon(Icons.near_me, color: Colors.teal, size: 16),
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.near_me,
+                                color: Colors.teal,
+                                size: 16,
+                              ),
                               const SizedBox(width: 5),
                               Text(
                                 distance!,

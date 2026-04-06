@@ -49,7 +49,7 @@ class ClinicReviewsButton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // Text Info
             Expanded(
               child: Column(
@@ -72,8 +72,8 @@ class ClinicReviewsButton extends StatelessWidget {
                             index < averageRating.floor()
                                 ? Icons.star_rounded
                                 : (index < averageRating
-                                    ? Icons.star_half_rounded
-                                    : Icons.star_outline_rounded),
+                                      ? Icons.star_half_rounded
+                                      : Icons.star_outline_rounded),
                             color: const Color(0xFFFBBF24),
                             size: 16,
                           );
@@ -92,7 +92,7 @@ class ClinicReviewsButton extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Arrow Icon
             Icon(
               Icons.arrow_forward_ios_rounded,

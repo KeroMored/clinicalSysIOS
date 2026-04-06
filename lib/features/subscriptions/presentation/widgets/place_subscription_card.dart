@@ -51,7 +51,11 @@ class PlaceSubscriptionCard extends StatelessWidget {
               // Owner and phone
               Row(
                 children: [
-                  const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                  const Icon(
+                    Icons.person_outline,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -61,7 +65,11 @@ class PlaceSubscriptionCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Icon(Icons.phone_outlined, size: 16, color: Colors.grey),
+                  const Icon(
+                    Icons.phone_outlined,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     place.phone,
@@ -75,14 +83,22 @@ class PlaceSubscriptionCard extends StatelessWidget {
               if (place.governorate != null || place.city != null)
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        [place.governorate, place.city]
-                            .where((e) => e != null && e.isNotEmpty)
-                            .join(' - '),
-                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        [
+                          place.governorate,
+                          place.city,
+                        ].where((e) => e != null && e.isNotEmpty).join(' - '),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -96,7 +112,10 @@ class PlaceSubscriptionCard extends StatelessWidget {
                 children: [
                   // Total paid
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -104,7 +123,11 @@ class PlaceSubscriptionCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.payments_outlined, size: 14, color: Colors.green),
+                        const Icon(
+                          Icons.payments_outlined,
+                          size: 14,
+                          color: Colors.green,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${place.totalPaid.toStringAsFixed(0)} ج.م',
@@ -121,17 +144,17 @@ class PlaceSubscriptionCard extends StatelessWidget {
 
                   // Payment count
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '${place.paymentCount} دفعة',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: Colors.blue),
                     ),
                   ),
 
@@ -144,7 +167,10 @@ class PlaceSubscriptionCard extends StatelessWidget {
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text('دفع'),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         textStyle: const TextStyle(fontSize: 13),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
@@ -162,14 +188,18 @@ class PlaceSubscriptionCard extends StatelessWidget {
                     Icon(
                       Icons.event_outlined,
                       size: 14,
-                      color: place.isSubscriptionExpired ? Colors.red : Colors.grey,
+                      color: place.isSubscriptionExpired
+                          ? Colors.red
+                          : Colors.grey,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'ينتهي: ${_formatDate(place.subscriptionEndDate!)}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: place.isSubscriptionExpired ? Colors.red : Colors.grey,
+                        color: place.isSubscriptionExpired
+                            ? Colors.red
+                            : Colors.grey,
                       ),
                     ),
                   ],
@@ -185,16 +215,25 @@ class PlaceSubscriptionCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.amber.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: Colors.amber.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.note_outlined, size: 14, color: Colors.amber),
+                      const Icon(
+                        Icons.note_outlined,
+                        size: 14,
+                        color: Colors.amber,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           place.notes,
-                          style: const TextStyle(fontSize: 12, color: Colors.amber),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.amber,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

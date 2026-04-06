@@ -5,6 +5,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import '../../data/models/radiology_model.dart';
 import '../../data/models/working_hours.dart';
 import '../cubit/radiology_cubit.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddRadiologyScreen extends StatefulWidget {
   const AddRadiologyScreen({super.key});
@@ -35,8 +36,6 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
   // Services
   final Set<String> _selectedServices = {};
 
-
-
   // Working Hours
   final Map<String, TimeOfDay?> _workingHoursFrom = {};
   final Map<String, TimeOfDay?> _workingHoursTo = {};
@@ -48,7 +47,15 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
   void initState() {
     super.initState();
     // Initialize working hours
-    final days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    final days = [
+      'saturday',
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+    ];
     for (var day in days) {
       _workingHoursFrom[day] = const TimeOfDay(hour: 8, minute: 0);
       _workingHoursTo[day] = const TimeOfDay(hour: 20, minute: 0);
@@ -82,9 +89,12 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
-        ) ,
-        title: const Text('إضافة مركز أشعة',style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.deepPurple,
+        ),
+        title: const Text(
+          'إضافة مركز أشعة',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF06B6D4),
         foregroundColor: Colors.white,
       ),
       body: Form(
@@ -118,7 +128,11 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
           children: [
             const Text(
               'معلومات المركز',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF06B6D4),
+              ),
             ),
             const Divider(),
             SizedBox(height: 8),
@@ -145,7 +159,7 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _centerWhatsappController,
-              decoration:  InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'رقم واتساب المركز *',
                 prefixIcon: Icon(MdiIcons.whatsapp),
                 border: OutlineInputBorder(),
@@ -195,10 +209,14 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
           children: [
             const Text(
               'معلومات صاحب المركز',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF06B6D4),
+              ),
             ),
             const Divider(),
-                        SizedBox(height: 8),
+            SizedBox(height: 8),
 
             TextFormField(
               controller: _ownerNameController,
@@ -235,10 +253,14 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
           children: [
             const Text(
               'الموقع',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF06B6D4),
+              ),
             ),
             const Divider(),
-                        SizedBox(height: 8),
+            SizedBox(height: 8),
 
             TextFormField(
               controller: _addressController,
@@ -260,16 +282,23 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: AppLoadingIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.touch_app),
-                    label: Text(_isLoadingLocation
-                        ? 'جاري التحديد...'
-                        : (_latitude == 0.0 || _longitude == 0.0)
-                            ? 'تحديد الموقع '
-                            : 'تحديد الموقع ✓'),
+                    label: Text(
+                      _isLoadingLocation
+                          ? 'جاري التحديد...'
+                          : (_latitude == 0.0 || _longitude == 0.0)
+                          ? 'تحديد الموقع '
+                          : 'تحديد الموقع ✓',
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: (_latitude == 0.0 || _longitude == 0.0) ? Colors.deepPurple : Colors.deepPurple,
+                      backgroundColor: (_latitude == 0.0 || _longitude == 0.0)
+                          ? const Color(0xFF06B6D4)
+                          : const Color(0xFF06B6D4),
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -283,7 +312,9 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
                   _locationStatus,
                   style: TextStyle(
                     fontSize: 12,
-                    color: _locationStatus.contains('✓') ? Colors.green : Colors.deepPurple,
+                    color: _locationStatus.contains('✓')
+                        ? Colors.green
+                        : const Color(0xFF06B6D4),
                   ),
                 ),
               ),
@@ -293,7 +324,7 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
                 child: Text(
                   '⚠️ يجب تحديد الموقع التلقائي للمتابعة',
                   style: TextStyle(
-                    color: Colors.deepPurple,
+                    color: Color(0xFF06B6D4),
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -325,7 +356,11 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
               children: [
                 const Text(
                   'الخدمات المتاحة',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF06B6D4),
+                  ),
                 ),
                 TextButton.icon(
                   onPressed: _showServicesDialog,
@@ -353,7 +388,7 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
                     onDeleted: () {
                       setState(() => _selectedServices.remove(service));
                     },
-                    backgroundColor: Colors.deepPurple.shade50,
+                    backgroundColor: const Color(0xFF06B6D4).withOpacity(0.1),
                   );
                 }).toList(),
               ),
@@ -382,7 +417,11 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
           children: [
             const Text(
               'مواعيد العمل',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF06B6D4),
+              ),
             ),
             const Divider(),
             ...daysInArabic.entries.map((entry) {
@@ -401,7 +440,10 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
         children: [
           SizedBox(
             width: 80,
-            child: Text(dayArabic, style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              dayArabic,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           Expanded(
             child: Row(
@@ -470,12 +512,12 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
       child: ElevatedButton(
         onPressed: _isSubmitting ? null : _submitForm,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: const Color(0xFF06B6D4),
           foregroundColor: Colors.white,
           disabledBackgroundColor: Colors.grey,
         ),
         child: _isSubmitting
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? const AppLoadingIndicator(color: Colors.white)
             : const Text(
                 'إضافة مركز الأشعة',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -509,7 +551,7 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
                         });
                         setState(() {});
                       },
-                      activeColor: Colors.deepPurple,
+                      activeColor: const Color(0xFF06B6D4),
                     );
                   }).toList(),
                 ),
@@ -545,8 +587,6 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
       });
     }
   }
-
-
 
   Future<void> _getCurrentLocation() async {
     setState(() {
@@ -629,8 +669,12 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
         final to = _workingHoursTo[day];
         final isHoliday = _isHolidayDays[day] ?? false;
         workingHours[day] = WorkingHours(
-          openTime: isHoliday ? '00:00 AM' : (from != null ? _formatTimeOfDay(from) : '00:00 AM'),
-          closeTime: isHoliday ? '00:00 AM' : (to != null ? _formatTimeOfDay(to) : '00:00 AM'),
+          openTime: isHoliday
+              ? '00:00 AM'
+              : (from != null ? _formatTimeOfDay(from) : '00:00 AM'),
+          closeTime: isHoliday
+              ? '00:00 AM'
+              : (to != null ? _formatTimeOfDay(to) : '00:00 AM'),
           isHoliday: isHoliday,
         );
       });
@@ -649,8 +693,8 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
         longitude: _longitude,
         governorate: '',
         city: '',
-        description: _descriptionController.text.trim().isEmpty 
-            ? null 
+        description: _descriptionController.text.trim().isEmpty
+            ? null
             : _descriptionController.text.trim(),
         services: _selectedServices.toList(),
         homeVisit: false,
@@ -677,10 +721,7 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطأ: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) {
@@ -688,5 +729,4 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
       }
     }
   }
-
 }

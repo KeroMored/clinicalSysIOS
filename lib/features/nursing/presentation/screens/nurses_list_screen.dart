@@ -11,6 +11,7 @@ import 'nurse_detail_screen.dart';
 import '../widgets/nurse_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class NursesListScreen extends StatefulWidget {
   const NursesListScreen({super.key});
@@ -26,15 +27,16 @@ class _NursesListScreenState extends State<NursesListScreen> {
   String? _selectedGender;
   bool _showAvailable24Only = false;
   bool _showAvailableNowOnly = false;
-  
+
   // Pagination fields
   final List<NurseModel> _nurses = [];
   final ScrollController _scrollController = ScrollController();
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
+  bool _isInitializing = true;
   bool _hasMore = true;
   static const int _pageSize = 10;
-  
+
   // Location fields
   Position? _userLocation;
   String _sortBy = 'name'; // distance, rating, name (default to name)
@@ -42,29 +44,34 @@ class _NursesListScreenState extends State<NursesListScreen> {
   @override
   void initState() {
     super.initState();
-    // Load nurses first, then request location in background
-    _loadNurses();
-    _requestLocation();
     _scrollController.addListener(_onScroll);
+    _initializeData();
   }
-  
+
+  Future<void> _initializeData() async {
+    await _requestLocation();
+    await _loadNurses();
+
+    if (!mounted) return;
+    setState(() => _isInitializing = false);
+  }
+
   Future<void> _requestLocation() async {
-    final position = await LocationService.getCurrentLocation();
+    Position? position;
+    try {
+      position = await LocationService.getCurrentLocation().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      );
+    } catch (_) {
+      position = null;
+    }
+
     if (position != null && mounted) {
       setState(() {
         _userLocation = position;
-        // Only change to distance if user hasn't changed sort option yet
-        if (_sortBy == 'name' && _nurses.isNotEmpty) {
-          _sortBy = 'distance';
-          // Clear and reload with distance sort
-          _nurses.clear();
-          _lastDocument = null;
-          _hasMore = true;
-        }
+        _sortBy = 'distance';
       });
-      if (_sortBy == 'distance') {
-        _loadNurses();
-      }
     }
   }
 
@@ -74,7 +81,7 @@ class _NursesListScreenState extends State<NursesListScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
@@ -83,16 +90,16 @@ class _NursesListScreenState extends State<NursesListScreen> {
       }
     }
   }
-  
+
   bool _hasActiveFilters() {
     return _searchController.text.length >= 2 ||
-           _selectedGovernorate != null ||
-           _selectedSpecialization != null ||
-           _selectedGender != null ||
-           _showAvailable24Only ||
-           _showAvailableNowOnly;
+        _selectedGovernorate != null ||
+        _selectedSpecialization != null ||
+        _selectedGender != null ||
+        _showAvailable24Only ||
+        _showAvailableNowOnly;
   }
-  
+
   Future<void> _loadNurses() async {
     if (_isLoading) return;
 
@@ -104,7 +111,7 @@ class _NursesListScreenState extends State<NursesListScreen> {
       Query query = FirebaseFirestore.instance
           .collection('nurses')
           .where('isApproved', isEqualTo: true);
-      
+
       // Add orderBy based on sort option to get data from DB in correct order
       switch (_sortBy) {
         case 'rating':
@@ -119,7 +126,7 @@ class _NursesListScreenState extends State<NursesListScreen> {
           query = query.orderBy('createdAt', descending: true);
           break;
       }
-      
+
       query = query.limit(_pageSize);
 
       if (_lastDocument != null) {
@@ -130,13 +137,11 @@ class _NursesListScreenState extends State<NursesListScreen> {
 
       if (snapshot.docs.isNotEmpty) {
         _lastDocument = snapshot.docs.last;
-        var newNurses = snapshot.docs
-            .map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              data['id'] = doc.id;
-              return NurseModel.fromMap(data);
-            })
-            .toList();
+        var newNurses = snapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          return NurseModel.fromMap(data);
+        }).toList();
 
         // Only sort client-side for distance (requires location calculation)
         if (_sortBy == 'distance' && _userLocation != null) {
@@ -144,7 +149,7 @@ class _NursesListScreenState extends State<NursesListScreen> {
             // Skip if location not available
             if (a.latitude == null || a.longitude == null) return 1;
             if (b.latitude == null || b.longitude == null) return -1;
-            
+
             final distA = LocationService.calculateDistance(
               _userLocation!.latitude,
               _userLocation!.longitude,
@@ -187,7 +192,9 @@ class _NursesListScreenState extends State<NursesListScreen> {
     } else if (_selectedGender != null) {
       context.read<NurseCubit>().filterByGender(_selectedGender!);
     } else if (_selectedSpecialization != null) {
-      context.read<NurseCubit>().filterBySpecialization(_selectedSpecialization!);
+      context.read<NurseCubit>().filterBySpecialization(
+        _selectedSpecialization!,
+      );
     } else if (_selectedGovernorate != null) {
       context.read<NurseCubit>().filterByGovernorate(_selectedGovernorate!);
     } else {
@@ -338,11 +345,32 @@ class _NursesListScreenState extends State<NursesListScreen> {
   }
 
   Widget _buildNursesList() {
+    if (_isInitializing || (_isLoading && _nurses.isEmpty)) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SpinKitPulsingGrid(
+              color: AppTheme.nursingGradient.colors[0],
+              size: 45,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'جاري تحميل خدمات التمريض...',
+              style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return _hasActiveFilters()
         ? BlocBuilder<NurseCubit, NurseState>(
             builder: (context, state) {
               if (state is NurseLoading) {
-                return const Center(child: CircularProgressIndicator(color: Colors.teal));
+                return const Center(
+                  child: AppLoadingIndicator(color: Colors.teal),
+                );
               }
 
               if (state is NurseError) {
@@ -350,9 +378,17 @@ class _NursesListScreenState extends State<NursesListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red.shade300,
+                      ),
                       const SizedBox(height: 16),
-                      Text(state.message, style: const TextStyle(fontSize: 16, color: Colors.red), textAlign: TextAlign.center),
+                      Text(
+                        state.message,
+                        style: const TextStyle(fontSize: 16, color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
                     ],
                   ),
                 );
@@ -363,7 +399,11 @@ class _NursesListScreenState extends State<NursesListScreen> {
                 nurses = state.nurses;
               } else if (state is NurseSearchLoaded) {
                 nurses = state.searchResults;
-              } else if (state is NurseFilteredByGovernorate || state is NurseFilteredBySpecialization || state is NurseFilteredByGender || state is NurseAvailable24Hours || state is NurseAvailableNow) {
+              } else if (state is NurseFilteredByGovernorate ||
+                  state is NurseFilteredBySpecialization ||
+                  state is NurseFilteredByGender ||
+                  state is NurseAvailable24Hours ||
+                  state is NurseAvailableNow) {
                 nurses = (state as dynamic).nurses;
               }
 
@@ -372,9 +412,19 @@ class _NursesListScreenState extends State<NursesListScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.person_search, size: 80, color: Colors.grey.shade300),
+                      Icon(
+                        Icons.person_search,
+                        size: 80,
+                        color: Colors.grey.shade300,
+                      ),
                       const SizedBox(height: 16),
-                      Text('لا توجد نتائج', style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
+                      Text(
+                        'لا توجد نتائج',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -390,7 +440,8 @@ class _NursesListScreenState extends State<NursesListScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => NurseDetailScreen(nurse: nurses[index]),
+                          builder: (context) =>
+                              NurseDetailScreen(nurse: nurses[index]),
                         ),
                       );
                     },
@@ -400,47 +451,57 @@ class _NursesListScreenState extends State<NursesListScreen> {
             },
           )
         : _nurses.isEmpty && !_isLoading
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.person_search, size: 80, color: Colors.grey.shade300),
-                    const SizedBox(height: 16),
-                    Text('لا توجد ممرضين متاحين', style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
-                  ],
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.person_search,
+                  size: 80,
+                  color: Colors.grey.shade300,
                 ),
-              )
-            : ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: _nurses.length + ((_isLoading && _nurses.isNotEmpty) || _hasMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == _nurses.length) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: _isLoading
-                            ? SpinKitFadingCircle(
-                                color: AppTheme.nursingGradient.colors[0],
-                                size: 40,
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    );
-                  }
+                const SizedBox(height: 16),
+                Text(
+                  'لا توجد ممرضين متاحين',
+                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          )
+        : ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount:
+                _nurses.length +
+                ((_isLoading && _nurses.isNotEmpty) || _hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == _nurses.length) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: _isLoading
+                        ? SpinKitPulsingGrid(
+                            color: AppTheme.nursingGradient.colors[0],
+                            size: 40,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                );
+              }
 
-                  return NurseCard(
-                    nurse: _nurses[index],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => NurseDetailScreen(nurse: _nurses[index]),
-                        ),
-                      );
-                    },
+              return NurseCard(
+                nurse: _nurses[index],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          NurseDetailScreen(nurse: _nurses[index]),
+                    ),
                   );
                 },
               );
+            },
+          );
   }
 }

@@ -4,10 +4,7 @@ import '../../data/models/subscribed_place_model.dart';
 class SubscriptionStatsCard extends StatelessWidget {
   final Map<String, dynamic> statistics;
 
-  const SubscriptionStatsCard({
-    super.key,
-    required this.statistics,
-  });
+  const SubscriptionStatsCard({super.key, required this.statistics});
 
   @override
   Widget build(BuildContext context) {
@@ -121,10 +118,7 @@ class SubscriptionStatsCard extends StatelessWidget {
                     children: [
                       const Text(
                         'إجمالي الإيرادات',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.white70),
                       ),
                       Text(
                         '${(statistics['totalRevenue'] ?? 0).toStringAsFixed(0)} ج.م',
@@ -142,10 +136,7 @@ class SubscriptionStatsCard extends StatelessWidget {
                     children: [
                       const Text(
                         'عدد الدفعات',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white70,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.white70),
                       ),
                       Text(
                         '${statistics['totalPayments'] ?? 0}',
@@ -190,10 +181,7 @@ class SubscriptionStatsCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.white70,
-          ),
+          style: const TextStyle(fontSize: 10, color: Colors.white70),
           textAlign: TextAlign.center,
         ),
       ],
@@ -223,10 +211,7 @@ class SubscriptionStatsCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 '${entry.key.arabicName}: ${entry.value}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.white,
-                ),
+                style: const TextStyle(fontSize: 11, color: Colors.white),
               ),
             ],
           ),

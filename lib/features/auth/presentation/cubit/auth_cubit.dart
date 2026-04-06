@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -27,12 +29,22 @@ class AuthCubit extends Cubit<AuthState> {
 
   AuthCubit(this._authRepository) : super(AuthInitial());
 
-  // Check auth state on app start - FAST (no loading for initial check)
+  // Check auth state on app start
   Future<void> checkAuthState() async {
     try {
+      // Show loading briefly while checking Firebase Auth
+      emit(AuthLoading());
+
+      // Small delay to ensure Firebase Auth has restored session
+      await Future.delayed(const Duration(milliseconds: 100));
+
       if (_authRepository.isSignedIn()) {
-        final user = await _authRepository.getCurrentUserModel();
+        final user = await _authRepository.getCurrentUserModel().timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => _authRepository.getFallbackCurrentUserModel(),
+        );
         if (user != null) {
+          unawaited(_authRepository.ensureAllUsersTopicSubscription());
           emit(Authenticated(user));
         } else {
           emit(Unauthenticated());
@@ -41,7 +53,7 @@ class AuthCubit extends Cubit<AuthState> {
         emit(Unauthenticated());
       }
     } catch (e) {
-      emit(AuthError(e.toString()));
+      emit(Unauthenticated()); // Don't show error on initial check
     }
   }
 
@@ -49,9 +61,9 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signInWithGoogle() async {
     try {
       emit(AuthLoading());
-      
+
       final user = await _authRepository.signInWithGoogle();
-      
+
       if (user != null) {
         emit(Authenticated(user));
       } else {
@@ -77,6 +89,7 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       final user = await _authRepository.getCurrentUserModel();
       if (user != null) {
+        unawaited(_authRepository.ensureAllUsersTopicSubscription());
         emit(Authenticated(user));
       } else {
         emit(Unauthenticated());

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
 import '../../../clinic/data/models/clinic_department.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class ClinicApprovalScreen extends StatefulWidget {
   const ClinicApprovalScreen({super.key});
@@ -33,104 +36,111 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الموافقة على العيادات'),
-        centerTitle: true,
-        backgroundColor: Colors.purple,
-        foregroundColor: Colors.white,
+      appBar: GradientAppBar(
+        title: 'الموافقة على العيادات',
+        gradient: AppTheme.clinicGradient,
       ),
-      body: Column(
-        children: [
-          // Filter Tabs
-          Container(
-            color: Colors.grey[200],
-            child: Row(
-              children: [
-                _buildFilterTab('الكل', 'all'),
-                _buildFilterTab('قيد الانتظار', 'pending'),
-                _buildFilterTab('مقبولة', 'approved'),
-                _buildFilterTab('مرفوضة', 'rejected'),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
           ),
-          // Requests List
-          Expanded(
-            child: BlocConsumer<AdminCubit, AdminState>(
-              listener: (context, state) {
-                if (state is RequestApproved) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  _loadRequests();
-                } else if (state is RequestRejected) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  _loadRequests();
-                } else if (state is AdminError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                if (state is AdminLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-    
-                if (state is ClinicRequestsLoaded) {
-                  if (state.requests.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.local_hospital_outlined,
-                            size: 80,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _getEmptyMessage(),
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
+        ),
+        child: Column(
+          children: [
+            // Filter Tabs
+            Container(
+              color: Colors.grey[200],
+              child: Row(
+                children: [
+                  _buildFilterTab('الكل', 'all'),
+                  _buildFilterTab('قيد الانتظار', 'pending'),
+                  _buildFilterTab('مقبولة', 'approved'),
+                  _buildFilterTab('مرفوضة', 'rejected'),
+                ],
+              ),
+            ),
+            // Requests List
+            Expanded(
+              child: BlocConsumer<AdminCubit, AdminState>(
+                listener: (context, state) {
+                  if (state is RequestApproved) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    _loadRequests();
+                  } else if (state is RequestRejected) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    _loadRequests();
+                  } else if (state is AdminError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.red,
                       ),
                     );
                   }
-    
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      _loadRequests();
-                    },
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: state.requests.length,
-                      itemBuilder: (context, index) {
-                        final clinicData = state.requests[index];
-                        return _buildClinicCard(clinicData);
+                },
+                builder: (context, state) {
+                  if (state is AdminLoading) {
+                    return const Center(child: AppLoadingIndicator());
+                  }
+
+                  if (state is ClinicRequestsLoaded) {
+                    if (state.requests.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.local_hospital_outlined,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _getEmptyMessage(),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        _loadRequests();
                       },
-                    ),
-                  );
-                }
-    
-                return const Center(child: Text('حدث خطأ ما'));
-              },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: state.requests.length,
+                        itemBuilder: (context, index) {
+                          final clinicData = state.requests[index];
+                          return _buildClinicCard(clinicData);
+                        },
+                      ),
+                    );
+                  }
+
+                  return const Center(child: Text('حدث خطأ ما'));
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -185,14 +195,13 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
 
   Widget _buildClinicCard(Map<String, dynamic> clinicData) {
     final status = clinicData['status'] ?? 'pending';
-    final createdAt = (clinicData['createdAt'] as dynamic)?.toDate() ?? DateTime.now();
+    final createdAt =
+        (clinicData['createdAt'] as dynamic)?.toDate() ?? DateTime.now();
 
     return Card(
       elevation: 3,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -215,11 +224,12 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        clinicData['specialization'] ?? '',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        (clinicData['specialization'] is List)
+                            ? (clinicData['specialization'] as List).join(' • ')
+                            : (clinicData['specialization']?.toString() ?? ''),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -230,8 +240,12 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
             const Divider(height: 24),
 
             // Clinic Info
-            _buildInfoRow(Icons.category, 
-                ClinicDepartment.fromString(clinicData['department'] ?? 'other').arabicName),
+            _buildInfoRow(
+              Icons.category,
+              ClinicDepartment.fromString(
+                clinicData['department'] ?? 'other',
+              ).arabicName,
+            ),
             const SizedBox(height: 8),
             _buildInfoRow(Icons.location_on, clinicData['address'] ?? ''),
             const SizedBox(height: 8),
@@ -241,16 +255,23 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
               _buildInfoRow(MdiIcons.whatsapp, clinicData['whatsapp']),
             ],
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.attach_money, 
-                'سعر الكشف: ${clinicData['consultationFee']?.toInt() ?? 0} جنيه'),
+            _buildInfoRow(
+              Icons.attach_money,
+              'سعر الكشف: ${clinicData['consultationFee']?.toInt() ?? 0} جنيه',
+            ),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.email, 
-                (clinicData['doctorEmails'] as List<dynamic>?)?.isNotEmpty == true
-                    ? (clinicData['doctorEmails'] as List<dynamic>).first.toString()
-                    : clinicData['doctorEmail'] ?? 'لا يوجد'),
+            _buildInfoRow(
+              Icons.email,
+              (clinicData['doctorEmails'] as List<dynamic>?)?.isNotEmpty == true
+                  ? (clinicData['doctorEmails'] as List<dynamic>).first
+                        .toString()
+                  : clinicData['doctorEmail'] ?? 'لا يوجد',
+            ),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.calendar_today, 
-                'تاريخ الطلب: ${DateFormat('yyyy-MM-dd').format(createdAt)}'),
+            _buildInfoRow(
+              Icons.calendar_today,
+              'تاريخ الطلب: ${DateFormat('yyyy-MM-dd').format(createdAt)}',
+            ),
 
             // Action Buttons
             if (status == 'pending') ...[
@@ -359,12 +380,7 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
       children: [
         Icon(icon, size: 18, color: Colors.grey[600]),
         const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 14),
-          ),
-        ),
+        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
       ],
     );
   }
@@ -385,9 +401,7 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
               Navigator.pop(context);
               context.read<AdminCubit>().approveClinicRequest(clinicId);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text('قبول'),
           ),
         ],
@@ -426,13 +440,11 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
             onPressed: () {
               Navigator.pop(context);
               context.read<AdminCubit>().rejectClinicRequest(
-                    clinicId,
-                    reasonController.text.trim(),
-                  );
+                clinicId,
+                reasonController.text.trim(),
+              );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('رفض'),
           ),
         ],
@@ -458,9 +470,7 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
               Navigator.pop(context);
               context.read<AdminCubit>().deleteClinic(clinicId);
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),
           ),
         ],

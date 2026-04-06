@@ -5,10 +5,7 @@ import 'radiology_info_row.dart';
 class RadiologyLicenseCard extends StatelessWidget {
   final RadiologyModel radiology;
 
-  const RadiologyLicenseCard({
-    super.key,
-    required this.radiology,
-  });
+  const RadiologyLicenseCard({super.key, required this.radiology});
 
   @override
   Widget build(BuildContext context) {
@@ -20,11 +17,19 @@ class RadiologyLicenseCard extends StatelessWidget {
           children: [
             const Text(
               'معلومات الترخيص',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
             ),
             const Divider(),
             if (radiology.licenseNumber != null)
-              RadiologyInfoRow(icon: Icons.card_membership, label: 'رقم الترخيص', value: radiology.licenseNumber!),
+              RadiologyInfoRow(
+                icon: Icons.card_membership,
+                label: 'رقم الترخيص',
+                value: radiology.licenseNumber!,
+              ),
             if (radiology.licenseImageUrl != null) ...[
               const SizedBox(height: 12),
               const Text(
@@ -44,14 +49,19 @@ class RadiologyLicenseCard extends StatelessWidget {
                       height: 200,
                       color: Colors.grey.shade200,
                       child: const Center(
-                        child: Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                        child: Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Colors.grey,
+                        ),
                       ),
                     );
                   },
                 ),
               ),
             ],
-            if (radiology.licenseNumber == null && radiology.licenseImageUrl == null)
+            if (radiology.licenseNumber == null &&
+                radiology.licenseImageUrl == null)
               const Center(child: Text('لا توجد معلومات ترخيص')),
           ],
         ),

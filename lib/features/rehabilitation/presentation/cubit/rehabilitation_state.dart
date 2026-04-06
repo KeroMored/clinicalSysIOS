@@ -1,6 +1,5 @@
 import 'package:clinicalsystem/features/rehabilitation/data/models/rehabilitation_center_model.dart';
 
-
 abstract class RehabilitationState {}
 
 class RehabilitationInitial extends RehabilitationState {}

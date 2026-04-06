@@ -10,7 +10,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   final SubscriptionRepository _repository;
   StreamSubscription? _placesSubscription;
   StreamSubscription? _paymentsSubscription;
-  
+
   // Pagination
   static const int _pageSize = 10;
   List<SubscribedPlaceModel> _allPlaces = [];
@@ -35,21 +35,25 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       _currentFilterType = null; // Reset filter
 
       _placesSubscription?.cancel();
-      _placesSubscription = _repository.getAllSubscribedPlacesPaginated(limit: _pageSize).listen(
-        (places) {
-          _allPlaces = places;
-          _hasMoreData = places.length >= _pageSize;
-          emit(SubscriptionLoaded(
-            places: places,
-            settings: settings,
-            statistics: statistics,
-            hasMoreData: _hasMoreData,
-          ));
-        },
-        onError: (error) {
-          emit(SubscriptionError('فشل في تحميل الأماكن: $error'));
-        },
-      );
+      _placesSubscription = _repository
+          .getAllSubscribedPlacesPaginated(limit: _pageSize)
+          .listen(
+            (places) {
+              _allPlaces = places;
+              _hasMoreData = places.length >= _pageSize;
+              emit(
+                SubscriptionLoaded(
+                  places: places,
+                  settings: settings,
+                  statistics: statistics,
+                  hasMoreData: _hasMoreData,
+                ),
+              );
+            },
+            onError: (error) {
+              emit(SubscriptionError('فشل في تحميل الأماكن: $error'));
+            },
+          );
     } catch (e) {
       emit(SubscriptionError('فشل في تحميل البيانات: $e'));
     }
@@ -58,15 +62,15 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   // Load more places (pagination)
   Future<void> loadMorePlaces() async {
     if (_isLoadingMore || !_hasMoreData) return;
-    
+
     final currentState = state;
     if (currentState is! SubscriptionLoaded) return;
 
     _isLoadingMore = true;
-    
+
     try {
       List<SubscribedPlaceModel> morePlaces;
-      
+
       // Check if we have a filter
       if (_currentFilterType != null) {
         morePlaces = await _repository.getMorePlacesByType(
@@ -84,23 +88,27 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       if (morePlaces.isNotEmpty) {
         _allPlaces.addAll(morePlaces);
         _hasMoreData = morePlaces.length >= _pageSize;
-        
-        emit(SubscriptionLoaded(
-          places: _allPlaces,
-          settings: currentState.settings,
-          statistics: currentState.statistics,
-          hasMoreData: _hasMoreData,
-          filterType: _currentFilterType,
-        ));
+
+        emit(
+          SubscriptionLoaded(
+            places: _allPlaces,
+            settings: currentState.settings,
+            statistics: currentState.statistics,
+            hasMoreData: _hasMoreData,
+            filterType: _currentFilterType,
+          ),
+        );
       } else {
         _hasMoreData = false;
-        emit(SubscriptionLoaded(
-          places: _allPlaces,
-          settings: currentState.settings,
-          statistics: currentState.statistics,
-          hasMoreData: false,
-          filterType: _currentFilterType,
-        ));
+        emit(
+          SubscriptionLoaded(
+            places: _allPlaces,
+            settings: currentState.settings,
+            statistics: currentState.statistics,
+            hasMoreData: false,
+            filterType: _currentFilterType,
+          ),
+        );
       }
     } catch (e) {
       emit(SubscriptionError('فشل في تحميل المزيد: $e'));
@@ -122,25 +130,26 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       _currentFilterType = type; // Set current filter
 
       _placesSubscription?.cancel();
-      _placesSubscription = _repository.getSubscribedPlacesByTypePaginated(
-        type: type,
-        limit: _pageSize,
-      ).listen(
-        (places) {
-          _allPlaces = places;
-          _hasMoreData = places.length >= _pageSize;
-          emit(SubscriptionLoaded(
-            places: places,
-            settings: settings,
-            statistics: statistics,
-            hasMoreData: _hasMoreData,
-            filterType: type,
-          ));
-        },
-        onError: (error) {
-          emit(SubscriptionError('فشل في تحميل الأماكن: $error'));
-        },
-      );
+      _placesSubscription = _repository
+          .getSubscribedPlacesByTypePaginated(type: type, limit: _pageSize)
+          .listen(
+            (places) {
+              _allPlaces = places;
+              _hasMoreData = places.length >= _pageSize;
+              emit(
+                SubscriptionLoaded(
+                  places: places,
+                  settings: settings,
+                  statistics: statistics,
+                  hasMoreData: _hasMoreData,
+                  filterType: type,
+                ),
+              );
+            },
+            onError: (error) {
+              emit(SubscriptionError('فشل في تحميل الأماكن: $error'));
+            },
+          );
     } catch (e) {
       emit(SubscriptionError('فشل في تحميل البيانات: $e'));
     }
@@ -159,18 +168,22 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       }
 
       _paymentsSubscription?.cancel();
-      _paymentsSubscription = _repository.getPaymentRecords(placeId).listen(
-        (payments) {
-          emit(PlaceDetailsLoaded(
-            place: place,
-            payments: payments,
-            settings: settings,
-          ));
-        },
-        onError: (error) {
-          emit(SubscriptionError('فشل في تحميل سجلات الدفع: $error'));
-        },
-      );
+      _paymentsSubscription = _repository
+          .getPaymentRecords(placeId)
+          .listen(
+            (payments) {
+              emit(
+                PlaceDetailsLoaded(
+                  place: place,
+                  payments: payments,
+                  settings: settings,
+                ),
+              );
+            },
+            onError: (error) {
+              emit(SubscriptionError('فشل في تحميل سجلات الدفع: $error'));
+            },
+          );
     } catch (e) {
       emit(SubscriptionError('فشل في تحميل التفاصيل: $e'));
     }
@@ -190,11 +203,13 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       // Keep existing payments subscription
       final currentState = state;
       if (currentState is PlaceDetailsLoaded) {
-        emit(PlaceDetailsLoaded(
-          place: place,
-          payments: currentState.payments,
-          settings: settings,
-        ));
+        emit(
+          PlaceDetailsLoaded(
+            place: place,
+            payments: currentState.payments,
+            settings: settings,
+          ),
+        );
       }
     } catch (e) {
       emit(SubscriptionError('فشل في تحديث التفاصيل: $e'));
@@ -213,11 +228,13 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       final settings = await _repository.getSettings();
       final places = await _repository.searchPlaces(query);
 
-      emit(SubscriptionLoaded(
-        places: places,
-        settings: settings,
-        searchQuery: query,
-      ));
+      emit(
+        SubscriptionLoaded(
+          places: places,
+          settings: settings,
+          searchQuery: query,
+        ),
+      );
     } catch (e) {
       emit(SubscriptionError('فشل في البحث: $e'));
     }
@@ -232,10 +249,7 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
       _placesSubscription?.cancel();
       _placesSubscription = _repository.getExpiredSubscriptions().listen(
         (places) {
-          emit(SubscriptionLoaded(
-            places: places,
-            settings: settings,
-          ));
+          emit(SubscriptionLoaded(places: places, settings: settings));
         },
         onError: (error) {
           emit(SubscriptionError('فشل في تحميل الاشتراكات المنتهية: $error'));
@@ -287,23 +301,36 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
 
       // Get current subscription end date to extend if still valid
       final place = await _repository.getSubscribedPlaceById(subscribedPlaceId);
-      if (place != null && place.subscriptionEndDate != null && 
+      if (place != null &&
+          place.subscriptionEndDate != null &&
           place.subscriptionEndDate!.isAfter(paymentDate)) {
         startDate = place.subscriptionEndDate!;
       }
 
       switch (paymentType) {
         case PaymentType.monthly:
-          endDate = DateTime(startDate.year, startDate.month + 1, startDate.day);
+          endDate = DateTime(
+            startDate.year,
+            startDate.month + 1,
+            startDate.day,
+          );
           break;
         case PaymentType.yearly:
-          endDate = DateTime(startDate.year + 1, startDate.month, startDate.day);
+          endDate = DateTime(
+            startDate.year + 1,
+            startDate.month,
+            startDate.day,
+          );
           break;
         case PaymentType.custom:
           // For custom, we'll add 30 days per 100 EGP (or configured amount)
           final settings = await _repository.getSettings();
           final months = (amount / settings.monthlyPrice).floor();
-          endDate = DateTime(startDate.year, startDate.month + months, startDate.day);
+          endDate = DateTime(
+            startDate.year,
+            startDate.month + months,
+            startDate.day,
+          );
           break;
       }
 
@@ -330,7 +357,11 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   }
 
   // Delete a payment record
-  Future<void> deletePaymentRecord(String id, String subscribedPlaceId, double amount) async {
+  Future<void> deletePaymentRecord(
+    String id,
+    String subscribedPlaceId,
+    double amount,
+  ) async {
     try {
       await _repository.deletePaymentRecord(id, subscribedPlaceId, amount);
       emit(PaymentDeleted('تم حذف سجل الدفع'));
@@ -359,9 +390,11 @@ class SubscriptionCubit extends Cubit<SubscriptionState> {
   Future<void> syncAllPlaces() async {
     emit(SyncingPlaces());
     try {
-      final beforeCount = (await _repository.getStatistics())['totalPlaces'] as int;
+      final beforeCount =
+          (await _repository.getStatistics())['totalPlaces'] as int;
       await _repository.syncAllPlaces();
-      final afterCount = (await _repository.getStatistics())['totalPlaces'] as int;
+      final afterCount =
+          (await _repository.getStatistics())['totalPlaces'] as int;
       final syncedCount = afterCount - beforeCount;
 
       emit(PlacesSynced('تم مزامنة الأماكن بنجاح', syncedCount));

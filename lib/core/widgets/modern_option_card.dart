@@ -46,11 +46,7 @@ class ModernOptionCard extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    icon,
-                    size: 32,
-                    color: Colors.white,
-                  ),
+                  child: Icon(icon, size: 32, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

@@ -12,8 +12,10 @@ class GymRepository {
         .where('isApproved', isEqualTo: true)
         .where('isActive', isEqualTo: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList(),
+        );
   }
 
   // Get pending gyms for admin approval
@@ -22,8 +24,10 @@ class GymRepository {
         .collection(_collection)
         .where('isApproved', isEqualTo: false)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList(),
+        );
   }
 
   // Get gym by ID
@@ -37,7 +41,9 @@ class GymRepository {
 
   // Add new gym
   Future<String> addGym(GymModel gym) async {
-    final docRef = await _firestore.collection(_collection).add(gym.toFirestore());
+    final docRef = await _firestore
+        .collection(_collection)
+        .add(gym.toFirestore());
     return docRef.id;
   }
 
@@ -122,8 +128,10 @@ class GymRepository {
       query = query.where('hasFemaleSection', isEqualTo: true);
     }
 
-    return query.snapshots().map((snapshot) =>
-        snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList());
+    return query.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList(),
+    );
   }
 
   // Filter by governorate
@@ -134,7 +142,9 @@ class GymRepository {
         .where('isActive', isEqualTo: true)
         .where('governorate', isEqualTo: governorate)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => GymModel.fromFirestore(doc)).toList(),
+        );
   }
 }

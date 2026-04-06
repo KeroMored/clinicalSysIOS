@@ -4,10 +4,7 @@ import '../../data/models/radiology_model.dart';
 class RadiologyServicesCard extends StatelessWidget {
   final RadiologyModel radiology;
 
-  const RadiologyServicesCard({
-    super.key,
-    required this.radiology,
-  });
+  const RadiologyServicesCard({super.key, required this.radiology});
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +16,21 @@ class RadiologyServicesCard extends StatelessWidget {
           children: [
             const Text(
               'الخدمات المتاحة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
             ),
             const Divider(),
             if (radiology.homeVisit)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(8),
@@ -39,7 +43,10 @@ class RadiologyServicesCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         'زيارة منزلية',
-                        style: TextStyle(fontSize: 13, color: Colors.blue.shade700),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade700,
+                        ),
                       ),
                     ],
                   ),
@@ -53,7 +60,10 @@ class RadiologyServicesCard extends StatelessWidget {
                 runSpacing: 8,
                 children: radiology.services.map((service) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.deepPurple.shade50,
                       borderRadius: BorderRadius.circular(8),
@@ -62,11 +72,18 @@ class RadiologyServicesCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_circle, size: 16, color: Colors.deepPurple.shade700),
+                        Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: Colors.deepPurple.shade700,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           service,
-                          style: TextStyle(fontSize: 13, color: Colors.deepPurple.shade700),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.deepPurple.shade700,
+                          ),
                         ),
                       ],
                     ),

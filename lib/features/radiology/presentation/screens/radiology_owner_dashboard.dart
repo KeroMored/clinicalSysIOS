@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/radiology_model.dart';
 import '../cubit/radiology_cubit.dart';
 import '../cubit/radiology_state.dart';
 import 'edit_radiology_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class RadiologyOwnerDashboard extends StatefulWidget {
   const RadiologyOwnerDashboard({super.key});
 
   @override
-  State<RadiologyOwnerDashboard> createState() => _RadiologyOwnerDashboardState();
+  State<RadiologyOwnerDashboard> createState() =>
+      _RadiologyOwnerDashboardState();
 }
 
 class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
@@ -27,95 +31,111 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: GradientAppBar(
+        title: 'إدارة مركز الأشعة',
+        gradient: AppTheme.radiologyGradient,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('لوحة تحكم مركز الأشعة',style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () {
               final user = FirebaseAuth.instance.currentUser;
               if (user != null) {
-                context.read<RadiologyCubit>().loadRadiologyCenterByOwner(user.email!);
+                context.read<RadiologyCubit>().loadRadiologyCenterByOwner(
+                  user.email!,
+                );
               }
             },
           ),
         ],
       ),
-      body: BlocConsumer<RadiologyCubit, RadiologyState>(
-        listener: (context, state) {
-          if (state is RadiologyActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ),
-            );
-            final user = FirebaseAuth.instance.currentUser;
-            if (user != null) {
-              context.read<RadiologyCubit>().loadRadiologyCenterByOwner(user.email!);
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+          ),
+        ),
+        child: BlocConsumer<RadiologyCubit, RadiologyState>(
+          listener: (context, state) {
+            if (state is RadiologyActionSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                context.read<RadiologyCubit>().loadRadiologyCenterByOwner(
+                  user.email!,
+                );
+              }
+            } else if (state is RadiologyError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
-          } else if (state is RadiologyError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is RadiologyLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.deepPurple),
-            );
-          }
+          },
+          builder: (context, state) {
+            if (state is RadiologyLoading) {
+              return const Center(
+                child: AppLoadingIndicator(color: AppTheme.secondaryColor),
+              );
+            }
 
-          if (state is RadiologyError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.message,
-                    style: const TextStyle(fontSize: 16, color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        context.read<RadiologyCubit>().loadRadiologyCenterByOwner(user.email!);
-                      }
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('إعادة المحاولة'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
+            if (state is RadiologyError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 60,
+                      color: Colors.red.shade300,
                     ),
-                  ),
-                ],
-              ),
-            );
-          }
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      style: const TextStyle(fontSize: 16, color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          context
+                              .read<RadiologyCubit>()
+                              .loadRadiologyCenterByOwner(user.email!);
+                        }
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة المحاولة'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-          if (state is RadiologyCenterDetailLoaded) {
-            return _buildDashboardContent(state.radiologyCenter);
-          }
+            if (state is RadiologyCenterDetailLoaded) {
+              return _buildDashboardContent(state.radiologyCenter);
+            }
 
-          return const Center(
-            child: Text('لم يتم العثور على بيانات المركز'),
-          );
-        },
+            return const Center(child: Text('لم يتم العثور على بيانات المركز'));
+          },
+        ),
       ),
     );
   }
@@ -212,7 +232,11 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
               children: [
                 const Text(
                   'معلومات المركز',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.deepPurple),
@@ -225,9 +249,17 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
             _buildInfoRow(Icons.person, 'اسم المالك', radiology.ownerName),
             _buildInfoRow(Icons.phone, 'رقم الهاتف', radiology.ownerPhone),
             _buildInfoRow(Icons.location_on, 'العنوان', radiology.address),
-            _buildInfoRow(Icons.location_city, 'المدينة', '${radiology.city}, ${radiology.governorate}'),
+            _buildInfoRow(
+              Icons.location_city,
+              'المدينة',
+              '${radiology.city}, ${radiology.governorate}',
+            ),
             if (radiology.licenseNumber != null)
-              _buildInfoRow(Icons.card_membership, 'رقم الترخيص', radiology.licenseNumber!),
+              _buildInfoRow(
+                Icons.card_membership,
+                'رقم الترخيص',
+                radiology.licenseNumber!,
+              ),
             _buildInfoRow(
               Icons.calendar_today,
               'تاريخ التسجيل',
@@ -256,7 +288,10 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
                 ),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -276,7 +311,11 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
           children: [
             const Text(
               'إجراءات سريعة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
             ),
             const Divider(),
             GridView.count(
@@ -300,7 +339,9 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
                   onTap: () => _showServicesDialog(radiology),
                 ),
                 _buildActionButton(
-                  icon: radiology.isActive ? Icons.pause_circle : Icons.play_circle,
+                  icon: radiology.isActive
+                      ? Icons.pause_circle
+                      : Icons.play_circle,
                   label: radiology.isActive ? 'إيقاف مؤقت' : 'تفعيل',
                   color: radiology.isActive ? Colors.red : Colors.green,
                   onTap: () => _toggleActiveStatus(radiology),
@@ -335,7 +376,11 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: color),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -354,7 +399,11 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
           children: [
             const Text(
               'إحصائيات',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
             ),
             const Divider(),
             Row(
@@ -408,7 +457,11 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
           Text(
             label,
@@ -432,11 +485,18 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
               children: [
                 const Text(
                   'الخدمات المتاحة',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
                 ),
                 if (radiology.homeVisit)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(6),
@@ -448,7 +508,10 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
                         const SizedBox(width: 4),
                         Text(
                           'زيارة منزلية',
-                          style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blue.shade700,
+                          ),
                         ),
                       ],
                     ),
@@ -469,7 +532,10 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
                 runSpacing: 8,
                 children: radiology.services.map((service) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.deepPurple.shade50,
                       borderRadius: BorderRadius.circular(8),
@@ -477,7 +543,10 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
                     ),
                     child: Text(
                       service,
-                      style: TextStyle(fontSize: 13, color: Colors.deepPurple.shade700),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.deepPurple.shade700,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -495,7 +564,7 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
         builder: (context) => EditRadiologyScreen(radiology: radiology),
       ),
     );
-    
+
     // Reload data if changes were saved
     if (result == true) {
       final user = FirebaseAuth.instance.currentUser;
@@ -544,7 +613,9 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
       return ListTile(
         title: Text(entry.value),
         trailing: Text(
-          hours?.isHoliday ?? true ? 'مغلق' : '${hours!.openTime} - ${hours.closeTime}',
+          hours?.isHoliday ?? true
+              ? 'مغلق'
+              : '${hours!.openTime} - ${hours.closeTime}',
           style: TextStyle(
             color: hours?.isHoliday ?? true ? Colors.red : Colors.green,
           ),
@@ -613,7 +684,9 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
                       homeVisit: homeVisit,
                       updatedAt: DateTime.now(),
                     );
-                    context.read<RadiologyCubit>().updateRadiologyCenter(updatedRadiology);
+                    context.read<RadiologyCubit>().updateRadiologyCenter(
+                      updatedRadiology,
+                    );
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
@@ -635,7 +708,9 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(radiology.isActive ? 'إيقاف المركز مؤقتاً' : 'تفعيل المركز'),
+          title: Text(
+            radiology.isActive ? 'إيقاف المركز مؤقتاً' : 'تفعيل المركز',
+          ),
           content: Text(
             radiology.isActive
                 ? 'هل أنت متأكد من إيقاف المركز مؤقتاً؟ لن يظهر المركز للمستخدمين.'
@@ -648,7 +723,10 @@ class _RadiologyOwnerDashboardState extends State<RadiologyOwnerDashboard> {
             ),
             ElevatedButton(
               onPressed: () {
-                context.read<RadiologyCubit>().toggleActiveStatus(radiology.id, !radiology.isActive);
+                context.read<RadiologyCubit>().toggleActiveStatus(
+                  radiology.id,
+                  !radiology.isActive,
+                );
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(

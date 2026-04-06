@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_appbar.dart';
 import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class NurseApprovalScreen extends StatefulWidget {
   const NurseApprovalScreen({super.key});
@@ -31,82 +34,96 @@ class _NurseApprovalScreenState extends State<NurseApprovalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الموافقة على الممرضين'),
-        centerTitle: true,
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
+      appBar: GradientAppBar(
+        title: 'الموافقة على الممرضين',
+        gradient: AppTheme.nursingGradient,
       ),
-      body: Column(
-        children: [
-          _buildFilterTabs(),
-          Expanded(
-            child: BlocConsumer<AdminCubit, AdminState>(
-              listener: (context, state) {
-                if (state is RequestApproved) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                  _loadRequests();
-                } else if (state is RequestRejected) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  _loadRequests();
-                } else if (state is AdminError) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.message),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                if (state is AdminLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+          ),
+        ),
+        child: Column(
+          children: [
+            _buildFilterTabs(),
+            Expanded(
+              child: BlocConsumer<AdminCubit, AdminState>(
+                listener: (context, state) {
+                  if (state is RequestApproved) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    _loadRequests();
+                  } else if (state is RequestRejected) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                    _loadRequests();
+                  } else if (state is AdminError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  if (state is AdminLoading) {
+                    return const Center(child: AppLoadingIndicator());
+                  }
 
-                if (state is NurseRequestsLoaded) {
-                  if (state.requests.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.medical_services_outlined, size: 80, color: Colors.grey[400]),
-                          const SizedBox(height: 16),
-                          Text(
-                            _getEmptyMessage(),
-                            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                          ),
-                        ],
+                  if (state is NurseRequestsLoaded) {
+                    if (state.requests.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.medical_services_outlined,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _getEmptyMessage(),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: () async => _loadRequests(),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: state.requests.length,
+                        itemBuilder: (context, index) {
+                          return _buildNurseCard(state.requests[index]);
+                        },
                       ),
                     );
                   }
 
-                  return RefreshIndicator(
-                    onRefresh: () async => _loadRequests(),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: state.requests.length,
-                      itemBuilder: (context, index) {
-                        return _buildNurseCard(state.requests[index]);
-                      },
-                    ),
-                  );
-                }
-
-                return const Center(child: Text('حدث خطأ ما'));
-              },
+                  return const Center(child: Text('حدث خطأ ما'));
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -173,7 +190,8 @@ class _NurseApprovalScreenState extends State<NurseApprovalScreen> {
 
   Widget _buildNurseCard(Map<String, dynamic> nurseData) {
     final status = nurseData['status'] ?? 'pending';
-    final createdAt = (nurseData['createdAt'] as dynamic)?.toDate() ?? DateTime.now();
+    final createdAt =
+        (nurseData['createdAt'] as dynamic)?.toDate() ?? DateTime.now();
     final gender = nurseData['gender'] ?? 'male';
 
     return Card(
@@ -195,7 +213,9 @@ class _NurseApprovalScreenState extends State<NurseApprovalScreen> {
                       : null,
                   child: nurseData['profileImageUrl'] == null
                       ? Icon(
-                          gender == 'male' ? Icons.person : Icons.person_outline,
+                          gender == 'male'
+                              ? Icons.person
+                              : Icons.person_outline,
                           size: 30,
                           color: Colors.teal,
                         )
@@ -227,17 +247,29 @@ class _NurseApprovalScreenState extends State<NurseApprovalScreen> {
             const Divider(height: 24),
             _buildInfoRow(Icons.person, gender == 'male' ? 'ممرض' : 'ممرضة'),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.work_history, '${nurseData['yearsOfExperience'] ?? 0} سنوات خبرة'),
+            _buildInfoRow(
+              Icons.work_history,
+              '${nurseData['yearsOfExperience'] ?? 0} سنوات خبرة',
+            ),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.location_on, '${nurseData['city']}, ${nurseData['governorate']}'),
+            _buildInfoRow(
+              Icons.location_on,
+              '${nurseData['city']}, ${nurseData['governorate']}',
+            ),
             const SizedBox(height: 8),
             _buildInfoRow(Icons.phone, nurseData['nursePhone'] ?? ''),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.payments, 'السعر: ${nurseData['hourlyRate']?.toInt() ?? 0} جنيه/ساعة'),
+            _buildInfoRow(
+              Icons.payments,
+              'السعر: ${nurseData['hourlyRate']?.toInt() ?? 0} جنيه/ساعة',
+            ),
             const SizedBox(height: 8),
-            _buildInfoRow(Icons.calendar_today,
-                'تاريخ الطلب: ${DateFormat('yyyy-MM-dd').format(createdAt)}'),
-            if (nurseData['services'] != null && (nurseData['services'] as List).isNotEmpty) ...[
+            _buildInfoRow(
+              Icons.calendar_today,
+              'تاريخ الطلب: ${DateFormat('yyyy-MM-dd').format(createdAt)}',
+            ),
+            if (nurseData['services'] != null &&
+                (nurseData['services'] as List).isNotEmpty) ...[
               const SizedBox(height: 12),
               const Text(
                 'الخدمات:',
@@ -247,16 +279,24 @@ class _NurseApprovalScreenState extends State<NurseApprovalScreen> {
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: (nurseData['services'] as List).take(3).map((service) {
+                children: (nurseData['services'] as List).take(3).map((
+                  service,
+                ) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.teal.shade50,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       service.toString(),
-                      style: TextStyle(fontSize: 12, color: Colors.teal.shade700),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.teal.shade700,
+                      ),
                     ),
                   );
                 }).toList(),
@@ -432,9 +472,9 @@ class _NurseApprovalScreenState extends State<NurseApprovalScreen> {
               if (reasonController.text.trim().isNotEmpty) {
                 Navigator.pop(context);
                 context.read<AdminCubit>().rejectNurseRequest(
-                      nurseId,
-                      reasonController.text.trim(),
-                    );
+                  nurseId,
+                  reasonController.text.trim(),
+                );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

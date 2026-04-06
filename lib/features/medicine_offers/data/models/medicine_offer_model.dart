@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/services/generic_offer_sorting_service.dart';
 
-class MedicineOfferModel {
+class MedicineOfferModel implements ISortableOffer {
   final String id;
   final String pharmacyId; // معرف الصيدلية
   final String pharmacyName; // اسم الصيدلية
@@ -11,6 +12,8 @@ class MedicineOfferModel {
   final String? imageUrl; // صورة الدواء (اختياري)
   final DateTime createdAt; // تاريخ النشر
   final bool isActive; // هل العرض متاح
+  final int viewsCount; // عدد المشاهدات
+  final String category; // تصنيف الدواء (مسكنات، مضادات حيوية، إلخ)
 
   MedicineOfferModel({
     required this.id,
@@ -23,6 +26,8 @@ class MedicineOfferModel {
     this.imageUrl,
     required this.createdAt,
     this.isActive = true,
+    this.viewsCount = 0,
+    this.category = 'عام', // القيمة الافتراضية
   });
 
   // Convert from Firestore document
@@ -40,6 +45,8 @@ class MedicineOfferModel {
           ? (json['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
       isActive: json['isActive'] ?? true,
+      viewsCount: json['viewsCount'] ?? 0,
+      category: json['category'] ?? 'عام',
     );
   }
 
@@ -56,6 +63,8 @@ class MedicineOfferModel {
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'isActive': isActive,
+      'viewsCount': viewsCount,
+      'category': category,
     };
   }
 
@@ -71,6 +80,8 @@ class MedicineOfferModel {
     String? imageUrl,
     DateTime? createdAt,
     bool? isActive,
+    int? viewsCount,
+    String? category,
   }) {
     return MedicineOfferModel(
       id: id ?? this.id,
@@ -83,6 +94,8 @@ class MedicineOfferModel {
       imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
       isActive: isActive ?? this.isActive,
+      viewsCount: viewsCount ?? this.viewsCount,
+      category: category ?? this.category,
     );
   }
 }

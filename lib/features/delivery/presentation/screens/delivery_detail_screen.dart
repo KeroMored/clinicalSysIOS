@@ -1,11 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../delivery/data/models/delivery_model.dart';
-import '../../../../core/widgets/rating_widget.dart';
+
 import '../../../../core/widgets/like_button.dart';
+import '../../../../core/widgets/rating_widget.dart';
 import '../../../../core/widgets/report_button.dart';
+import '../../data/models/delivery_model.dart';
 
 class DeliveryDetailScreen extends StatefulWidget {
   final DeliveryModel delivery;
@@ -17,6 +18,9 @@ class DeliveryDetailScreen extends StatefulWidget {
 }
 
 class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
+  static const Color _brandColor = Color(0xFF0E7787);
+  static const Color _brandColorDark = Color(0xFF0B6572);
+
   late DeliveryModel _delivery;
 
   @override
@@ -31,259 +35,327 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
           .collection('deliveries')
           .doc(_delivery.id)
           .get();
-      
-      if (doc.exists && mounted) {
-        setState(() {
-          _delivery = DeliveryModel.fromMap(doc.data()!);
-        });
-      }
-    } catch (e) {
-      debugPrint('Error reloading delivery: $e');
+
+      if (!doc.exists || !mounted) return;
+
+      setState(() {
+        _delivery = DeliveryModel.fromMap({'id': doc.id, ...doc.data()!});
+      });
+    } catch (_) {
+      // Silent refresh fail is acceptable.
+    }
+  }
+
+  Future<void> _callPhone(String phone) async {
+    final trimmed = phone.trim();
+    if (trimmed.isEmpty) return;
+
+    final uri = Uri(scheme: 'tel', path: trimmed);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      return;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكن إجراء المكالمة حالياً')),
+      );
     }
   }
 
   String _formatWhatsAppNumber(String phoneNumber) {
-    String formatted = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-    formatted = formatted.replaceAll('+', '');
-    if (formatted.startsWith('00')) {
-      formatted = formatted.substring(2);
+    String value = phoneNumber.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+    if (value.startsWith('+')) {
+      value = value.substring(1);
     }
-    if (formatted.startsWith('0')) {
-      formatted = '20${formatted.substring(1)}';
+    if (value.startsWith('00')) {
+      value = value.substring(2);
     }
-    if (!formatted.startsWith('20')) {
-      formatted = '20$formatted';
+    if (value.startsWith('0')) {
+      value = '20${value.substring(1)}';
     }
-    return formatted;
+    if (!value.startsWith('20')) {
+      value = '20$value';
+    }
+    return value;
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
-    try {
-      await launchUrl(phoneUri);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا يمكن إجراء المكالمة')),
-        );
-      }
+  Future<void> _openWhatsApp() async {
+    if (_delivery.deliveryWhatsApp.trim().isEmpty) return;
+
+    final number = _formatWhatsAppNumber(_delivery.deliveryWhatsApp);
+    final uri = Uri.parse('https://wa.me/$number');
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يمكن فتح واتساب حالياً')),
+      );
     }
   }
-
-  Future<void> _openWhatsApp(String phoneNumber) async {
-    final String formattedNumber = _formatWhatsAppNumber(phoneNumber);
-    final Uri whatsappUri = Uri.parse('https://wa.me/$formattedNumber');
-    try {
-      await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('لا يمكن فتح واتساب')),
-        );
-      }
-    }
-  }
-
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFAFBFC),
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(),
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 16),
-                _buildContactCard(),
-                const SizedBox(height: 16),
-                _buildInfoCard(),
-                const SizedBox(height: 16),
-                _buildReviewsButton(context),
-                const SizedBox(height: 16),
-                _buildLocationCard(),
-                const SizedBox(height: 16),
-                if (_delivery.about != null && _delivery.about!.isNotEmpty)
-                  _buildAboutCard(),
-                if (_delivery.about != null && _delivery.about!.isNotEmpty)
-                  const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    final locationText =
+        '${_delivery.center.isEmpty ? _delivery.city : _delivery.center} - ${_delivery.governorate}';
 
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      leading: IconButton(onPressed: (){
-        Navigator.pop(context);
-      }, icon: const Icon(Icons.arrow_back,color: Colors.white,)),
-      expandedHeight: 200,
-      pinned: true,
-      backgroundColor: const Color(0xFF06B6D4),
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF06B6D4),
-                const Color(0xFF0891B2),
-              ],
-            ),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (_delivery.profileImageUrl != null)
-                Image.network(
-                  _delivery.profileImageUrl!,
-                  fit: BoxFit.cover,
-                ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.3),
-                      Colors.black.withValues(alpha: 0.7),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          'تفاصيل الدليفري',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: _brandColor,
+            size: 20,
           ),
-        ],
+          onPressed: () => Navigator.maybePop(context),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFE5E7EB)),
+        ),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF06B6D4),
-                      const Color(0xFF0891B2),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: _delivery.profileImageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.network(
-                          _delivery.profileImageUrl!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.delivery_dining,
-                        size: 36,
-                        color: Colors.white,
-                      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _delivery.deliveryName,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _delivery.vehicleType,
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (_delivery.availableNow)
+              child: Column(
+                children: [
+                  Row(
+                    children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                        width: 56,
+                        height: 56,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(14),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomLeft,
+                            colors: [_brandColor, _brandColorDark],
+                          ),
                         ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 14,
+                        child: Center(
+                          child: Text(
+                            _delivery.deliveryName.trim().isEmpty
+                                ? 'د'
+                                : _delivery.deliveryName
+                                      .trim()
+                                      .characters
+                                      .first,
+                            style: const TextStyle(
                               color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
                             ),
-                            SizedBox(width: 4),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              'متاح الآن',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                              _delivery.deliveryName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF111827),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_rounded,
+                                  size: 15,
+                                  color: _brandColor,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    locationText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 15,
+                        color: Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _delivery.averageRating.toStringAsFixed(1),
+                        style: const TextStyle(
+                          color: Color(0xFFB45309),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(
+                        Icons.favorite_rounded,
+                        size: 14,
+                        color: Color(0xFFE11D48),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${_delivery.likesCount}',
+                        style: const TextStyle(
+                          color: Color(0xFFBE123C),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Container(
+                      //   padding: const EdgeInsets.symmetric(
+                      //     horizontal: 9,
+                      //     vertical: 5,
+                      //   ),
+                      //   decoration: BoxDecoration(
+                      //     color: _delivery.availableNow
+                      //         ? const Color(0xFFDCFCE7)
+                      //         : const Color(0xFFFEE2E2),
+                      //     borderRadius: BorderRadius.circular(10),
+                      //   ),
+                      //   child: Text(
+                      //     _delivery.availableNow ? 'متاح الآن' : 'غير متاح',
+                      //     style: TextStyle(
+                      //       fontSize: 11,
+                      //       fontWeight: FontWeight.w700,
+                      //       color: _delivery.availableNow
+                      //           ? const Color(0xFF15803D)
+                      //           : const Color(0xFFB91C1C),
+                      //     ),
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        
-          // Action Buttons Row
-          Card(
-            margin: EdgeInsets.zero,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'التواصل',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ..._delivery.deliveryPhones.map(
+                    (phone) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _callPhone(phone),
+                          icon: const Icon(Icons.call_rounded, size: 18),
+                          label: Text(
+                            phone,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _brandColor,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_delivery.deliveryWhatsApp.trim().isNotEmpty)
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _openWhatsApp,
+                        icon: Icon(MdiIcons.whatsapp, size: 18),
+                        label: const Text(
+                          'واتساب',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF16A34A),
+                          side: const BorderSide(color: Color(0xFF86EFAC)),
+                          backgroundColor: const Color(0xFFF0FDF4),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -293,631 +365,37 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
                       serviceType: 'delivery',
                       averageRating: _delivery.averageRating,
                       totalRatings: _delivery.totalRatings,
-                      starSize: 22,
+                      starSize: 20,
                       onRatingAdded: _reloadDelivery,
                     ),
                   ),
                   Container(
                     height: 40,
                     width: 1,
-                    color: Colors.grey[300],
+                    color: const Color(0xFFE5E7EB),
                   ),
                   LikeButton(
                     serviceId: _delivery.id,
                     serviceType: 'delivery',
                     initialLikesCount: _delivery.likesCount,
-                    iconSize: 26,
+                    iconSize: 24,
                   ),
                   Container(
                     height: 40,
                     width: 1,
-                    color: Colors.grey[300],
+                    color: const Color(0xFFE5E7EB),
                   ),
                   ReportButton(
                     serviceId: _delivery.id,
                     serviceType: 'delivery',
                     serviceName: _delivery.deliveryName,
+                    iconSize: 24,
+                    showLabel: true,
                   ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'معلومات المركبة',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(
-            Icons.two_wheeler_rounded,
-            'نوع المركبة',
-            _delivery.vehicleType,
-          ),
-        
-          const SizedBox(height: 12),
-          _buildInfoRow(
-            Icons.attach_money_rounded,
-            'رسوم التوصيل',
-            '${_delivery.deliveryFee} جنيه',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContactCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.phone_in_talk_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'تواصل معنا',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          
-          // Phone Numbers (Multiple)
-          if (_delivery.deliveryPhones.isNotEmpty) ...[
-            ...List.generate(_delivery.deliveryPhones.length, (index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF3B82F6).withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: () => _makePhoneCall(_delivery.deliveryPhones[index]),
-                    icon: const Icon(Icons.phone, size: 20),
-                    label: Text(
-                      _delivery.deliveryPhones.length > 1 
-                          ? 'رقم ${index + 1}: ${_delivery.deliveryPhones[index]}'
-                          : 'اتصال: ${_delivery.deliveryPhones[index]}',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
           ],
-          
-          // WhatsApp Button
-          if (_delivery.deliveryWhatsApp.isNotEmpty)
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF25D366).withOpacity(0.3),
-                  width: 1.5,
-                ),
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () => _openWhatsApp(_delivery.deliveryWhatsApp),
-                icon: Icon(MdiIcons.whatsapp, size: 20),
-                label: const Text(
-                  'واتساب',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  elevation: 0,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF06B6D4).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.location_on_rounded,
-                  size: 20,
-                  color: Color(0xFF06B6D4),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'العنوان',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _delivery.address,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF64748B),
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAboutCard() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF06B6D4).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.info,
-                  size: 20,
-                  color: Color(0xFF06B6D4),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'نبذة عن الديليفري',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _delivery.about!,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Color(0xFF64748B),
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF06B6D4).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF06B6D4),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReviewsButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: () {
-          _showReviewsDialog(context);
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF06B6D4).withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              // Icon Container
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFBBF24),
-                      Color(0xFFF59E0B),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFBBF24).withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.star_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              
-              // Text Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'التقييمات',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Row(
-                          children: List.generate(5, (index) {
-                            return Icon(
-                              index < _delivery.averageRating.floor()
-                                  ? Icons.star_rounded
-                                  : (index < _delivery.averageRating
-                                      ? Icons.star_half_rounded
-                                      : Icons.star_outline_rounded),
-                              color: const Color(0xFFFBBF24),
-                              size: 16,
-                            );
-                          }),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${_delivery.averageRating.toStringAsFixed(1)} (${_delivery.totalRatings} تقييم)',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Arrow Icon
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 18,
-                color: Colors.grey.shade400,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showReviewsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
-        child: Container(
-          constraints: const BoxConstraints(maxHeight: 650, maxWidth: 500),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF06B6D4),
-                      Color(0xFF0891B2),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.star_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'تقييمات ${_delivery.deliveryName}',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_delivery.totalRatings} تقييم',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Average Rating
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _delivery.averageRating.toStringAsFixed(1),
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: List.generate(5, (index) {
-                                  return Icon(
-                                    index < _delivery.averageRating.floor()
-                                        ? Icons.star_rounded
-                                        : (index < _delivery.averageRating
-                                            ? Icons.star_half_rounded
-                                            : Icons.star_outline_rounded),
-                                    color: Colors.white,
-                                    size: 16,
-                                  );
-                                }),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'من أصل 5',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Ratings List
-              Expanded(
-                child: RatingsListWidget(
-                  serviceId: _delivery.id,
-                  starSize: 16,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

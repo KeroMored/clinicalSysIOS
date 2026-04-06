@@ -1,21 +1,27 @@
+import 'dart:convert';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = 
+  final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
   // Topic names
   static const String pharmacyTopic = 'pharmacy_requests';
-  static const String allUsersTopic = 'all_users'; // For general notifications (offers, etc.)
+  static const String allUsersTopic =
+      'all_users'; // For general notifications (offers, etc.)
 
   /// Initialize notifications and request permissions
   Future<void> initialize() async {
     // Initialize local notifications
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -95,25 +101,45 @@ class NotificationService {
       enableVibration: true,
     );
 
+    // Laboratory bookings channel
+    const labBookingsChannel = AndroidNotificationChannel(
+      'lab_bookings',
+      'Laboratory Bookings',
+      description: 'Notifications for new laboratory bookings',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(highChannel);
 
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(medicineChannel);
 
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(bookingsChannel);
 
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(offersChannel);
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(labBookingsChannel);
 
     print('✅ Notification channels created');
   }
@@ -121,7 +147,30 @@ class NotificationService {
   /// Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
     print('Notification tapped: ${response.payload}');
-    // You can navigate to specific screens here based on payload
+
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) {
+        _handleNotificationAction(decoded);
+      }
+    } catch (_) {
+      // Backward compatibility for old simple payloads.
+    }
+  }
+
+  Future<void> _handleNotificationAction(Map<String, dynamic> data) async {
+    final openUrl = (data['openUrl'] ?? '').toString().trim();
+    if (openUrl.isEmpty) return;
+
+    final uri = Uri.tryParse(openUrl);
+    if (uri == null) return;
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   /// Subscribe ALL users to the general topic for offers and announcements
@@ -129,10 +178,10 @@ class NotificationService {
     try {
       await _messaging.subscribeToTopic(allUsersTopic);
       print('✅ Subscribed to all_users topic');
-      
+
       // Get FCM token
       String? token = await _messaging.getToken();
-      
+
       // Update user document with FCM token and topic subscription
       await _firestore.collection('users').doc(userId).update({
         'fcmToken': token,
@@ -149,7 +198,7 @@ class NotificationService {
     try {
       await _messaging.subscribeToTopic(pharmacyTopic);
       print('✅ Subscribed to pharmacy topic: $pharmacyTopic');
-      
+
       // Get and print FCM token for debugging
       String? token = await _messaging.getToken();
       print('📱 FCM Token: $token');
@@ -188,7 +237,7 @@ class NotificationService {
       final clinicTopic = 'clinic_$clinicId';
       await _messaging.subscribeToTopic(clinicTopic);
       print('✅ Subscribed to clinic topic: $clinicTopic');
-      
+
       // Get FCM token
       String? token = await _messaging.getToken();
       print('📱 FCM Token for clinic: $token');
@@ -229,13 +278,61 @@ class NotificationService {
     }
   }
 
+  /// Subscribe secretary to multiple clinic topics (for secretaries working in multiple clinics)
+  Future<void> subscribeToMultipleClinicTopics(
+    List<String> clinicIds,
+    String userId,
+  ) async {
+    try {
+      // Get FCM token once
+      final String? token = await _messaging.getToken();
+      print('📱 FCM Token for secretary: $token');
+
+      // Subscribe to each clinic topic
+      for (var clinicId in clinicIds) {
+        final clinicTopic = 'clinic_$clinicId';
+        await _messaging.subscribeToTopic(clinicTopic);
+        print('✅ Secretary subscribed to clinic topic: $clinicTopic');
+
+        // Save subscription info
+        await _firestore
+            .collection('clinic_subscriptions')
+            .doc('${userId}_$clinicId')
+            .set({
+              'subscribedAt': FieldValue.serverTimestamp(),
+              'topic': clinicTopic,
+              'isActive': true,
+              'fcmToken': token,
+              'userId': userId,
+              'clinicId': clinicId,
+              'role': 'secretary',
+            });
+      }
+
+      // Update user document with FCM token
+      if (token != null) {
+        await _firestore.collection('users').doc(userId).update({
+          'fcmToken': token,
+          'fcmUpdatedAt': FieldValue.serverTimestamp(),
+          'secretaryClinics': clinicIds,
+        });
+      }
+
+      print(
+        '✅ Secretary successfully subscribed to ${clinicIds.length} clinic topics',
+      );
+    } catch (e) {
+      print('❌ Error subscribing secretary to clinic topics: $e');
+    }
+  }
+
   /// Subscribe laboratory owner to lab-specific topic for booking notifications
   Future<void> subscribeToLabTopic(String laboratoryId, String userId) async {
     try {
       final labTopic = 'lab_$laboratoryId';
       await _messaging.subscribeToTopic(labTopic);
       print('✅ Subscribed to laboratory topic: $labTopic');
-      
+
       // Get FCM token
       String? token = await _messaging.getToken();
       print('📱 FCM Token for laboratory: $token');
@@ -267,10 +364,9 @@ class NotificationService {
       print('Unsubscribed from laboratory topic: $labTopic');
 
       // Update Firestore
-      await _firestore.collection('lab_subscriptions').doc(laboratoryId).update({
-        'unsubscribedAt': FieldValue.serverTimestamp(),
-        'isActive': false,
-      });
+      await _firestore.collection('lab_subscriptions').doc(laboratoryId).update(
+        {'unsubscribedAt': FieldValue.serverTimestamp(), 'isActive': false},
+      );
     } catch (e) {
       print('Error unsubscribing from laboratory topic: $e');
     }
@@ -284,7 +380,7 @@ class NotificationService {
 
       if (message.notification != null) {
         print('📬 Message notification: ${message.notification!.title}');
-        
+
         // Show local notification
         await _showLocalNotification(message);
       }
@@ -295,7 +391,7 @@ class NotificationService {
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
     final data = message.data;
-    
+
     if (notification == null) return;
 
     // Determine channel based on notification type
@@ -304,19 +400,39 @@ class NotificationService {
       channelId = 'medicine_requests';
     } else if (data['type'] == 'new_booking') {
       channelId = 'clinic_bookings';
+    } else if (data['type'] == 'new_lab_booking') {
+      channelId = 'lab_bookings';
     }
+
+    // Ensure full content is visible in expanded notifications.
+    final fullBody = (notification.body ?? '').trim();
 
     final androidDetails = AndroidNotificationDetails(
       channelId,
-      channelId == 'clinic_bookings' ? 'Clinic Bookings' : 
-      channelId == 'medicine_requests' ? 'Medicine Requests' : 
-      'High Importance Notifications',
-      channelDescription: notification.body,
+      channelId == 'clinic_bookings'
+          ? 'Clinic Bookings'
+          : channelId == 'medicine_requests'
+          ? 'Medicine Requests'
+          : channelId == 'lab_bookings'
+          ? 'Laboratory Bookings'
+          : 'High Importance Notifications',
+      channelDescription: 'Important app notifications',
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
       icon: '@mipmap/ic_launcher',
+      styleInformation: BigTextStyleInformation(
+        fullBody,
+        contentTitle: notification.title,
+        summaryText: data['type'] == 'new_booking'
+            ? 'تفاصيل الحجز'
+            : data['type'] == 'booking_added_by_secretary'
+            ? 'إضافة حجز بواسطة السكرتيرة'
+            : data['type'] == 'booking_deleted'
+            ? 'إلغاء حجز بواسطة السكرتيرة'
+            : null,
+      ),
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -335,7 +451,7 @@ class NotificationService {
       notification.title,
       notification.body,
       notificationDetails,
-      payload: data['type'],
+      payload: jsonEncode(data),
     );
 
     print('✅ Local notification shown');
@@ -343,8 +459,16 @@ class NotificationService {
 
   /// Handle notification taps
   void handleNotificationTaps() {
+    _messaging.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleNotificationAction(message.data);
+      }
+    });
+
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('A new onMessageOpenedApp event was published!');
+      _handleNotificationAction(message.data);
+
       // Navigate to medicine requests screen or bookings screen based on type
       final type = message.data['type'];
       if (type == 'new_booking') {
@@ -366,17 +490,17 @@ class NotificationService {
   }) async {
     try {
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      
+
       // Get user's FCM token from Firestore
       final userDoc = await firestore.collection('users').doc(userId).get();
-      
+
       if (!userDoc.exists) {
         print('❌ User not found: $userId');
         return;
       }
-      
+
       final fcmToken = userDoc.data()?['fcmToken'] as String?;
-      
+
       if (fcmToken == null || fcmToken.isEmpty) {
         print('❌ No FCM token for user: $userId');
         return;
@@ -385,7 +509,7 @@ class NotificationService {
       // Note: Direct FCM sending requires Firebase Admin SDK or Cloud Functions
       // For now, we'll store the notification in Firestore for the user to read
       // In production, you should use Cloud Functions to send FCM messages
-      
+
       await firestore.collection('notifications').add({
         'userId': userId,
         'title': title,
@@ -398,7 +522,6 @@ class NotificationService {
       });
 
       print('✅ Notification queued for user: $userId');
-      
     } catch (e) {
       print('❌ Error sending notification to user: $e');
     }
@@ -413,11 +536,11 @@ class NotificationService {
   }) async {
     try {
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      
+
       // Note: Direct topic messaging requires Firebase Admin SDK or Cloud Functions
       // For now, we'll store the notification for processing
       // In production, use Cloud Functions to send to topics
-      
+
       await firestore.collection('topic_notifications').add({
         'topic': topic,
         'title': title,
@@ -429,7 +552,6 @@ class NotificationService {
       });
 
       print('✅ Notification queued for topic: $topic');
-      
     } catch (e) {
       print('❌ Error sending notification to topic: $e');
     }

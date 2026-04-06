@@ -4,27 +4,25 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 
 class DoctorOfTheDayNotification {
-  static final DoctorOfTheDayNotification _instance = DoctorOfTheDayNotification._internal();
+  static final DoctorOfTheDayNotification _instance =
+      DoctorOfTheDayNotification._internal();
   factory DoctorOfTheDayNotification() => _instance;
   DoctorOfTheDayNotification._internal();
 
   // Initialize Awesome Notifications
   static Future<void> initialize() async {
-    await AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-          channelKey: 'doctor_of_day_channel',
-          channelName: 'دكتور اليوم',
-          channelDescription: 'إشعارات دكتور اليوم اليومية',
-          defaultColor: const Color(0xFF26A69A),
-          ledColor: Colors.white,
-          importance: NotificationImportance.High,
-          playSound: true,
-          enableVibration: true,
-        ),
-      ],
-    );
+    await AwesomeNotifications().initialize(null, [
+      NotificationChannel(
+        channelKey: 'doctor_of_day_channel',
+        channelName: 'دكتور اليوم',
+        channelDescription: 'إشعارات دكتور اليوم اليومية',
+        defaultColor: const Color(0xFF26A69A),
+        ledColor: Colors.white,
+        importance: NotificationImportance.High,
+        playSound: true,
+        enableVibration: true,
+      ),
+    ]);
 
     // Request permissions
     await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
@@ -36,8 +34,8 @@ class DoctorOfTheDayNotification {
 
   // Schedule daily notification at 4:05 PM Egypt time - Simple offline notification
   static Future<void> scheduleDailyNotification() async {
-    // Cancel any existing scheduled notifications
-    await AwesomeNotifications().cancelAllSchedules();
+    // Cancel only this feature schedule to avoid expensive global operations.
+    await AwesomeNotifications().cancelSchedule(100);
 
     await AwesomeNotifications().createNotification(
       content: NotificationContent(
@@ -50,7 +48,7 @@ class DoctorOfTheDayNotification {
         category: NotificationCategory.Reminder,
       ),
       schedule: NotificationCalendar(
-        hour: 19,  // 7 PM
+        hour: 19, // 7 PM
         minute: 00,
         second: 0,
         repeats: true, // Repeat daily
@@ -74,20 +72,23 @@ class DoctorOfTheDayNotification {
       final today = DateTime.now();
       final seed = today.year * 10000 + today.month * 100 + today.day;
       final random = Random(seed);
-      
+
       // Group by specialization
       Map<String, List<QueryDocumentSnapshot>> bySpecialization = {};
       for (var doc in snapshot.docs) {
-        final spec = doc.data()['specialization'] as String? ?? 'عام';
+        final specData = doc.data()['specialization'];
+        final spec = (specData is List && specData.isNotEmpty)
+            ? specData.first.toString()
+            : (specData?.toString() ?? 'عام');
         bySpecialization.putIfAbsent(spec, () => []).add(doc);
       }
-      
+
       List<Map<String, dynamic>> selectedDoctors = [];
       List<String> usedSpecs = [];
-      
+
       // Try to get 10 doctors from different specializations
       final specs = bySpecialization.keys.toList()..shuffle(random);
-      
+
       for (var spec in specs) {
         if (selectedDoctors.length >= 10) break;
         if (!usedSpecs.contains(spec)) {
@@ -99,13 +100,13 @@ class DoctorOfTheDayNotification {
           usedSpecs.add(spec);
         }
       }
-      
+
       // If we have less than 10 doctors, fill with remaining doctors
       if (selectedDoctors.length < 10) {
         final remainingDocs = snapshot.docs.where((doc) {
           return !selectedDoctors.any((selected) => selected['id'] == doc.id);
         }).toList()..shuffle(random);
-        
+
         for (var doc in remainingDocs) {
           if (selectedDoctors.length >= 10) break;
           final data = doc.data();
@@ -113,14 +114,14 @@ class DoctorOfTheDayNotification {
           selectedDoctors.add(data);
         }
       }
-      
+
       return selectedDoctors;
     } catch (e) {
       debugPrint('Error getting today\'s featured doctors: $e');
       return [];
     }
   }
-  
+
   // Get today's featured doctor (for backward compatibility)
   static Future<Map<String, dynamic>?> getTodaysFeaturedDoctor() async {
     final doctors = await getTodaysFeaturedDoctors();

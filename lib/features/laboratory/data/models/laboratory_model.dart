@@ -6,7 +6,9 @@ class LaboratoryModel {
   final String name;
   final String ownerName;
   final List<String> authEmails; // إيميلات المصادقة للدخول
-  final String ownerPhone;
+  final String ownerPhone; // للتوافق مع الإصدارات القديمة
+  final List<String> phones; // قائمة أرقام التليفون (دعم أرقام متعددة)
+  final String? whatsapp; // رقم الواتساب
   final String address;
   final String city;
   final String governorate;
@@ -35,6 +37,8 @@ class LaboratoryModel {
     required this.ownerName,
     required this.authEmails,
     required this.ownerPhone,
+    List<String>? phones, // اختياري - يستخدم ownerPhone إذا لم يتم توفيره
+    this.whatsapp,
     required this.address,
     required this.city,
     required this.governorate,
@@ -56,7 +60,8 @@ class LaboratoryModel {
     this.averageRating = 0.0,
     this.totalRatings = 0,
     this.totalLikes = 0,
-  });
+  }) : phones =
+           phones ?? [ownerPhone]; // استخدام ownerPhone إذا لم يتم توفير phones
 
   // Convert to Firestore
   Map<String, dynamic> toFirestore() {
@@ -64,7 +69,9 @@ class LaboratoryModel {
       'name': name,
       'ownerName': ownerName,
       'authEmails': authEmails,
-      'ownerPhone': ownerPhone,
+      'ownerPhone': phones.isNotEmpty ? phones.first : ownerPhone,
+      'phones': phones,
+      'whatsapp': whatsapp,
       'address': address,
       'city': city,
       'governorate': governorate,
@@ -73,7 +80,9 @@ class LaboratoryModel {
       'longitude': longitude,
       'logoUrl': logoUrl,
       'availableTests': availableTests,
-      'workingHours': workingHours.map((key, value) => MapEntry(key, value.toMap())),
+      'workingHours': workingHours.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ),
       'isVisible': isVisible,
       'status': status,
       'rejectionReason': rejectionReason,
@@ -92,7 +101,7 @@ class LaboratoryModel {
   // Create from Firestore
   factory LaboratoryModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     return LaboratoryModel(
       id: doc.id,
       name: data['name'] ?? '',
@@ -101,6 +110,10 @@ class LaboratoryModel {
           ? List<String>.from(data['authEmails'])
           : (data['ownerEmail'] != null ? [data['ownerEmail']] : []),
       ownerPhone: data['ownerPhone'] ?? '',
+      phones: data['phones'] != null
+          ? List<String>.from(data['phones'])
+          : (data['ownerPhone'] != null ? [data['ownerPhone']] : []),
+      whatsapp: data['whatsapp'],
       address: data['address'] ?? '',
       city: data['city'] ?? '',
       governorate: data['governorate'] ?? '',
@@ -109,7 +122,8 @@ class LaboratoryModel {
       longitude: (data['longitude'] ?? 0.0).toDouble(),
       logoUrl: data['logoUrl'],
       availableTests: List<String>.from(data['availableTests'] ?? []),
-      workingHours: (data['workingHours'] as Map<String, dynamic>?)?.map(
+      workingHours:
+          (data['workingHours'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(key, WorkingHours.fromMap(value)),
           ) ??
           {},
@@ -135,6 +149,8 @@ class LaboratoryModel {
     String? ownerName,
     List<String>? authEmails,
     String? ownerPhone,
+    List<String>? phones,
+    String? whatsapp,
     String? address,
     String? city,
     String? governorate,
@@ -160,6 +176,8 @@ class LaboratoryModel {
       ownerName: ownerName ?? this.ownerName,
       authEmails: authEmails ?? this.authEmails,
       ownerPhone: ownerPhone ?? this.ownerPhone,
+      phones: phones ?? this.phones,
+      whatsapp: whatsapp ?? this.whatsapp,
       address: address ?? this.address,
       city: city ?? this.city,
       governorate: governorate ?? this.governorate,

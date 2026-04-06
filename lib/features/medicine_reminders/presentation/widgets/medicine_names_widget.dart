@@ -58,17 +58,14 @@ class MedicineNamesWidget extends StatelessWidget {
               Expanded(
                 child: Text(
                   'يمكنك إضافة أكثر من دواء لنفس الموعد (مثلاً: أسبرين + فيتامين د)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        
+
         if (medicineNames.isEmpty)
           Container(
             padding: const EdgeInsets.all(24),
@@ -91,10 +88,7 @@ class MedicineNamesWidget extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'لم تقم بإضافة أي أدوية بعد',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ],
               ),
@@ -142,14 +136,21 @@ class MedicineNamesWidget extends StatelessWidget {
                     ),
                   ),
                   backgroundColor: const Color(0xFF06B6D4).withOpacity(0.1),
-                  deleteIcon: const Icon(Icons.close, size: 18, color: Color(0xFF06B6D4)),
+                  deleteIcon: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: Color(0xFF06B6D4),
+                  ),
                   onDeleted: () {
                     final newNames = List<String>.from(medicineNames);
                     newNames.removeAt(index);
                     onNamesChanged(newNames);
                   },
                   side: const BorderSide(color: Color(0xFF06B6D4), width: 1.5),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
                 );
               }).toList(),
             ),
@@ -206,13 +207,19 @@ class MedicineNamesWidget extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'اسم الدواء',
                 hintText: 'مثلاً: أسبرين',
-                prefixIcon: const Icon(Icons.medical_services, color: Color(0xFF06B6D4)),
+                prefixIcon: const Icon(
+                  Icons.medical_services,
+                  color: Color(0xFF06B6D4),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF06B6D4), width: 2),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF06B6D4),
+                    width: 2,
+                  ),
                 ),
               ),
               validator: (value) {
@@ -243,10 +250,7 @@ class MedicineNamesWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text(
-                'إضافة',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('إضافة', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),

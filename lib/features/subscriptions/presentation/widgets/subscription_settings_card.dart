@@ -12,7 +12,8 @@ class SubscriptionSettingsCard extends StatefulWidget {
   });
 
   @override
-  State<SubscriptionSettingsCard> createState() => _SubscriptionSettingsCardState();
+  State<SubscriptionSettingsCard> createState() =>
+      _SubscriptionSettingsCardState();
 }
 
 class _SubscriptionSettingsCardState extends State<SubscriptionSettingsCard> {
@@ -56,9 +57,9 @@ class _SubscriptionSettingsCardState extends State<SubscriptionSettingsCard> {
     final yearly = double.tryParse(_yearlyController.text) ?? 0;
 
     if (monthly <= 0 || yearly <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال أسعار صحيحة')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('يرجى إدخال أسعار صحيحة')));
       return;
     }
 
@@ -108,10 +109,7 @@ class _SubscriptionSettingsCardState extends State<SubscriptionSettingsCard> {
                       ),
                       Text(
                         'تحديد أسعار الاشتراك الشهري والسنوي',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -177,10 +175,7 @@ class _SubscriptionSettingsCardState extends State<SubscriptionSettingsCard> {
             Center(
               child: Text(
                 'آخر تحديث: ${_formatDate(widget.settings.updatedAt)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[400],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[400]),
               ),
             ),
           ],
@@ -226,7 +221,9 @@ class _SubscriptionSettingsCardState extends State<SubscriptionSettingsCard> {
           decoration: InputDecoration(
             suffixText: 'ج.م',
             filled: true,
-            fillColor: _isEditing ? Colors.white : color.withValues(alpha: 0.05),
+            fillColor: _isEditing
+                ? Colors.white
+                : color.withValues(alpha: 0.05),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,

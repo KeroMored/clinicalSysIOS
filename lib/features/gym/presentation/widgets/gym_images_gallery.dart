@@ -49,8 +49,10 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
             itemCount: widget.images.length,
             itemBuilder: (context, index) {
               // Use 'gym_main_image' for first image to match the main hero tag
-              final heroTag = index == 0 ? 'gym_main_image' : 'gym_image_$index';
-              
+              final heroTag = index == 0
+                  ? 'gym_main_image'
+                  : 'gym_image_$index';
+
               return Center(
                 child: Hero(
                   tag: heroTag,
@@ -78,7 +80,7 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
               );
             },
           ),
-          
+
           // Close button
           Positioned(
             top: 40,
@@ -94,7 +96,7 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
               ),
             ),
           ),
-          
+
           // Image counter
           Positioned(
             top: 50,
@@ -102,7 +104,10 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(20),
@@ -118,7 +123,7 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
               ),
             ),
           ),
-          
+
           // Navigation arrows (if more than one image)
           if (widget.images.length > 1) ...[
             // Previous button
@@ -134,7 +139,11 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white, size: 24),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                       onPressed: () {
                         _pageController.previousPage(
                           duration: const Duration(milliseconds: 300),
@@ -145,7 +154,7 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
                   ),
                 ),
               ),
-            
+
             // Next button
             if (_currentIndex < widget.images.length - 1)
               Positioned(
@@ -159,7 +168,11 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 24),
+                      icon: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                       onPressed: () {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 300),
@@ -171,7 +184,7 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
                 ),
               ),
           ],
-          
+
           // Thumbnail strip at bottom
           if (widget.images.length > 1)
             Positioned(
@@ -200,7 +213,9 @@ class _GymImagesGalleryState extends State<GymImagesGallery> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? AppTheme.gymGradient.colors[0] : Colors.transparent,
+                            color: isSelected
+                                ? AppTheme.gymGradient.colors[0]
+                                : Colors.transparent,
                             width: 3,
                           ),
                         ),

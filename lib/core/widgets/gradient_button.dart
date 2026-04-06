@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class GradientButton extends StatelessWidget {
   final String text;
@@ -28,7 +29,7 @@ class GradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveTextColor = textColor ?? Colors.white;
-    
+
     return Container(
       width: width,
       height: height,
@@ -53,28 +54,18 @@ class GradientButton extends StatelessWidget {
                 ? SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(
+                    child: AppLoadingIndicator(
                       color: effectiveTextColor,
                       strokeWidth: 2,
                     ),
                   )
                 : icon != null
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(icon, color: effectiveTextColor, size: 22),
-                          const SizedBox(width: 8),
-                          Text(
-                            text,
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: effectiveTextColor,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      )
-                    : Text(
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(icon, color: effectiveTextColor, size: 22),
+                      const SizedBox(width: 8),
+                      Text(
                         text,
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           color: effectiveTextColor,
@@ -82,6 +73,16 @@ class GradientButton extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ],
+                  )
+                : Text(
+                    text,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: effectiveTextColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ),
       ),

@@ -44,8 +44,8 @@ class ReportModel {
       complaint: data['complaint'] ?? '',
       status: data['status'] ?? 'pending',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
-      reviewedAt: data['reviewedAt'] != null 
-          ? (data['reviewedAt'] as Timestamp).toDate() 
+      reviewedAt: data['reviewedAt'] != null
+          ? (data['reviewedAt'] as Timestamp).toDate()
           : null,
       adminNotes: data['adminNotes'],
     );

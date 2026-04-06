@@ -9,7 +9,7 @@ class RehabilitationTypes {
   static const String specialEducation = 'تربية خاصة';
   static const String hearingRehab = 'تأهيل سمعي';
   static const String mentalHealth = 'صحة نفسية';
-  
+
   static List<String> get allTypes => [
     speechTherapy,
     physicalTherapy,
@@ -27,11 +27,7 @@ class WorkingHours {
   final String to;
   final bool isClosed;
 
-  WorkingHours({
-    required this.from,
-    required this.to,
-    this.isClosed = false,
-  });
+  WorkingHours({required this.from, required this.to, this.isClosed = false});
 
   factory WorkingHours.fromMap(Map<String, dynamic> map) {
     return WorkingHours(
@@ -42,11 +38,7 @@ class WorkingHours {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'from': from,
-      'to': to,
-      'isClosed': isClosed,
-    };
+    return {'from': from, 'to': to, 'isClosed': isClosed};
   }
 }
 
@@ -152,7 +144,9 @@ class RehabilitationCenterModel {
       final daysData = map['workingDays'] as Map<String, dynamic>;
       daysData.forEach((day, hours) {
         if (hours != null) {
-          parsedWorkingDays[day] = WorkingHours.fromMap(hours as Map<String, dynamic>);
+          parsedWorkingDays[day] = WorkingHours.fromMap(
+            hours as Map<String, dynamic>,
+          );
         }
       });
     }

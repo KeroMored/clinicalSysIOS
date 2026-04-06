@@ -37,11 +37,14 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
   @override
   void initState() {
     super.initState();
-    // 🚀 Load centers immediately, don't wait for location
-    setState(() => _isInitializing = false);
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await _tryAutoLocation();
+    if (!mounted) return;
     _loadCenters();
-    // Try to get location in background
-    _tryAutoLocation();
+    setState(() => _isInitializing = false);
   }
 
   // 🔥 Get location in background and update sort if available
@@ -62,10 +65,8 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
       try {
         final position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
-        ).timeout(
-          const Duration(seconds: 3),
-        );
-        
+        ).timeout(const Duration(seconds: 3));
+
         if (mounted) {
           setState(() {
             _currentPosition = position;
@@ -127,16 +128,23 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
     super.dispose();
   }
 
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
+  ) {
     const p = 0.017453292519943295; // Math.PI / 180
-    final a = 0.5 - cos((lat2 - lat1) * p) / 2 +
+    final a =
+        0.5 -
+        cos((lat2 - lat1) * p) / 2 +
         cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
     return 12742 * asin(sqrt(a)); // 2 * R; R = 6371 km
   }
 
   void _applyFilters() {
     if (!mounted) return;
-  if (_showHomeVisitOnly) {
+    if (_showHomeVisitOnly) {
       context.read<RadiologyCubit>().loadHomeVisitRadiologyCenters();
     } else if (_selectedService != null) {
       context.read<RadiologyCubit>().filterByService(_selectedService!);
@@ -187,8 +195,12 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
                     Text(
                       'الأقرب',
                       style: TextStyle(
-                        color: _sortBy == 'distance' ? Colors.teal : const Color(0xFF0F172A),
-                        fontWeight: _sortBy == 'distance' ? FontWeight.w600 : FontWeight.normal,
+                        color: _sortBy == 'distance'
+                            ? Colors.teal
+                            : const Color(0xFF0F172A),
+                        fontWeight: _sortBy == 'distance'
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -207,8 +219,12 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
                     Text(
                       'الأعلى تقييماً',
                       style: TextStyle(
-                        color: _sortBy == 'rating' ? Colors.teal : const Color(0xFF0F172A),
-                        fontWeight: _sortBy == 'rating' ? FontWeight.w600 : FontWeight.normal,
+                        color: _sortBy == 'rating'
+                            ? Colors.teal
+                            : const Color(0xFF0F172A),
+                        fontWeight: _sortBy == 'rating'
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -227,8 +243,12 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
                     Text(
                       'الاسم',
                       style: TextStyle(
-                        color: _sortBy == 'name' ? Colors.teal : const Color(0xFF0F172A),
-                        fontWeight: _sortBy == 'name' ? FontWeight.w600 : FontWeight.normal,
+                        color: _sortBy == 'name'
+                            ? Colors.teal
+                            : const Color(0xFF0F172A),
+                        fontWeight: _sortBy == 'name'
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -238,11 +258,82 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
           ),
         ],
       ),
-      body: Column(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+          ),
+        ),
+        child: Column(
+          children: [
+            _buildIntroCard(),
+            _buildSearchBar(),
+            _buildFilterChips(),
+            Expanded(child: _buildRadiologyList()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntroCard() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
         children: [
-          _buildSearchBar(),
-          _buildFilterChips(),
-          Expanded(child: _buildRadiologyList()),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              gradient: AppTheme.radiologyGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.medical_information_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'مراكز أشعة معتمدة',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'اختر المركز الأنسب حسب القرب والتقييم',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blueGrey[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -250,20 +341,29 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'ابحث عن مركز أشعة...',
-          hintStyle: TextStyle(color: Colors.grey[400]),
-          prefixIcon: const Icon(Icons.search, color: Colors.teal),
+          hintText: 'ابحث عن مركز أشعة أو خدمة...',
+          hintStyle: const TextStyle(
+            color: Color(0xFF94A3B8),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: Color(0xFF0F766E),
+          ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, color: Colors.grey),
                   onPressed: () {
                     _searchController.clear();
                     if (mounted) {
-                      context.read<RadiologyCubit>().loadApprovedRadiologyCenters();
+                      context
+                          .read<RadiologyCubit>()
+                          .loadApprovedRadiologyCenters();
                     }
                   },
                 )
@@ -271,18 +371,21 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: const BorderSide(color: Colors.teal, width: 2),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF0F766E), width: 1.6),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
         ),
         onChanged: (value) {
           if (mounted) {
@@ -386,7 +489,7 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
         ),
       );
     }
-    
+
     return BlocBuilder<RadiologyCubit, RadiologyState>(
       builder: (context, state) {
         if (state is RadiologyLoading) {
@@ -426,7 +529,9 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () => context.read<RadiologyCubit>().loadApprovedRadiologyCenters(),
+                  onPressed: () => context
+                      .read<RadiologyCubit>()
+                      .loadApprovedRadiologyCenters(),
                   icon: const Icon(Icons.refresh),
                   label: const Text('إعادة المحاولة'),
                   style: ElevatedButton.styleFrom(
@@ -482,7 +587,11 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.medical_services_outlined, size: 80, color: Colors.grey.shade300),
+                Icon(
+                  Icons.medical_services_outlined,
+                  size: 80,
+                  color: Colors.grey.shade300,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'لا توجد مراكز أشعة متاحة',
@@ -504,7 +613,7 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
           itemBuilder: (context, index) {
             final center = centers[index];
             String? distance;
-            
+
             // Calculate distance if location available
             if (_currentPosition != null) {
               final dist = _calculateDistance(
@@ -515,7 +624,7 @@ class _RadiologyHomePageState extends State<RadiologyHomePage> {
               );
               distance = '${dist.toStringAsFixed(1)} كم';
             }
-            
+
             return RadiologyCard(
               radiology: center,
               distance: distance,
@@ -576,10 +685,10 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
     // Handle time in format "HH:mm"
     final parts = time.split(':');
     if (parts.length != 2) return time;
-    
+
     int hour = int.tryParse(parts[0]) ?? 0;
     final minute = parts[1];
-    
+
     String period;
     if (hour == 0) {
       hour = 12;
@@ -592,7 +701,7 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
       hour = hour - 12;
       period = 'مساءً';
     }
-    
+
     if (minute == '00') {
       return '$hour $period';
     }
@@ -628,9 +737,9 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ: $e')));
       }
     }
   }
@@ -643,37 +752,43 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
         await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('لا يمكن فتح واتساب')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('لا يمكن فتح واتساب')));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ: $e')));
       }
     }
   }
 
-  Future<void> _openMap(BuildContext context, double latitude, double longitude) async {
-    final Uri mapUri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$latitude,$longitude');
+  Future<void> _openMap(
+    BuildContext context,
+    double latitude,
+    double longitude,
+  ) async {
+    final Uri mapUri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
     try {
       if (await canLaunchUrl(mapUri)) {
         await launchUrl(mapUri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('لا يمكن فتح الخريطة')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('لا يمكن فتح الخريطة')));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ: $e')));
       }
     }
   }
@@ -681,94 +796,152 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(radiology.centerName,style: const TextStyle(color: Colors.white),),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-     leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-     
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: GradientAppBar(
+        title: radiology.centerName,
+        gradient: AppTheme.pharmacyGradient,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-                  _buildInfoSection(),
- const SizedBox(height: 16),
-            _buildContactSection(context),
-            const SizedBox(height: 16),
-            _buildMapSection(context),
-            const SizedBox(height: 16),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Expanded(
-                      child: RatingWidget(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeaderCard(),
+              const SizedBox(height: 16),
+              _buildInfoSection(),
+              const SizedBox(height: 16),
+              _buildContactSection(context),
+              const SizedBox(height: 16),
+              _buildMapSection(context),
+              const SizedBox(height: 16),
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Expanded(
+                        child: RatingWidget(
+                          serviceId: radiology.id,
+                          serviceType: 'radiology',
+                          averageRating: radiology.averageRating,
+                          totalRatings: radiology.totalRatings,
+                          starSize: 22,
+                          onRatingAdded: _reloadRadiology,
+                        ),
+                      ),
+                      Container(height: 40, width: 1, color: Colors.grey[300]),
+                      LikeButton(
                         serviceId: radiology.id,
                         serviceType: 'radiology',
-                        averageRating: radiology.averageRating,
-                        totalRatings: radiology.totalRatings,
-                        starSize: 22,
-                        onRatingAdded: _reloadRadiology,
+                        initialLikesCount: radiology.totalLikes,
+                        iconSize: 26,
+                        onLikeChanged: _reloadRadiology,
                       ),
-                    ),
-                    Container(
-                      height: 40,
-                      width: 1,
-                      color: Colors.grey[300],
-                    ),
-                    LikeButton(
-                      serviceId: radiology.id,
-                      serviceType: 'radiology',
-                      initialLikesCount: radiology.totalLikes,
-                      iconSize: 26,
-                      onLikeChanged: _reloadRadiology,
-                    ),
-                    Container(
-                      height: 40,
-                      width: 1,
-                      color: Colors.grey[300],
-                    ),
-                    ReportButton(
-                      serviceId: radiology.id,
-                      serviceType: 'radiology',
-                      serviceName: radiology.centerName,
-                      iconSize: 26,
-                      showLabel: true,
-                    ),
-                  ],
+                      Container(height: 40, width: 1, color: Colors.grey[300]),
+                      ReportButton(
+                        serviceId: radiology.id,
+                        serviceType: 'radiology',
+                        serviceName: radiology.centerName,
+                        iconSize: 26,
+                        showLabel: true,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // Reviews Button
-            _buildReviewsButton(context, radiology),
-    
-            const SizedBox(height: 16),
-      
-            _buildServicesSection(),
-            const SizedBox(height: 16),
-            _buildWorkingHoursSection(),
-           
-          ],
+              _buildReviewsButton(context, radiology),
+
+              const SizedBox(height: 16),
+
+              _buildServicesSection(),
+              const SizedBox(height: 16),
+              _buildWorkingHoursSection(),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: AppTheme.pharmacyGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.monitor_heart_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  radiology.centerName,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  radiology.address,
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInfoSection() {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -776,13 +949,18 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
           children: [
             const Text(
               'معلومات المركز',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
             ),
-                        const SizedBox(height: 8),
+            const SizedBox(height: 8),
 
             const Divider(),
             // Description if available
-            if (radiology.description != null && radiology.description!.isNotEmpty) ...[
+            if (radiology.description != null &&
+                radiology.description!.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -820,18 +998,36 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
             ],
             _buildInfoRow(Icons.location_on, 'العنوان', radiology.address),
             _buildInfoRow(Icons.phone, 'هاتف المركز', radiology.centerPhone),
-            _buildInfoRow(MdiIcons.whatsapp, 'واتساب المركز', radiology.centerWhatsApp),
+            _buildInfoRow(
+              MdiIcons.whatsapp,
+              'واتساب المركز',
+              radiology.centerWhatsApp,
+            ),
             if (radiology.licenseNumber != null)
-              _buildInfoRow(Icons.card_membership, 'رقم الترخيص', radiology.licenseNumber!),
+              _buildInfoRow(
+                Icons.card_membership,
+                'رقم الترخيص',
+                radiology.licenseNumber!,
+              ),
             if (radiology.homeVisit)
-              _buildInfoRow(Icons.home, 'الزيارة المنزلية', 'متاح', color: Colors.blue),
+              _buildInfoRow(
+                Icons.home,
+                'الزيارة المنزلية',
+                'متاح',
+                color: Colors.blue,
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, {Color? color}) {
+  Widget _buildInfoRow(
+    IconData icon,
+    String label,
+    String value, {
+    Color? color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -848,7 +1044,11 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
                 ),
                 Text(
                   value,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: color,
+                  ),
                 ),
               ],
             ),
@@ -862,6 +1062,11 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
     if (radiology.services.isEmpty) return const SizedBox.shrink();
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -869,7 +1074,11 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
           children: [
             const Text(
               'الخدمات المتاحة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
             ),
             const Divider(),
             const SizedBox(height: 8),
@@ -878,7 +1087,10 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
               runSpacing: 8,
               children: radiology.services.map((service) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.teal.shade50,
                     borderRadius: BorderRadius.circular(8),
@@ -887,11 +1099,18 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.check_circle, size: 16, color: Colors.teal.shade700),
+                      Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: Colors.teal.shade700,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         service,
-                        style: TextStyle(fontSize: 13, color: Colors.teal.shade700),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.teal.shade700,
+                        ),
                       ),
                     ],
                   ),
@@ -918,6 +1137,11 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
     };
 
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -925,12 +1149,16 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
           children: [
             const Text(
               'مواعيد العمل',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
             ),
-                        const SizedBox(height: 8),
+            const SizedBox(height: 8),
 
             const Divider(),
-            
+
             ...daysInArabic.entries.map((entry) {
               final hours = radiology.workingHours[entry.key];
               if (hours == null) return const SizedBox.shrink();
@@ -942,12 +1170,15 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
                   children: [
                     Text(
                       entry.value,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     Text(
-                      hours.isHoliday 
-                        ? 'مغلق' 
-                        : '${_formatTimeToArabic(hours.openTime)} - ${_formatTimeToArabic(hours.closeTime)}',
+                      hours.isHoliday
+                          ? 'مغلق'
+                          : '${_formatTimeToArabic(hours.openTime)} - ${_formatTimeToArabic(hours.closeTime)}',
                       style: TextStyle(
                         fontSize: 14,
                         color: hours.isHoliday ? Colors.red : Colors.green,
@@ -965,6 +1196,11 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
 
   Widget _buildContactSection(BuildContext context) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -972,9 +1208,13 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
           children: [
             const Text(
               'معلومات التواصل',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
             ),
-                        const SizedBox(height: 8),
+            const SizedBox(height: 8),
 
             const Divider(),
             const SizedBox(height: 12),
@@ -982,7 +1222,8 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _makePhoneCall(context, radiology.centerPhone),
+                    onPressed: () =>
+                        _makePhoneCall(context, radiology.centerPhone),
                     icon: const Icon(Icons.phone),
                     label: const Text('مكالمة'),
                     style: ElevatedButton.styleFrom(
@@ -995,7 +1236,8 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _openWhatsApp(context, radiology.centerWhatsApp),
+                    onPressed: () =>
+                        _openWhatsApp(context, radiology.centerWhatsApp),
                     icon: Icon(MdiIcons.whatsapp),
                     label: const Text('واتساب'),
                     style: ElevatedButton.styleFrom(
@@ -1015,6 +1257,11 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
 
   Widget _buildMapSection(BuildContext context) {
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -1022,16 +1269,21 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
           children: [
             const Text(
               'الموقع على الخريطة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
             ),
-                        const SizedBox(height: 8),
+            const SizedBox(height: 8),
 
             const Divider(),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => _openMap(context, radiology.latitude, radiology.longitude),
+                onPressed: () =>
+                    _openMap(context, radiology.latitude, radiology.longitude),
                 icon: const Icon(Icons.map),
                 label: const Text('فتح الموقع في الخريطة'),
                 style: ElevatedButton.styleFrom(
@@ -1082,10 +1334,7 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFBBF24),
-                    Color(0xFFF59E0B),
-                  ],
+                  colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
@@ -1103,7 +1352,7 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
               ),
             ),
             const SizedBox(width: 16),
-            
+
             // Text Info
             Expanded(
               child: Column(
@@ -1126,8 +1375,8 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
                             index < radiology.averageRating.floor()
                                 ? Icons.star_rounded
                                 : (index < radiology.averageRating
-                                    ? Icons.star_half_rounded
-                                    : Icons.star_outline_rounded),
+                                      ? Icons.star_half_rounded
+                                      : Icons.star_outline_rounded),
                             color: const Color(0xFFFBBF24),
                             size: 16,
                           );
@@ -1146,7 +1395,7 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
                 ],
               ),
             ),
-           
+
             // Arrow Icon
             Icon(
               Icons.arrow_forward_ios_rounded,

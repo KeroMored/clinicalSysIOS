@@ -59,17 +59,17 @@ class LabReviewModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        laboratoryId,
-        laboratoryName,
-        userId,
-        userName,
-        rating,
-        comment,
-        createdAt,
-        resultId,
-        isVerified,
-      ];
+    id,
+    laboratoryId,
+    laboratoryName,
+    userId,
+    userName,
+    rating,
+    comment,
+    createdAt,
+    resultId,
+    isVerified,
+  ];
 }
 
 /// إحصائيات التقييمات
@@ -86,18 +86,27 @@ class ReviewStatistics extends Equatable {
     required this.verifiedReviews,
   });
 
-  int get percentage5Star =>
-      totalReviews > 0 ? ((ratingDistribution[5] ?? 0) * 100 ~/ totalReviews) : 0;
-  int get percentage4Star =>
-      totalReviews > 0 ? ((ratingDistribution[4] ?? 0) * 100 ~/ totalReviews) : 0;
-  int get percentage3Star =>
-      totalReviews > 0 ? ((ratingDistribution[3] ?? 0) * 100 ~/ totalReviews) : 0;
-  int get percentage2Star =>
-      totalReviews > 0 ? ((ratingDistribution[2] ?? 0) * 100 ~/ totalReviews) : 0;
-  int get percentage1Star =>
-      totalReviews > 0 ? ((ratingDistribution[1] ?? 0) * 100 ~/ totalReviews) : 0;
+  int get percentage5Star => totalReviews > 0
+      ? ((ratingDistribution[5] ?? 0) * 100 ~/ totalReviews)
+      : 0;
+  int get percentage4Star => totalReviews > 0
+      ? ((ratingDistribution[4] ?? 0) * 100 ~/ totalReviews)
+      : 0;
+  int get percentage3Star => totalReviews > 0
+      ? ((ratingDistribution[3] ?? 0) * 100 ~/ totalReviews)
+      : 0;
+  int get percentage2Star => totalReviews > 0
+      ? ((ratingDistribution[2] ?? 0) * 100 ~/ totalReviews)
+      : 0;
+  int get percentage1Star => totalReviews > 0
+      ? ((ratingDistribution[1] ?? 0) * 100 ~/ totalReviews)
+      : 0;
 
   @override
-  List<Object?> get props =>
-      [averageRating, totalReviews, ratingDistribution, verifiedReviews];
+  List<Object?> get props => [
+    averageRating,
+    totalReviews,
+    ratingDistribution,
+    verifiedReviews,
+  ];
 }

@@ -5,11 +5,13 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_visit_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../screens/add_visit_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class VisitCard extends StatefulWidget {
   final MedicalVisitModel visit;
+  final VoidCallback? onLongPress;
 
-  const VisitCard({super.key, required this.visit});
+  const VisitCard({super.key, required this.visit, this.onLongPress});
 
   @override
   State<VisitCard> createState() => _VisitCardState();
@@ -23,14 +25,13 @@ class _VisitCardState extends State<VisitCard> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
             onTap: () => setState(() => _isExpanded = !_isExpanded),
+            onLongPress: widget.onLongPress,
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -44,11 +45,18 @@ class _VisitCardState extends State<VisitCard> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today, color: Colors.white, size: 20),
+                  const Icon(
+                    Icons.calendar_today,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      DateFormat('yyyy/MM/dd - hh:mm a', 'ar').format(widget.visit.visitDate),
+                      DateFormat(
+                        'yyyy/MM/dd - hh:mm a',
+                        'ar',
+                      ).format(widget.visit.visitDate),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -60,37 +68,10 @@ class _VisitCardState extends State<VisitCard> {
                     _isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: Colors.white,
                   ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: Colors.white),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _editVisit(context);
-                      } else if (value == 'delete') {
-                        _deleteVisit(context);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 20),
-                            SizedBox(width: 8),
-                            Text('تعديل'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: Colors.red, size: 20),
-                            SizedBox(width: 8),
-                            Text('حذف', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    onPressed: () => _editVisit(context),
+                    tooltip: 'تعديل',
                   ),
                 ],
               ),
@@ -101,102 +82,108 @@ class _VisitCardState extends State<VisitCard> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.visit.diagnosis != null && widget.visit.diagnosis!.isNotEmpty) ...[
-                  const Text(
-                    'التشخيص',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.visit.diagnosis!,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (widget.visit.medications.isNotEmpty) ...[
-                  const Text(
-                    'الأدوية',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: widget.visit.medications.map((med) {
-                      return Chip(
-                        label: Text(med),
-                        backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                        labelStyle: const TextStyle(
-                          color: AppTheme.primaryColor,
-                          fontSize: 13,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (widget.visit.prescriptionImageUrls.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      const Text(
-                        'صور الروشتة',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
-                        ),
+                children: [
+                  if (widget.visit.diagnosis != null &&
+                      widget.visit.diagnosis!.isNotEmpty) ...[
+                    const Text(
+                      'التشخيص',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '(${widget.visit.prescriptionImageUrls.length})',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.visit.diagnosis!,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (widget.visit.medications.isNotEmpty) ...[
+                    const Text(
+                      'الأدوية',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 80,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: widget.visit.prescriptionImageUrls.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () => _showPrescriptionImage(context, index),
-                          child: Container(
-                            width: 80,
-                            margin: const EdgeInsets.only(left: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.blue, width: 2),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: Image.network(
-                                widget.visit.prescriptionImageUrls[index],
-                                fit: BoxFit.cover,
-                              ),
-                            ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: widget.visit.medications.map((med) {
+                        return Chip(
+                          label: Text(med),
+                          backgroundColor: AppTheme.primaryColor.withOpacity(
+                            0.1,
+                          ),
+                          labelStyle: const TextStyle(
+                            color: AppTheme.primaryColor,
+                            fontSize: 13,
                           ),
                         );
-                      },
+                      }).toList(),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (widget.visit.prescriptionImageUrls.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        const Text(
+                          'صور الروشتة',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '(${widget.visit.prescriptionImageUrls.length})',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 80,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: widget.visit.prescriptionImageUrls.length,
+                        itemBuilder: (context, index) {
+                          return GestureDetector(
+                            onTap: () => _showPrescriptionImage(context, index),
+                            child: Container(
+                              width: 80,
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.blue,
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(
+                                  widget.visit.prescriptionImageUrls[index],
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -214,29 +201,6 @@ class _VisitCardState extends State<VisitCard> {
             visit: widget.visit,
           ),
         ),
-      ),
-    );
-  }
-
-  void _deleteVisit(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: const Text('هل أنت متأكد من حذف هذا الكشف؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<PatientCubit>().deleteVisit(widget.visit.id);
-              Navigator.pop(context);
-            },
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }
@@ -265,7 +229,8 @@ class _FullScreenImageGallery extends StatefulWidget {
   });
 
   @override
-  State<_FullScreenImageGallery> createState() => _FullScreenImageGalleryState();
+  State<_FullScreenImageGallery> createState() =>
+      _FullScreenImageGalleryState();
 }
 
 class _FullScreenImageGalleryState extends State<_FullScreenImageGallery> {
@@ -308,10 +273,10 @@ class _FullScreenImageGalleryState extends State<_FullScreenImageGallery> {
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Center(
-                        child: CircularProgressIndicator(
+                        child: AppLoadingIndicator(
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                           color: Colors.white,
                         ),
@@ -347,14 +312,21 @@ class _FullScreenImageGalleryState extends State<_FullScreenImageGallery> {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.black54,
                         ),
                       ),
                       if (widget.imageUrls.length > 1)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black54,
                             borderRadius: BorderRadius.circular(20),

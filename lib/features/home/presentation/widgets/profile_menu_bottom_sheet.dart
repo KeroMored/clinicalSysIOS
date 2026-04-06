@@ -7,10 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ProfileMenuBottomSheet extends StatelessWidget {
   final dynamic user;
 
-  const ProfileMenuBottomSheet({
-    super.key,
-    required this.user,
-  });
+  const ProfileMenuBottomSheet({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -20,10 +17,7 @@ class ProfileMenuBottomSheet extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.white,
-            AppTheme.backgroundColor,
-          ],
+          colors: [Colors.white, AppTheme.backgroundColor],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         boxShadow: [
@@ -47,7 +41,7 @@ class ProfileMenuBottomSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // User Info
           if (user != null) ...[
             Container(
@@ -93,9 +87,9 @@ class ProfileMenuBottomSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               user.email,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 16),
             // Role Badge
@@ -105,17 +99,18 @@ class ProfileMenuBottomSheet extends StatelessWidget {
                 gradient: user.isPharmacyOwner
                     ? AppTheme.pharmacyGradient
                     : user.isAdmin
-                        ? AppTheme.accentGradient
-                        : AppTheme.primaryGradient,
+                    ? AppTheme.accentGradient
+                    : AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(25),
                 boxShadow: [
                   BoxShadow(
-                    color: (user.isPharmacyOwner
-                            ? AppTheme.secondaryColor
-                            : user.isAdmin
+                    color:
+                        (user.isPharmacyOwner
+                                ? AppTheme.secondaryColor
+                                : user.isAdmin
                                 ? AppTheme.accentColor
                                 : AppTheme.primaryColor)
-                        .withValues(alpha: 0.3),
+                            .withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -125,8 +120,8 @@ class ProfileMenuBottomSheet extends StatelessWidget {
                 user.isPharmacyOwner
                     ? '👨‍⚕️ صاحب صيدلية'
                     : user.isAdmin
-                        ? '👑 مدير'
-                        : '👤 مستخدم',
+                    ? '👑 مدير'
+                    : '👤 مستخدم',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -137,7 +132,7 @@ class ProfileMenuBottomSheet extends StatelessWidget {
             Divider(color: Colors.grey[300], thickness: 1),
             const SizedBox(height: 16),
           ],
-          
+
           // Edit Profile Button
           SizedBox(
             width: double.infinity,
@@ -179,10 +174,11 @@ class ProfileMenuBottomSheet extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'تعديل الملف الشخصي',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ],
                     ),
@@ -192,7 +188,7 @@ class ProfileMenuBottomSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Sign Out Button
           SizedBox(
             width: double.infinity,
@@ -213,7 +209,7 @@ class ProfileMenuBottomSheet extends StatelessWidget {
                 child: InkWell(
                   onTap: () async {
                     Navigator.pop(context); // Close drawer first
-                    
+
                     // Sign out immediately - no loading dialog
                     await context.read<AuthCubit>().signOut();
                   },
@@ -227,10 +223,11 @@ class ProfileMenuBottomSheet extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'تسجيل الخروج',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ],
                     ),

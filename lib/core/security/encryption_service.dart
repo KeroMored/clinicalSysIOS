@@ -18,9 +18,7 @@ class EncryptionService {
       encryptedSharedPreferences: true,
       resetOnError: true,
     ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-    ),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
   late encrypt.Key _encryptionKey;
@@ -59,14 +57,8 @@ class EncryptionService {
     final key = encrypt.Key.fromSecureRandom(32); // AES-256
     final iv = encrypt.IV.fromSecureRandom(16);
 
-    await _secureStorage.write(
-      key: 'encryption_key',
-      value: key.base64,
-    );
-    await _secureStorage.write(
-      key: 'encryption_iv',
-      value: iv.base64,
-    );
+    await _secureStorage.write(key: 'encryption_key', value: key.base64);
+    await _secureStorage.write(key: 'encryption_iv', value: iv.base64);
 
     _encryptionKey = key;
     _iv = iv;
@@ -129,13 +121,13 @@ class EncryptionService {
     try {
       final parts = hashedPassword.split(':');
       if (parts.length != 2) return false;
-      
+
       final salt = parts[0];
       final hash = parts[1];
-      
+
       final bytes = utf8.encode(password + salt);
       final digest = sha256.convert(bytes);
-      
+
       return digest.toString() == hash;
     } catch (e) {
       return false;
@@ -159,7 +151,7 @@ class EncryptionService {
   Future<String?> readSecureData(String key) async {
     final encrypted = await _secureStorage.read(key: key);
     if (encrypted == null) return null;
-    
+
     try {
       return decryptText(encrypted);
     } catch (e) {
@@ -205,19 +197,14 @@ class EncryptionService {
     final keyGen = RSAKeyGenerator()
       ..init(
         ParametersWithRandom(
-          RSAKeyGeneratorParameters(
-            BigInt.parse('65537'),
-            2048,
-            64,
-          ),
-          SecureRandom('Fortuna')
-            ..seed(
-              KeyParameter(
-                Uint8List.fromList(
-                  List.generate(32, (i) => Random.secure().nextInt(256)),
-                ),
+          RSAKeyGeneratorParameters(BigInt.parse('65537'), 2048, 64),
+          SecureRandom('Fortuna')..seed(
+            KeyParameter(
+              Uint8List.fromList(
+                List.generate(32, (i) => Random.secure().nextInt(256)),
               ),
             ),
+          ),
         ),
       );
 
@@ -226,17 +213,13 @@ class EncryptionService {
 
   /// تشفير باستخدام RSA Public Key
   String encryptWithPublicKey(String plainText, RSAPublicKey publicKey) {
-    final encrypter = encrypt.Encrypter(encrypt.RSA(
-      publicKey: publicKey,
-    ));
+    final encrypter = encrypt.Encrypter(encrypt.RSA(publicKey: publicKey));
     return encrypter.encrypt(plainText).base64;
   }
 
   /// فك التشفير باستخدام RSA Private Key
   String decryptWithPrivateKey(String encryptedText, RSAPrivateKey privateKey) {
-    final encrypter = encrypt.Encrypter(encrypt.RSA(
-      privateKey: privateKey,
-    ));
+    final encrypter = encrypt.Encrypter(encrypt.RSA(privateKey: privateKey));
     return encrypter.decrypt64(encryptedText);
   }
 

@@ -6,6 +6,28 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../data/models/lab_booking_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+
+const Color _labPrimaryColor = Color(0xFF0B8293);
+const Color _labTextColor = Color(0xFF0F172A);
+
+PreferredSizeWidget _buildLabAppBar(String title) {
+  return AppBar(
+    backgroundColor: Colors.white,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0.5,
+    centerTitle: true,
+    title: Text(
+      title,
+      style: const TextStyle(
+        color: _labTextColor,
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+      ),
+    ),
+    iconTheme: const IconThemeData(color: _labPrimaryColor),
+  );
+}
 
 /// شاشة أرشيف الحجوزات - نظام هرمي (سنة → شهر → يوم)
 class LabBookingsHistoryScreen extends StatefulWidget {
@@ -14,20 +36,25 @@ class LabBookingsHistoryScreen extends StatefulWidget {
   const LabBookingsHistoryScreen({super.key, required this.laboratoryId});
 
   @override
-  State<LabBookingsHistoryScreen> createState() => _LabBookingsHistoryScreenState();
+  State<LabBookingsHistoryScreen> createState() =>
+      _LabBookingsHistoryScreenState();
 }
 
 class _LabBookingsHistoryScreenState extends State<LabBookingsHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الأرشيف', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF00BCD4),
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
+      appBar: _buildLabAppBar('الأرشيف'),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAF7FB), Color(0xFFF4FAFD), Color(0xFFF8FCFE)],
+          ),
+        ),
+        child: _YearsListView(laboratoryId: widget.laboratoryId),
       ),
-      body: _YearsListView(laboratoryId: widget.laboratoryId),
     );
   }
 }
@@ -61,8 +88,8 @@ class _YearsListViewState extends State<_YearsListView> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= 
-        _scrollController.position.maxScrollExtent * 0.8 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.8 &&
         !_isLoading) {
       _loadMore();
     }
@@ -88,7 +115,7 @@ class _YearsListViewState extends State<_YearsListView> {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: AppLoadingIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -96,7 +123,11 @@ class _YearsListViewState extends State<_YearsListView> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.archive_outlined, size: 100, color: Colors.grey[300]),
+                Icon(
+                  Icons.archive_outlined,
+                  size: 100,
+                  color: Colors.grey[300],
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'لا يوجد أرشيف',
@@ -118,14 +149,19 @@ class _YearsListViewState extends State<_YearsListView> {
           }
         }
 
-        final sortedYears = bookingsByYear.keys.toList()..sort((a, b) => b.compareTo(a));
+        final sortedYears = bookingsByYear.keys.toList()
+          ..sort((a, b) => b.compareTo(a));
 
         if (sortedYears.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.archive_outlined, size: 100, color: Colors.grey[300]),
+                Icon(
+                  Icons.archive_outlined,
+                  size: 100,
+                  color: Colors.grey[300],
+                ),
                 const SizedBox(height: 16),
                 Text(
                   'لا يوجد أرشيف',
@@ -145,13 +181,14 @@ class _YearsListViewState extends State<_YearsListView> {
             return ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount: displayedYears.length + (hasMore && _isLoading ? 1 : 0),
+              itemCount:
+                  displayedYears.length + (hasMore && _isLoading ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == displayedYears.length) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
+                      child: AppLoadingIndicator(),
                     ),
                   );
                 }
@@ -261,10 +298,7 @@ class _MonthsScreen extends StatefulWidget {
   final String laboratoryId;
   final int year;
 
-  const _MonthsScreen({
-    required this.laboratoryId,
-    required this.year,
-  });
+  const _MonthsScreen({required this.laboratoryId, required this.year});
 
   @override
   State<_MonthsScreen> createState() => _MonthsScreenState();
@@ -289,8 +323,8 @@ class _MonthsScreenState extends State<_MonthsScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= 
-        _scrollController.position.maxScrollExtent * 0.8 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.8 &&
         !_isLoading) {
       _loadMore();
     }
@@ -312,113 +346,133 @@ class _MonthsScreenState extends State<_MonthsScreen> {
     final endOfYear = DateTime(widget.year + 1, 1, 1);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('عام ${widget.year}', style: const TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF00BCD4),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('lab_bookings')
-            .where('laboratoryId', isEqualTo: widget.laboratoryId)
-            .where('archivedDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYear))
-            .where('archivedDate', isLessThan: Timestamp.fromDate(endOfYear))
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.calendar_today_outlined, size: 100, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'لا توجد حجوزات في هذا العام',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // تجميع الحجوزات حسب الشهر (تاريخ الحجز الأصلي)
-          final Map<int, List<LabBookingModel>> bookingsByMonth = {};
-          for (var doc in snapshot.data!.docs) {
-            final booking = LabBookingModel.fromFirestore(doc);
-            if (booking.archivedDate != null) {
-              final month = booking.createdAt.month;
-              bookingsByMonth.putIfAbsent(month, () => []);
-              bookingsByMonth[month]!.add(booking);
+      appBar: _buildLabAppBar('عام ${widget.year}'),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAF7FB), Color(0xFFF4FAFD), Color(0xFFF8FCFE)],
+          ),
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('lab_bookings')
+              .where('laboratoryId', isEqualTo: widget.laboratoryId)
+              .where(
+                'archivedDate',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfYear),
+              )
+              .where('archivedDate', isLessThan: Timestamp.fromDate(endOfYear))
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: AppLoadingIndicator());
             }
-          }
 
-          final sortedMonths = bookingsByMonth.keys.toList()..sort((a, b) => b.compareTo(a));
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 100,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'لا توجد حجوزات في هذا العام',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-          if (sortedMonths.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.calendar_today_outlined, size: 100, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'لا توجد حجوزات في هذا العام',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
+            // تجميع الحجوزات حسب الشهر (تاريخ الحجز الأصلي)
+            final Map<int, List<LabBookingModel>> bookingsByMonth = {};
+            for (var doc in snapshot.data!.docs) {
+              final booking = LabBookingModel.fromFirestore(doc);
+              if (booking.archivedDate != null) {
+                final month = booking.createdAt.month;
+                bookingsByMonth.putIfAbsent(month, () => []);
+                bookingsByMonth[month]!.add(booking);
+              }
+            }
 
-          return ValueListenableBuilder<int>(
-            valueListenable: _displayCount,
-            builder: (context, displayCount, _) {
-              final displayedMonths = sortedMonths.take(displayCount).toList();
-              final hasMore = sortedMonths.length > displayCount;
+            final sortedMonths = bookingsByMonth.keys.toList()
+              ..sort((a, b) => b.compareTo(a));
 
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: displayedMonths.length + (hasMore && _isLoading ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == displayedMonths.length) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
+            if (sortedMonths.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 100,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'لا توجد حجوزات في هذا العام',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-                  final month = displayedMonths[index];
-                  final bookings = bookingsByMonth[month]!;
-                  final date = DateTime(widget.year, month, 1);
+            return ValueListenableBuilder<int>(
+              valueListenable: _displayCount,
+              builder: (context, displayCount, _) {
+                final displayedMonths = sortedMonths
+                    .take(displayCount)
+                    .toList();
+                final hasMore = sortedMonths.length > displayCount;
 
-                  return _MonthCard(
-                    date: date,
-                    bookingsCount: bookings.length,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => _DaysScreen(
-                            laboratoryId: widget.laboratoryId,
-                            year: widget.year,
-                            month: month,
-                          ),
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount:
+                      displayedMonths.length + (hasMore && _isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == displayedMonths.length) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: AppLoadingIndicator(),
                         ),
                       );
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
+                    }
+
+                    final month = displayedMonths[index];
+                    final bookings = bookingsByMonth[month]!;
+                    final date = DateTime(widget.year, month, 1);
+
+                    return _MonthCard(
+                      date: date,
+                      bookingsCount: bookings.length,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => _DaysScreen(
+                              laboratoryId: widget.laboratoryId,
+                              year: widget.year,
+                              month: month,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -534,8 +588,8 @@ class _DaysScreenState extends State<_DaysScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= 
-        _scrollController.position.maxScrollExtent * 0.8 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.8 &&
         !_isLoading) {
       _loadMore();
     }
@@ -558,112 +612,130 @@ class _DaysScreenState extends State<_DaysScreen> {
     final monthName = DateFormat('MMMM yyyy', 'ar').format(startOfMonth);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(monthName, style: const TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF00BCD4),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('lab_bookings')
-            .where('laboratoryId', isEqualTo: widget.laboratoryId)
-            .where('archivedDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-            .where('archivedDate', isLessThan: Timestamp.fromDate(endOfMonth))
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.event_available_outlined, size: 100, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'لا توجد حجوزات في هذا الشهر',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // تجميع الحجوزات حسب اليوم (تاريخ الحجز الأصلي)
-          final Map<int, List<LabBookingModel>> bookingsByDay = {};
-          for (var doc in snapshot.data!.docs) {
-            final booking = LabBookingModel.fromFirestore(doc);
-            if (booking.archivedDate != null) {
-              final day = booking.createdAt.day;
-              bookingsByDay.putIfAbsent(day, () => []);
-              bookingsByDay[day]!.add(booking);
+      appBar: _buildLabAppBar(monthName),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAF7FB), Color(0xFFF4FAFD), Color(0xFFF8FCFE)],
+          ),
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('lab_bookings')
+              .where('laboratoryId', isEqualTo: widget.laboratoryId)
+              .where(
+                'archivedDate',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+              )
+              .where('archivedDate', isLessThan: Timestamp.fromDate(endOfMonth))
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: AppLoadingIndicator());
             }
-          }
 
-          final sortedDays = bookingsByDay.keys.toList()..sort((a, b) => b.compareTo(a));
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.event_available_outlined,
+                      size: 100,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'لا توجد حجوزات في هذا الشهر',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-          if (sortedDays.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.event_available_outlined, size: 100, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'لا توجد حجوزات في هذا الشهر',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
+            // تجميع الحجوزات حسب اليوم (تاريخ الحجز الأصلي)
+            final Map<int, List<LabBookingModel>> bookingsByDay = {};
+            for (var doc in snapshot.data!.docs) {
+              final booking = LabBookingModel.fromFirestore(doc);
+              if (booking.archivedDate != null) {
+                final day = booking.createdAt.day;
+                bookingsByDay.putIfAbsent(day, () => []);
+                bookingsByDay[day]!.add(booking);
+              }
+            }
 
-          return ValueListenableBuilder<int>(
-            valueListenable: _displayCount,
-            builder: (context, displayCount, _) {
-              final displayedDays = sortedDays.take(displayCount).toList();
-              final hasMore = sortedDays.length > displayCount;
+            final sortedDays = bookingsByDay.keys.toList()
+              ..sort((a, b) => b.compareTo(a));
 
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: displayedDays.length + (hasMore && _isLoading ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == displayedDays.length) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
+            if (sortedDays.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.event_available_outlined,
+                      size: 100,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'لا توجد حجوزات في هذا الشهر',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              );
+            }
 
-                  final day = displayedDays[index];
-                  final bookings = bookingsByDay[day]!;
-                  final date = DateTime(widget.year, widget.month, day);
+            return ValueListenableBuilder<int>(
+              valueListenable: _displayCount,
+              builder: (context, displayCount, _) {
+                final displayedDays = sortedDays.take(displayCount).toList();
+                final hasMore = sortedDays.length > displayCount;
 
-                  return _DayCard(
-                    date: date,
-                    bookingsCount: bookings.length,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => _DayBookingsScreen(
-                            laboratoryId: widget.laboratoryId,
-                            date: date,
-                          ),
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount:
+                      displayedDays.length + (hasMore && _isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == displayedDays.length) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: AppLoadingIndicator(),
                         ),
                       );
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
+                    }
+
+                    final day = displayedDays[index];
+                    final bookings = bookingsByDay[day]!;
+                    final date = DateTime(widget.year, widget.month, day);
+
+                    return _DayCard(
+                      date: date,
+                      bookingsCount: bookings.length,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => _DayBookingsScreen(
+                              laboratoryId: widget.laboratoryId,
+                              date: date,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -726,10 +798,7 @@ class _DayCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     dayDate,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -758,10 +827,7 @@ class _DayBookingsScreen extends StatefulWidget {
   final String laboratoryId;
   final DateTime date;
 
-  const _DayBookingsScreen({
-    required this.laboratoryId,
-    required this.date,
-  });
+  const _DayBookingsScreen({required this.laboratoryId, required this.date});
 
   @override
   State<_DayBookingsScreen> createState() => _DayBookingsScreenState();
@@ -786,8 +852,8 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= 
-        _scrollController.position.maxScrollExtent * 0.8 &&
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.8 &&
         !_isLoading) {
       _loadMore();
     }
@@ -805,77 +871,103 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final startOfDay = DateTime(widget.date.year, widget.date.month, widget.date.day);
-    final endOfDay = DateTime(widget.date.year, widget.date.month, widget.date.day, 23, 59, 59);
+    final startOfDay = DateTime(
+      widget.date.year,
+      widget.date.month,
+      widget.date.day,
+    );
+    final endOfDay = DateTime(
+      widget.date.year,
+      widget.date.month,
+      widget.date.day,
+      23,
+      59,
+      59,
+    );
     final dayName = DateFormat('EEEE، d MMMM yyyy', 'ar').format(widget.date);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(dayName, style: const TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF00BCD4),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('lab_bookings')
-            .where('laboratoryId', isEqualTo: widget.laboratoryId)
-            .where('archivedDate', isNull: false)
-            .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      appBar: _buildLabAppBar(dayName),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEAF7FB), Color(0xFFF4FAFD), Color(0xFFF8FCFE)],
+          ),
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('lab_bookings')
+              .where('laboratoryId', isEqualTo: widget.laboratoryId)
+              .where('archivedDate', isNull: false)
+              .where(
+                'createdAt',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+              )
+              .where(
+                'createdAt',
+                isLessThanOrEqualTo: Timestamp.fromDate(endOfDay),
+              )
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: AppLoadingIndicator());
+            }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.event_busy, size: 100, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'لا توجد حجوزات في هذا اليوم',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final allBookings = snapshot.data!.docs
-              .map((doc) => LabBookingModel.fromFirestore(doc))
-              .toList();
-
-          return ValueListenableBuilder<int>(
-            valueListenable: _displayCount,
-            builder: (context, displayCount, _) {
-              final displayedBookings = allBookings.take(displayCount).toList();
-              final hasMore = allBookings.length > displayCount;
-
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: displayedBookings.length + (hasMore && _isLoading ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == displayedBookings.length) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
-
-                  final booking = displayedBookings[index];
-                  return _BookingCard(booking: booking);
-                },
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.event_busy, size: 100, color: Colors.grey[300]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'لا توجد حجوزات في هذا اليوم',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
               );
-            },
-          );
-        },
+            }
+
+            final allBookings = snapshot.data!.docs
+                .map((doc) => LabBookingModel.fromFirestore(doc))
+                .toList();
+
+            return ValueListenableBuilder<int>(
+              valueListenable: _displayCount,
+              builder: (context, displayCount, _) {
+                final displayedBookings = allBookings
+                    .take(displayCount)
+                    .toList();
+                final hasMore = allBookings.length > displayCount;
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount:
+                      displayedBookings.length +
+                      (hasMore && _isLoading ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == displayedBookings.length) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: AppLoadingIndicator(),
+                        ),
+                      );
+                    }
+
+                    final booking = displayedBookings[index];
+                    return _BookingCard(booking: booking);
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -927,7 +1019,10 @@ class _BookingCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -978,16 +1073,18 @@ class _BookingCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
 
-            // نوع التحليل
-            if (booking.testType != null && booking.testType!.isNotEmpty) ...[
+            // التحاليل المطلوبة
+            if (booking.testTypes.isNotEmpty) ...[
               Row(
                 children: [
                   const Icon(Icons.science, size: 18, color: Colors.grey),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      booking.testType!,
+                      booking.testTypes.join('، '),
                       style: const TextStyle(fontSize: 14),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -1000,7 +1097,9 @@ class _BookingCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    booking.serviceType == 'lab' ? Icons.local_hospital : Icons.home,
+                    booking.serviceType == 'lab'
+                        ? Icons.local_hospital
+                        : Icons.home,
                     size: 18,
                     color: Colors.grey,
                   ),
@@ -1041,21 +1140,31 @@ class _BookingCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 // زر الواتساب
                 IconButton(
-                  icon: const FaIcon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366)),
+                  icon: const FaIcon(
+                    FontAwesomeIcons.whatsapp,
+                    color: Color(0xFF25D366),
+                  ),
                   iconSize: 24,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () async {
-                    final phone = booking.patientPhone.replaceAll(RegExp(r'[^0-9]'), '');
+                    final phone = booking.patientPhone.replaceAll(
+                      RegExp(r'[^0-9]'),
+                      '',
+                    );
                     final message = Uri.encodeComponent(
                       'أهلاً بحضرتك 👋\n'
                       'نحن ${booking.laboratoryName}\n'
-                      'نتشرف بخدمتك دائماً\n\n'
-                      
+                      'نتشرف بخدمتك دائماً\n\n',
                     );
-                    final uri = Uri.parse('https://wa.me/+2$phone?text=$message');
+                    final uri = Uri.parse(
+                      'https://wa.me/+2$phone?text=$message',
+                    );
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   },
                 ),
@@ -1069,7 +1178,10 @@ class _BookingCard extends StatelessWidget {
                 const Icon(Icons.access_time, size: 18, color: Colors.grey),
                 const SizedBox(width: 8),
                 Text(
-                  DateFormat('d MMM yyyy - h:mm a', 'ar').format(booking.createdAt),
+                  DateFormat(
+                    'd MMM yyyy - h:mm a',
+                    'ar',
+                  ).format(booking.createdAt),
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -1081,13 +1193,16 @@ class _BookingCard extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  final phone = booking.patientPhone.replaceAll(RegExp(r'[^0-9]'), '');
+                  final phone = booking.patientPhone.replaceAll(
+                    RegExp(r'[^0-9]'),
+                    '',
+                  );
                   final message = Uri.encodeComponent(
                     'أهلاً بحضرتك 👋\n'
                     'نحن ${booking.laboratoryName}\n\n'
                     'نفيدكم بإنه تم انتهاء تحليلكم ✅\n'
                     'يمكنكم استلام النتيجة في أي وقت\n\n'
-                    'نتمنى لكم الصحة والعافية 💚'
+                    'نتمنى لكم الصحة والعافية 💚',
                   );
                   final uri = Uri.parse('https://wa.me/+2$phone?text=$message');
                   if (await canLaunchUrl(uri)) {

@@ -16,21 +16,18 @@ class AppointmentReminderService {
 
   /// تهيئة خدمة التذكيرات
   static Future<void> initialize() async {
-    await AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-          channelKey: 'appointment_reminders',
-          channelName: 'تذكيرات المواعيد',
-          channelDescription: 'إشعارات تذكير بمواعيد التحاليل',
-          defaultColor: Color(0xFF00BCD4),
-          ledColor: Colors.white,
-          importance: NotificationImportance.High,
-          playSound: true,
-          enableVibration: true,
-        ),
-      ],
-    );
+    await AwesomeNotifications().initialize(null, [
+      NotificationChannel(
+        channelKey: 'appointment_reminders',
+        channelName: 'تذكيرات المواعيد',
+        channelDescription: 'إشعارات تذكير بمواعيد التحاليل',
+        defaultColor: Color(0xFF00BCD4),
+        ledColor: Colors.white,
+        importance: NotificationImportance.High,
+        playSound: true,
+        enableVibration: true,
+      ),
+    ]);
 
     // طلب الأذونات
     await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
@@ -86,7 +83,8 @@ class AppointmentReminderService {
 
       if (appointments.isNotEmpty) {
         print(
-            'Sent ${appointments.length} appointment reminders at ${DateTime.now()}');
+          'Sent ${appointments.length} appointment reminders at ${DateTime.now()}',
+        );
       }
     } catch (e) {
       print('Error checking reminders: $e');
@@ -111,10 +109,7 @@ class AppointmentReminderService {
         },
       ),
       actionButtons: [
-        NotificationActionButton(
-          key: 'VIEW',
-          label: 'عرض التفاصيل',
-        ),
+        NotificationActionButton(key: 'VIEW', label: 'عرض التفاصيل'),
         NotificationActionButton(
           key: 'CANCEL',
           label: 'إلغاء',
@@ -146,10 +141,7 @@ class AppointmentReminderService {
         },
       ),
       actionButtons: [
-        NotificationActionButton(
-          key: 'VIEW',
-          label: 'عرض الموعد',
-        ),
+        NotificationActionButton(key: 'VIEW', label: 'عرض الموعد'),
         NotificationActionButton(
           key: 'DIRECTIONS',
           label: 'الاتجاهات',
@@ -165,8 +157,9 @@ class AppointmentReminderService {
     Duration beforeAppointment,
     String message,
   ) async {
-    final reminderTime =
-        appointment.appointmentDateTime.subtract(beforeAppointment);
+    final reminderTime = appointment.appointmentDateTime.subtract(
+      beforeAppointment,
+    );
 
     // التأكد من أن الوقت في المستقبل
     if (reminderTime.isBefore(DateTime.now())) {
@@ -179,10 +172,7 @@ class AppointmentReminderService {
         channelKey: 'appointment_reminders',
         title: 'تذكير بموعد التحليل',
         body: message,
-        payload: {
-          'type': 'custom_reminder',
-          'appointmentId': appointment.id,
-        },
+        payload: {'type': 'custom_reminder', 'appointmentId': appointment.id},
       ),
       schedule: NotificationCalendar.fromDate(date: reminderTime),
     );
@@ -202,10 +192,7 @@ class AppointmentReminderService {
         channelKey: 'appointment_reminders',
         title: '📋 تذكير: حان وقت إجراء التحليل',
         body: 'حان وقت إجراء $testName الدوري',
-        payload: {
-          'type': 'recurring_reminder',
-          'testName': testName,
-        },
+        payload: {'type': 'recurring_reminder', 'testName': testName},
       ),
       schedule: NotificationCalendar.fromDate(
         date: firstReminderDate,

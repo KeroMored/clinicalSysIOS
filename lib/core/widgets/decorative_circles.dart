@@ -33,8 +33,12 @@ class DecorativeCircles extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    (bottomLeftColor ?? AppTheme.primaryColor).withValues(alpha: 0.15),
-                    (bottomLeftColor ?? AppTheme.primaryColor).withValues(alpha: 0.05),
+                    (bottomLeftColor ?? AppTheme.primaryColor).withValues(
+                      alpha: 0.15,
+                    ),
+                    (bottomLeftColor ?? AppTheme.primaryColor).withValues(
+                      alpha: 0.05,
+                    ),
                     Colors.transparent,
                   ],
                   stops: const [0.0, 0.7, 1.0],
@@ -42,7 +46,7 @@ class DecorativeCircles extends StatelessWidget {
               ),
             ),
           ),
-        
+
         // Top Right Circle
         if (showTopRight)
           Positioned(
@@ -55,8 +59,12 @@ class DecorativeCircles extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    (topRightColor ?? AppTheme.secondaryColor).withValues(alpha: 0.12),
-                    (topRightColor ?? AppTheme.secondaryColor).withValues(alpha: 0.06),
+                    (topRightColor ?? AppTheme.secondaryColor).withValues(
+                      alpha: 0.12,
+                    ),
+                    (topRightColor ?? AppTheme.secondaryColor).withValues(
+                      alpha: 0.06,
+                    ),
                     Colors.transparent,
                   ],
                   stops: const [0.0, 0.7, 1.0],
@@ -74,7 +82,7 @@ class DecorativeCircle extends StatelessWidget {
   final double size;
   final Color color;
   final double opacity;
-  
+
   const DecorativeCircle({
     super.key,
     required this.size,

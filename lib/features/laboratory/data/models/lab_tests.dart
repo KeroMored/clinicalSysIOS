@@ -50,7 +50,7 @@ class AvailableLabTests {
       category: LabTestCategories.hematology,
       description: 'PT & PTT',
     ),
-    
+
     // التحاليل الكيميائية
     LabTest(
       id: 'blood_sugar',
@@ -86,7 +86,7 @@ class AvailableLabTests {
       category: LabTestCategories.biochemistry,
       description: 'Na, K, Cl, Ca, Mg',
     ),
-    
+
     // تحاليل الميكروبيولوجي
     LabTest(
       id: 'urine_culture',
@@ -108,7 +108,7 @@ class AvailableLabTests {
       name: 'مزرعة دم',
       category: LabTestCategories.microbiology,
     ),
-    
+
     // تحاليل المناعة
     LabTest(
       id: 'hiv',
@@ -125,7 +125,7 @@ class AvailableLabTests {
       name: 'التهاب الكبد سي (HCV Ab)',
       category: LabTestCategories.immunology,
     ),
-    
+
     // تحاليل الهرمونات
     LabTest(
       id: 'thyroid_profile',
@@ -153,13 +153,9 @@ class AvailableLabTests {
       name: 'فيتامين د',
       category: LabTestCategories.hormones,
     ),
-    
+
     // دلالات الأورام
-    LabTest(
-      id: 'cea',
-      name: 'CEA',
-      category: LabTestCategories.tumourMarkers,
-    ),
+    LabTest(id: 'cea', name: 'CEA', category: LabTestCategories.tumourMarkers),
     LabTest(
       id: 'ca_125',
       name: 'CA 125',
@@ -170,42 +166,30 @@ class AvailableLabTests {
       name: 'CA 19-9',
       category: LabTestCategories.tumourMarkers,
     ),
-    LabTest(
-      id: 'psa',
-      name: 'PSA',
-      category: LabTestCategories.tumourMarkers,
-    ),
-    LabTest(
-      id: 'afp',
-      name: 'AFP',
-      category: LabTestCategories.tumourMarkers,
-    ),
-    
+    LabTest(id: 'psa', name: 'PSA', category: LabTestCategories.tumourMarkers),
+    LabTest(id: 'afp', name: 'AFP', category: LabTestCategories.tumourMarkers),
+
     // تحاليل البول
     LabTest(
       id: 'urine_analysis',
       name: 'تحليل بول كامل',
       category: LabTestCategories.urine,
     ),
-    
+
     // تحاليل البراز
     LabTest(
       id: 'stool_analysis',
       name: 'تحليل براز كامل',
       category: LabTestCategories.stool,
     ),
-    
+
     // تحاليل الأمصال
     LabTest(
       id: 'crp',
       name: 'بروتين سي التفاعلي (CRP)',
       category: LabTestCategories.serology,
     ),
-    LabTest(
-      id: 'aso',
-      name: 'ASO',
-      category: LabTestCategories.serology,
-    ),
+    LabTest(id: 'aso', name: 'ASO', category: LabTestCategories.serology),
     LabTest(
       id: 'rf',
       name: 'عامل الروماتويد (RF)',
@@ -218,8 +202,9 @@ class AvailableLabTests {
     ),
   ];
 
-  static List<String> get allTestNames => allTests.map((test) => test.name).toList();
-  
+  static List<String> get allTestNames =>
+      allTests.map((test) => test.name).toList();
+
   static List<String> getTestsByCategory(String category) {
     return allTests
         .where((test) => test.category == category)
@@ -228,15 +213,15 @@ class AvailableLabTests {
   }
 
   static List<String> get allCategories => [
-        LabTestCategories.hematology,
-        LabTestCategories.biochemistry,
-        LabTestCategories.microbiology,
-        LabTestCategories.immunology,
-        LabTestCategories.hormones,
-        LabTestCategories.tumourMarkers,
-        LabTestCategories.urine,
-        LabTestCategories.stool,
-        LabTestCategories.serology,
-        LabTestCategories.other,
-      ];
+    LabTestCategories.hematology,
+    LabTestCategories.biochemistry,
+    LabTestCategories.microbiology,
+    LabTestCategories.immunology,
+    LabTestCategories.hormones,
+    LabTestCategories.tumourMarkers,
+    LabTestCategories.urine,
+    LabTestCategories.stool,
+    LabTestCategories.serology,
+    LabTestCategories.other,
+  ];
 }

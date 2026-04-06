@@ -9,10 +9,7 @@ import 'radiology_status_badge.dart';
 class RadiologyListCard extends StatelessWidget {
   final RadiologyModel radiology;
 
-  const RadiologyListCard({
-    super.key,
-    required this.radiology,
-  });
+  const RadiologyListCard({super.key, required this.radiology});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +25,8 @@ class RadiologyListCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => RadiologyDetailApprovalScreen(radiology: radiology),
+              builder: (context) =>
+                  RadiologyDetailApprovalScreen(radiology: radiology),
             ),
           );
         },
@@ -88,7 +86,10 @@ class RadiologyListCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       radiology.ownerName,
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ),
                 ],
@@ -154,11 +155,18 @@ class RadiologyListCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.medical_services, size: 12, color: Colors.deepPurple.shade700),
+              Icon(
+                Icons.medical_services,
+                size: 12,
+                color: Colors.deepPurple.shade700,
+              ),
               const SizedBox(width: 4),
               Text(
                 '${radiology.services.length} خدمة',
-                style: TextStyle(fontSize: 11, color: Colors.deepPurple.shade700),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.deepPurple.shade700,
+                ),
               ),
             ],
           ),
@@ -178,7 +186,9 @@ class RadiologyListCard extends StatelessWidget {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('إرجاع لقيد الانتظار'),
-                  content: Text('هل تريد إرجاع "${radiology.centerName}" لقيد الانتظار؟'),
+                  content: Text(
+                    'هل تريد إرجاع "${radiology.centerName}" لقيد الانتظار؟',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -186,21 +196,23 @@ class RadiologyListCard extends StatelessWidget {
                     ),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                      ),
                       child: const Text('إرجاع'),
                     ),
                   ],
                 ),
               );
               if (confirm == true && context.mounted) {
-                await context.read<RadiologyCubit>().returnToPending(radiology.id);
+                await context.read<RadiologyCubit>().returnToPending(
+                  radiology.id,
+                );
               }
             },
             icon: const Icon(Icons.undo, size: 18),
             label: const Text('إرجاع'),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.orange,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
           ),
         const SizedBox(width: 8),
         TextButton.icon(
@@ -208,15 +220,14 @@ class RadiologyListCard extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => RadiologyDetailApprovalScreen(radiology: radiology),
+                builder: (context) =>
+                    RadiologyDetailApprovalScreen(radiology: radiology),
               ),
             );
           },
           icon: const Icon(Icons.visibility, size: 18),
           label: const Text('عرض التفاصيل'),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.teal,
-          ),
+          style: TextButton.styleFrom(foregroundColor: Colors.teal),
         ),
       ],
     );

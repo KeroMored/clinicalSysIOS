@@ -10,30 +10,30 @@ class LabResultModel {
   final String userName; // اسم المريض
   final String userPhone; // رقم المريض
   final String? userEmail; // إيميل المريض
-  
+
   // تفاصيل النتيجة
   final List<String> testNames; // أسماء التحاليل
   final String? resultPdfUrl; // رابط ملف PDF للنتيجة
   final String? resultImageUrl; // رابط صورة النتيجة (اختياري)
   final List<String>? additionalFiles; // ملفات إضافية
-  
+
   // معلومات النتيجة
   final DateTime testDate; // تاريخ إجراء التحليل
   final DateTime resultDate; // تاريخ جاهزية النتيجة
   final String? doctorName; // اسم الطبيب الذي أجرى التحليل
   final String? technicianName; // اسم الفني
-  
+
   // الإشعارات
   final bool notificationSent; // تم إرسال إشعار؟
   final DateTime? notificationSentAt; // وقت إرسال الإشعار
   final bool viewed; // المريض شاف النتيجة؟
   final DateTime? viewedAt; // وقت المشاهدة
   final int viewCount; // عدد مرات المشاهدة
-  
+
   // ملاحظات
   final String? notes; // ملاحظات المعمل على النتيجة
   final String? recommendation; // توصيات
-  
+
   final DateTime createdAt;
   final DateTime? updatedAt;
 
@@ -66,7 +66,8 @@ class LabResultModel {
   });
 
   // Getters for compatibility with result_sharing_service
-  String get testName => testNames.isNotEmpty ? testNames.join(', ') : 'تحليل معملي';
+  String get testName =>
+      testNames.isNotEmpty ? testNames.join(', ') : 'تحليل معملي';
   String get patientName => userName;
   DateTime get uploadedAt => resultDate;
   String? get pdfUrl => resultPdfUrl;
@@ -90,7 +91,9 @@ class LabResultModel {
       'doctorName': doctorName,
       'technicianName': technicianName,
       'notificationSent': notificationSent,
-      'notificationSentAt': notificationSentAt != null ? Timestamp.fromDate(notificationSentAt!) : null,
+      'notificationSentAt': notificationSentAt != null
+          ? Timestamp.fromDate(notificationSentAt!)
+          : null,
       'viewed': viewed,
       'viewedAt': viewedAt != null ? Timestamp.fromDate(viewedAt!) : null,
       'viewCount': viewCount,
@@ -117,11 +120,12 @@ class LabResultModel {
       testNames: List<String>.from(data['testNames'] ?? []),
       resultPdfUrl: data['resultPdfUrl'],
       resultImageUrl: data['resultImageUrl'],
-      additionalFiles: data['additionalFiles'] != null 
+      additionalFiles: data['additionalFiles'] != null
           ? List<String>.from(data['additionalFiles'])
           : null,
       testDate: (data['testDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      resultDate: (data['resultDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      resultDate:
+          (data['resultDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       doctorName: data['doctorName'],
       technicianName: data['technicianName'],
       notificationSent: data['notificationSent'] ?? false,

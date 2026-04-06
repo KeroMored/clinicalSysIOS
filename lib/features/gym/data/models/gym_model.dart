@@ -14,7 +14,7 @@ class GymModel {
   final String whatsapp;
   final String? logoUrl;
   final List<String> images;
-  
+
   // Gym specific features
   final bool hasMaleSection;
   final bool hasFemaleSection;
@@ -26,39 +26,37 @@ class GymModel {
   final bool hasYogaClasses;
   final bool hasCrossFit;
   final bool hasMartialArts;
-  
+
   // Training Types (أنواع التدريب)
-  final bool hasCardio;           // كارديو - تمارين التخسيس
-  final bool hasWeightLifting;    // رفع الأثقال
-  final bool hasBodybuilding;     // تدريب كمال أجسام
+  final bool hasCardio; // كارديو - تمارين التخسيس
+  final bool hasWeightLifting; // رفع الأثقال
+  final bool hasBodybuilding; // تدريب كمال أجسام
   final bool hasFunctionalTraining; // تدريب وظيفي
-  final bool hasGroupClasses;     // حصص جماعية
-  
+  final bool hasGroupClasses; // حصص جماعية
+
   // Working hours
   final Map<String, WorkingHours> maleWorkingHours;
   final Map<String, WorkingHours> femaleWorkingHours;
-  
+
   // Pricing
   final double? monthlySubscription;
   final double? yearlySubscription;
   final double? singleSessionPrice;
-  
 
-  
   // Rating (old fields - keep for backward compatibility)
   final double rating;
   final int reviewsCount;
-  
+
   // New rating fields
   final double averageRating; // متوسط التقييم (0.0 - 5.0)
   final int totalRatings; // عدد التقييمات
   final int totalLikes; // عدد اللايكات
-  
+
   // Owner info
   final String ownerId;
   final String ownerName;
   final List<String> authEmails; // إيميلات المصادقة للدخول
-  
+
   // Status
   final bool isApproved;
   final bool isActive;
@@ -102,7 +100,7 @@ class GymModel {
     this.monthlySubscription,
     this.yearlySubscription,
     this.singleSessionPrice,
-   
+
     this.rating = 0.0,
     this.reviewsCount = 0,
     required this.ownerId,
@@ -145,13 +143,21 @@ class GymModel {
       hasBodybuilding: data['hasBodybuilding'] ?? false,
       hasFunctionalTraining: data['hasFunctionalTraining'] ?? false,
       hasGroupClasses: data['hasGroupClasses'] ?? false,
-      maleWorkingHours: (data['maleWorkingHours'] as Map<String, dynamic>?)
-              ?.map((key, value) => MapEntry(
-                  key, WorkingHours.fromMap(value as Map<String, dynamic>))) ??
+      maleWorkingHours:
+          (data['maleWorkingHours'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(
+              key,
+              WorkingHours.fromMap(value as Map<String, dynamic>),
+            ),
+          ) ??
           {},
-      femaleWorkingHours: (data['femaleWorkingHours'] as Map<String, dynamic>?)
-              ?.map((key, value) => MapEntry(
-                  key, WorkingHours.fromMap(value as Map<String, dynamic>))) ??
+      femaleWorkingHours:
+          (data['femaleWorkingHours'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(
+              key,
+              WorkingHours.fromMap(value as Map<String, dynamic>),
+            ),
+          ) ??
           {},
       monthlySubscription: data['monthlySubscription']?.toDouble(),
       yearlySubscription: data['yearlySubscription']?.toDouble(),
@@ -204,10 +210,12 @@ class GymModel {
       'hasBodybuilding': hasBodybuilding,
       'hasFunctionalTraining': hasFunctionalTraining,
       'hasGroupClasses': hasGroupClasses,
-      'maleWorkingHours':
-          maleWorkingHours.map((key, value) => MapEntry(key, value.toMap())),
-      'femaleWorkingHours':
-          femaleWorkingHours.map((key, value) => MapEntry(key, value.toMap())),
+      'maleWorkingHours': maleWorkingHours.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ),
+      'femaleWorkingHours': femaleWorkingHours.map(
+        (key, value) => MapEntry(key, value.toMap()),
+      ),
       'monthlySubscription': monthlySubscription,
       'yearlySubscription': yearlySubscription,
       'singleSessionPrice': singleSessionPrice,

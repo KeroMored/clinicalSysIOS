@@ -11,10 +11,8 @@ import '../../presentation/cubit/admin_state.dart';
 class LaboratoryDetailApprovalScreen extends StatelessWidget {
   final LaboratoryModel laboratory;
 
-  const LaboratoryDetailApprovalScreen({
-    Key? key,
-    required this.laboratory,
-  }) : super(key: key);
+  const LaboratoryDetailApprovalScreen({Key? key, required this.laboratory})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -87,9 +85,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
               // Header with status
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                ),
+                decoration: BoxDecoration(color: statusColor.withOpacity(0.1)),
                 child: Column(
                   children: [
                     // Logo
@@ -121,7 +117,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                             ),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // Laboratory name
                     Text(
                       laboratory.name,
@@ -132,10 +128,13 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Status badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor,
                         borderRadius: BorderRadius.circular(20),
@@ -157,14 +156,11 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Created date
                     Text(
                       'تاريخ الطلب: ${DateFormat('yyyy/MM/dd - hh:mm a').format(laboratory.createdAt)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     ),
                   ],
                 ),
@@ -179,7 +175,11 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                     // Owner Information
                     _buildSectionTitle('بيانات المالك'),
                     _buildInfoCard([
-                      _buildDetailRow(Icons.person, 'اسم المالك', laboratory.ownerName),
+                      _buildDetailRow(
+                        Icons.person,
+                        'اسم المالك',
+                        laboratory.ownerName,
+                      ),
                       const SizedBox(height: 12),
                       // Contact Buttons
                       Row(
@@ -187,13 +187,16 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                           // Call Button
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => _makePhoneCall(laboratory.ownerPhone),
+                              onPressed: () =>
+                                  _makePhoneCall(laboratory.ownerPhone),
                               icon: const Icon(Icons.phone),
                               label: const Text('اتصال'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -201,13 +204,16 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                           // WhatsApp Button
                           Expanded(
                             child: ElevatedButton.icon(
-                              onPressed: () => _openWhatsApp(laboratory.ownerPhone),
-                              icon:  Icon(MdiIcons.whatsapp),
+                              onPressed: () =>
+                                  _openWhatsApp(laboratory.ownerPhone),
+                              icon: Icon(MdiIcons.whatsapp),
                               label: const Text('واتساب'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF25D366),
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -220,25 +226,42 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                     // Laboratory Information
                     _buildSectionTitle('معلومات المعمل'),
                     _buildInfoCard([
-                      _buildDetailRow(Icons.location_on, 'العنوان', laboratory.address),
-                      if (laboratory.description != null && laboratory.description!.isNotEmpty)
-                        _buildDetailRow(Icons.description, 'الوصف', laboratory.description!),
+                      _buildDetailRow(
+                        Icons.location_on,
+                        'العنوان',
+                        laboratory.address,
+                      ),
+                      if (laboratory.description != null &&
+                          laboratory.description!.isNotEmpty)
+                        _buildDetailRow(
+                          Icons.description,
+                          'الوصف',
+                          laboratory.description!,
+                        ),
                     ]),
 
                     const SizedBox(height: 16),
 
                     // Available Tests
-                    _buildSectionTitle('التحاليل المتاحة (${laboratory.availableTests.length})'),
+                    _buildSectionTitle(
+                      'التحاليل المتاحة (${laboratory.availableTests.length})',
+                    ),
                     _buildInfoCard([
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: laboratory.availableTests.map((test) {
                           return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.green.shade400, Colors.green.shade600],
+                                colors: [
+                                  Colors.green.shade400,
+                                  Colors.green.shade600,
+                                ],
                               ),
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
@@ -270,7 +293,11 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                       _buildInfoCard([
                         Row(
                           children: [
-                            const Icon(Icons.home, size: 24, color: Colors.blue),
+                            const Icon(
+                              Icons.home,
+                              size: 24,
+                              color: Colors.blue,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -301,7 +328,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                     ],
 
                     // Certifications
-                 
+
                     // Working Hours
                     _buildSectionTitle('مواعيد العمل'),
                     _buildInfoCard([
@@ -309,7 +336,8 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                     ]),
 
                     // Rejection Reason (if rejected)
-                    if (laboratory.status == 'rejected' && laboratory.rejectionReason != null) ...[
+                    if (laboratory.status == 'rejected' &&
+                        laboratory.rejectionReason != null) ...[
                       const SizedBox(height: 16),
                       _buildSectionTitle('سبب الرفض'),
                       Container(
@@ -345,7 +373,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
           ),
         ),
       ),
-      
+
       // Action Buttons (fixed at bottom)
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
@@ -408,10 +436,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -463,12 +488,17 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
               ),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isAvailable ? Colors.green[50] : Colors.grey[200],
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isAvailable ? Colors.green[300]! : Colors.grey[400]!,
+                      color: isAvailable
+                          ? Colors.green[300]!
+                          : Colors.grey[400]!,
                     ),
                   ),
                   child: Text(
@@ -558,9 +588,9 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
               ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Delete Button (always available)
         SizedBox(
           width: double.infinity,
@@ -647,9 +677,9 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                 return;
               }
               context.read<AdminCubit>().rejectLaboratoryRequest(
-                    labId,
-                    reasonController.text.trim(),
-                  );
+                labId,
+                reasonController.text.trim(),
+              );
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -725,10 +755,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
   }
 
   void _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
     try {
       await launchUrl(launchUri);
     } catch (e) {
@@ -739,7 +766,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
   void _openWhatsApp(String phoneNumber) async {
     final formatted = _formatWhatsAppNumber(phoneNumber);
     if (formatted.isEmpty) return;
-    
+
     final String whatsappUrl = "https://wa.me/$formatted";
     try {
       await launchUrl(Uri.parse(whatsappUrl));

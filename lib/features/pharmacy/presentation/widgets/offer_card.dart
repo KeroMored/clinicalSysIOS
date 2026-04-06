@@ -5,20 +5,14 @@ class OfferCard extends StatelessWidget {
   final PharmacyOfferModel offer;
   final VoidCallback? onTap;
 
-  const OfferCard({
-    super.key,
-    required this.offer,
-    this.onTap,
-  });
+  const OfferCard({super.key, required this.offer, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -29,8 +23,9 @@ class OfferCard extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
                   child: offer.imageUrl.isNotEmpty
                       ? Image.network(
                           offer.imageUrl,
@@ -87,18 +82,12 @@ class OfferCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     offer.pharmacyName,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     offer.description,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -134,11 +123,7 @@ class OfferCard extends StatelessWidget {
       width: double.infinity,
       height: 150,
       color: Colors.grey[300],
-      child: const Icon(
-        Icons.local_offer,
-        size: 50,
-        color: Colors.grey,
-      ),
+      child: const Icon(Icons.local_offer, size: 50, color: Colors.grey),
     );
   }
 

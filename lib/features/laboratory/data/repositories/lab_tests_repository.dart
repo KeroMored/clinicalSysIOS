@@ -15,7 +15,10 @@ class LabTestsRepository {
       final bookingsSnapshot = await _firestore
           .collection('lab_bookings')
           .where('laboratoryId', isEqualTo: laboratoryId)
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+          )
           .get();
 
       int totalBookings = bookingsSnapshot.docs.length;
@@ -52,10 +55,11 @@ class LabTestsRepository {
         .where('laboratoryId', isEqualTo: laboratoryId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => {
-              'id': doc.id,
-              ...doc.data(),
-            }).toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => {'id': doc.id, ...doc.data()})
+              .toList(),
+        );
   }
 
   /// Get appointments needing reminders (for appointment_reminder_service)
@@ -73,7 +77,10 @@ class LabTestsRepository {
 
   /// Mark appointment reminder as sent (for appointment_reminder_service)
   /// Note: This is a placeholder
-  Future<void> sendAppointmentReminder(String appointmentId, String reminderType) async {
+  Future<void> sendAppointmentReminder(
+    String appointmentId,
+    String reminderType,
+  ) async {
     try {
       // TODO: Implement proper appointment reminder tracking
       print('تم إرسال تذكير $reminderType للموعد $appointmentId');

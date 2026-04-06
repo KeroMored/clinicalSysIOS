@@ -3,14 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../auth/data/models/user_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
 
-  const EditProfileScreen({
-    super.key,
-    required this.user,
-  });
+  const EditProfileScreen({super.key, required this.user});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -27,9 +25,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _displayNameController = TextEditingController(text: widget.user.displayName);
-    _phoneController = TextEditingController(text: widget.user.phoneNumber ?? '');
-    _whatsappController = TextEditingController(text: widget.user.whatsappNumber ?? '');
+    _displayNameController = TextEditingController(
+      text: widget.user.displayName,
+    );
+    _phoneController = TextEditingController(
+      text: widget.user.phoneNumber ?? '',
+    );
+    _whatsappController = TextEditingController(
+      text: widget.user.whatsappNumber ?? '',
+    );
     _addressController = TextEditingController(text: widget.user.address ?? '');
   }
 
@@ -52,11 +56,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           .collection('users')
           .doc(widget.user.uid)
           .update({
-        'displayName': _displayNameController.text.trim(),
-        'phoneNumber': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-        'whatsappNumber': _whatsappController.text.trim().isEmpty ? null : _whatsappController.text.trim(),
-        'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-      });
+            'displayName': _displayNameController.text.trim(),
+            'phoneNumber': _phoneController.text.trim().isEmpty
+                ? null
+                : _phoneController.text.trim(),
+            'whatsappNumber': _whatsappController.text.trim().isEmpty
+                ? null
+                : _whatsappController.text.trim(),
+            'address': _addressController.text.trim().isEmpty
+                ? null
+                : _addressController.text.trim(),
+          });
 
       // Refresh user data in AuthCubit
       if (mounted) {
@@ -75,10 +85,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('حدث خطأ: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -95,10 +102,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         appBar: AppBar(
           title: const Text(
             'تعديل الملف الشخصي',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
           backgroundColor: const Color(0xFF00BCD4),
@@ -106,7 +110,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: AppLoadingIndicator())
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Form(
@@ -213,19 +217,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFF00BCD4), width: 2),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF00BCD4),
+                              width: 2,
+                            ),
                           ),
                           errorBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Colors.red, width: 2),
+                            borderSide: const BorderSide(
+                              color: Colors.red,
+                              width: 2,
+                            ),
                           ),
                         ),
                         validator: (value) {
@@ -234,7 +250,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           }
                           return null;
                         },
-                      ),                      const SizedBox(height: 24),
+                      ),
+                      const SizedBox(height: 24),
 
                       // Phone Number
                       TextFormField(
@@ -259,15 +276,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFF00BCD4), width: 2),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF00BCD4),
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -296,15 +322,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFF25D366), width: 2),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF25D366),
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -334,18 +369,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(color: Colors.grey.shade300, width: 2),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 2,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFF00BCD4), width: 2),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF00BCD4),
+                              width: 2,
+                            ),
                           ),
                         ),
-                      ),                      const SizedBox(height: 40),
+                      ),
+                      const SizedBox(height: 40),
 
                       // Save Button
                       SizedBox(
@@ -359,7 +404,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             elevation: 5,
-                            shadowColor: const Color(0xFF00BCD4).withOpacity(0.5),
+                            shadowColor: const Color(
+                              0xFF00BCD4,
+                            ).withOpacity(0.5),
                           ),
                           child: const Text(
                             'حفظ التعديلات',

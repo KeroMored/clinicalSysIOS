@@ -5,6 +5,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/laboratory_model.dart';
 import '../../data/models/lab_booking_model.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class LabBookingsManagementScreen extends StatefulWidget {
   final LaboratoryModel laboratory;
@@ -19,6 +20,10 @@ class LabBookingsManagementScreen extends StatefulWidget {
 class _LabBookingsManagementScreenState
     extends State<LabBookingsManagementScreen>
     with SingleTickerProviderStateMixin {
+  static const Color _primaryColor = Color(0xFF0B8293);
+  static const Color _secondaryColor = Color(0xFF179AAC);
+  static const Color _textPrimary = Color(0xFF0F172A);
+
   late TabController _tabController;
 
   @override
@@ -136,109 +141,157 @@ class _LabBookingsManagementScreenState
 
         return Scaffold(
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0.5,
+            centerTitle: true,
             title: const Text(
               'إدارة الحجوزات',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: _textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-            backgroundColor: const Color(0xFF00BCD4),
-            foregroundColor: Colors.white,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: _primaryColor,
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
             actions: [
               IconButton(
                 onPressed: _endDay,
                 icon: const Icon(
-                  Icons.event_available_rounded,
-                  color: Colors.white,
+                  Icons.check_circle,
+                  color: _primaryColor,
+                  size: 24,
                 ),
                 tooltip: 'إنهاء اليوم',
               ),
             ],
-            bottom: TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              tabs: [
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('مؤكد'),
-                      if (confirmedCount > 0) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$confirmedCount',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(52),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F6FA),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFD7E4EE)),
                 ),
-                Tab(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text('في الانتظار'),
-                      if (pendingCount > 0) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '$pendingCount',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [_primaryColor, _secondaryColor],
+                    ),
+                    borderRadius: BorderRadius.circular(9),
                   ),
+                  indicatorPadding: const EdgeInsets.all(4),
+                  dividerColor: Colors.transparent,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: const Color(0xFF476079),
+                  labelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  tabs: [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('مؤكد'),
+                          if (confirmedCount > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.26),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$confirmedCount',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('في الانتظار'),
+                          if (pendingCount > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.26),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$pendingCount',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFEAF7FB),
+                  Color(0xFFF4FAFD),
+                  Color(0xFFF8FCFE),
+                ],
+              ),
+            ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _BookingsListTab(
+                  laboratory: widget.laboratory,
+                  status: LabBookingStatus.confirmed,
+                ),
+                _BookingsListTab(
+                  laboratory: widget.laboratory,
+                  status: LabBookingStatus.pending,
                 ),
               ],
             ),
           ),
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              _BookingsListTab(
-                laboratory: widget.laboratory,
-                status: LabBookingStatus.confirmed,
-              ),
-              _BookingsListTab(
-                laboratory: widget.laboratory,
-                status: LabBookingStatus.pending,
-              ),
-            ],
-          ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _showAddBookingDialog(),
-            backgroundColor: const Color(0xFF00BCD4),
+            backgroundColor: _primaryColor,
             foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             icon: const Icon(Icons.add),
             label: const Text('حجز جديد'),
           ),
@@ -516,11 +569,12 @@ class _LabBookingsManagementScreenState
 
                       try {
                         // التحقق من اختيار نوع التحليل
-                        final testType = isCustomTest
+                        final selectedTestType = isCustomTest
                             ? customTestController.text.trim()
                             : selectedTest;
 
-                        if (testType == null || testType.isEmpty) {
+                        if (selectedTestType == null ||
+                            selectedTestType.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('من فضلك اختر أو أدخل نوع التحليل'),
@@ -547,7 +601,7 @@ class _LabBookingsManagementScreenState
                               ? null
                               : notesController.text.trim(),
                           isOnlineBooking: false, // حجز يدوي من المعمل
-                          testType: testType,
+                          testTypes: [selectedTestType],
                           serviceType: serviceType,
                         );
 
@@ -586,7 +640,7 @@ class _LabBookingsManagementScreenState
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
+                      child: AppLoadingIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
@@ -810,7 +864,7 @@ class _BookingsListTabState extends State<_BookingsListTab> {
                       child: const SizedBox(
                         width: 24,
                         height: 24,
-                        child: CircularProgressIndicator(
+                        child: AppLoadingIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             Color(0xFF00BCD4),
@@ -841,30 +895,46 @@ class _BookingCard extends StatelessWidget {
     final isCompleted = booking.status == LabBookingStatus.completed;
     final isCancelled = booking.status == LabBookingStatus.cancelled;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      color: isCancelled
-          ? Colors.red[50]
-          : (isCompleted ? Colors.grey[200] : null),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final Color statusColor = isCancelled
+        ? const Color(0xFFDC2626)
+        : isCompleted
+        ? const Color(0xFF475569)
+        : isPending
+        ? const Color(0xFFD97706)
+        : const Color(0xFF0B8293);
+
+    final Color cardColor = isCancelled
+        ? const Color(0xFFFFF1F2)
+        : isCompleted
+        ? const Color(0xFFE5E7EB)
+        : Colors.white;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: statusColor.withValues(alpha: 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: isCancelled
-                        ? Colors.red.withValues(alpha: 0.1)
-                        : isCompleted
-                        ? Colors.grey.withValues(alpha: 0.3)
-                        : isPending
-                        ? Colors.orange.withValues(alpha: 0.1)
-                        : Colors.green.withValues(alpha: 0.1),
+                    color: statusColor.withValues(alpha: 0.14),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -875,57 +945,30 @@ class _BookingCard extends StatelessWidget {
                         : isPending
                         ? Icons.pending_rounded
                         : Icons.check_circle_rounded,
-                    color: isCancelled
-                        ? Colors.red
-                        : (isCompleted
-                              ? Colors.grey
-                              : (isPending ? Colors.orange : Colors.green)),
-                    size: 24,
+                    color: statusColor,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            'رقم الحجز: ',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                              decoration: (isCompleted || isCancelled)
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-                          Text(
-                            '${booking.bookingNumber}',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: isCompleted
-                                  ? Colors.grey
-                                  : const Color(0xFF00BCD4),
-                              decoration: isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-                        ],
-                      ),
                       Text(
-                        booking.statusArabic,
+                        booking.patientName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'رقم الحجز ${booking.bookingNumber}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: isCompleted
-                              ? Colors.grey
-                              : (isPending ? Colors.orange : Colors.green),
-                          fontWeight: FontWeight.w600,
-                          decoration: isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
                         ),
                       ),
                     ],
@@ -937,13 +980,28 @@ class _BookingCard extends StatelessWidget {
                     onPressed: () => _confirmBooking(context),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.more_vert),
+                  icon: const Icon(Icons.more_horiz_rounded),
                   onPressed: () => _showOptions(context),
                 ),
               ],
             ),
-            const Divider(height: 24),
-            _buildInfoRow(Icons.person, 'المريض', booking.patientName),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                booking.statusArabic,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: statusColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const Divider(height: 18),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -954,10 +1012,11 @@ class _BookingCard extends StatelessWidget {
                     booking.patientPhone,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.phone, color: Color(0xFF00BCD4)),
+                      icon: const Icon(Icons.phone, color: Color(0xFF0B8293)),
                       onPressed: () =>
                           _makePhoneCall(context, booking.patientPhone),
                       tooltip: 'اتصال',
@@ -983,9 +1042,13 @@ class _BookingCard extends StatelessWidget {
               'تاريخ الحجز',
               _formatDateTime(booking.createdAt),
             ),
-            if (booking.testType != null && booking.testType!.isNotEmpty) ...[
+            if (booking.testTypes.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _buildInfoRow(Icons.science, 'نوع التحليل', booking.testType!),
+              _buildInfoRow(
+                Icons.science,
+                booking.testTypes.length > 1 ? 'التحاليل' : 'نوع التحليل',
+                booking.testTypes.join('، '),
+              ),
             ],
             if (booking.serviceType != null) ...[
               const SizedBox(height: 8),
@@ -1033,12 +1096,16 @@ class _BookingCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.note, size: 18, color: Colors.grey),
+                    const Icon(Icons.note, size: 16, color: Color(0xFF64748B)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         booking.notes!,
-                        style: const TextStyle(fontSize: 13),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF334155),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
@@ -1054,16 +1121,24 @@ class _BookingCard extends StatelessWidget {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
+        Icon(icon, size: 16, color: const Color(0xFF64748B)),
+        const SizedBox(width: 6),
         Text(
           '$label: ',
-          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF64748B),
+            fontWeight: FontWeight.w700,
+          ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
           ),
         ),
       ],
@@ -1075,22 +1150,14 @@ class _BookingCard extends StatelessWidget {
   }
 
   String _formatWhatsAppNumber(String phone) {
-    // إزالة أي رموز أو مسافات
-    String cleaned = phone.replaceAll(RegExp(r'[^\d+]'), '');
-
-    // إزالة + أو 00 من البداية
-    if (cleaned.startsWith('+')) {
-      cleaned = cleaned.substring(1);
-    } else if (cleaned.startsWith('00')) {
-      cleaned = cleaned.substring(2);
-    }
-
-    // إذا كان الرقم يبدأ بـ 0 (رقم محلي مصري)، نضيف كود مصر 20
-    if (cleaned.startsWith('0') && cleaned.length == 11) {
-      cleaned = '20${cleaned.substring(1)}';
-    }
-
-    return cleaned;
+    // خد الرقم زي ما هو وضيفله +20 فقط
+    String n = phone.trim();
+    // لو بيبدأ بـ + شيله
+    if (n.startsWith('+')) n = n.substring(1);
+    // لو بيبدأ بـ 20 يبقى خلاص
+    if (n.startsWith('20')) return '20$n';
+    // ضيف +20 قدام الرقم
+    return '20$n';
   }
 
   void _makePhoneCall(BuildContext context, String phone) async {

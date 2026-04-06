@@ -15,86 +15,90 @@ class AdminRepository {
           .where('status', isEqualTo: 'pending')
           .get();
 
-      return snapshot.docs
-          .map((doc) {
-            final data = doc.data();
-            // Convert pharmacy data to request model format
-            return PharmacyRequestModel(
-              id: doc.id,
-              name: data['name'] ?? '',
-              address: data['address'] ?? '',
-              phone: data['phone'] ?? '',
-              whatsapp: data['whatsapp'] ?? '',
-            
-              latitude: (data['latitude'] ?? 0.0).toDouble(),
-              longitude: (data['longitude'] ?? 0.0).toDouble(),
-              workingHours: data['workingHours'] ?? '',
-              holidays: data['holidays'] ?? '',
-              images: List<String>.from(data['images'] ?? []),
-              hasHomeDelivery: data['hasHomeDelivery'] ?? false,
-              deliveryFee: data['deliveryFee']?.toDouble(),
-              minimumOrderForDelivery: data['minimumOrderForDelivery']?.toDouble(),
-              services: List<String>.from(data['services'] ?? []),
-              status: data['status'] ?? 'pending',
-              requestDate: DateTime.now(),
-              ownerName: data['ownerName'] ?? '',
-              ownerPhone: data['ownerPhone'] ?? '',
-              ownerEmail: data['ownerEmail'] ?? '',              hasInsurance: data['hasInsurance'] ?? false,
-              insuranceCompanies: data['insuranceCompanies'] != null
-                  ? List<String>.from(data['insuranceCompanies'])
-                  : [],
-              description: data['description'],            );
-          })
-          .toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        // Convert pharmacy data to request model format
+        return PharmacyRequestModel(
+          id: doc.id,
+          name: data['name'] ?? '',
+          address: data['address'] ?? '',
+          phones: data['phones'] != null
+              ? List<String>.from(data['phones'])
+              : (data['phone'] != null ? [data['phone']] : []),
+          whatsapp: data['whatsapp'] ?? '',
+
+          latitude: (data['latitude'] ?? 0.0).toDouble(),
+          longitude: (data['longitude'] ?? 0.0).toDouble(),
+          workingHours: data['workingHours'] ?? '',
+          holidays: data['holidays'] ?? '',
+          images: List<String>.from(data['images'] ?? []),
+          hasHomeDelivery: data['hasHomeDelivery'] ?? false,
+          deliveryFee: data['deliveryFee']?.toDouble(),
+          minimumOrderForDelivery: data['minimumOrderForDelivery']?.toDouble(),
+          services: List<String>.from(data['services'] ?? []),
+          status: data['status'] ?? 'pending',
+          requestDate: DateTime.now(),
+          ownerName: data['ownerName'] ?? '',
+          ownerPhone: data['ownerPhone'] ?? '',
+          ownerEmail: data['ownerEmail'] ?? '',
+          hasInsurance: data['hasInsurance'] ?? false,
+          insuranceCompanies: data['insuranceCompanies'] != null
+              ? List<String>.from(data['insuranceCompanies'])
+              : [],
+          description: data['description'],
+        );
+      }).toList();
     } catch (e) {
       throw Exception('Failed to fetch pharmacy requests: $e');
     }
   }
 
   // Get pharmacy requests by status (all, pending, rejected)
-  Future<List<PharmacyRequestModel>> getPharmacyRequestsByStatus(String status) async {
+  Future<List<PharmacyRequestModel>> getPharmacyRequestsByStatus(
+    String status,
+  ) async {
     try {
       Query query = _firestore.collection('pharmacies');
-      
+
       // If status is not 'all', filter by status
       if (status != 'all') {
         query = query.where('status', isEqualTo: status);
       }
-      
+
       final snapshot = await query.get();
 
-      return snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return PharmacyRequestModel(
-              id: doc.id,
-              name: data['name'] ?? '',
-              address: data['address'] ?? '',
-              phone: data['phone'] ?? '',
-              whatsapp: data['whatsapp'] ?? '',
-             
-              latitude: (data['latitude'] ?? 0.0).toDouble(),
-              longitude: (data['longitude'] ?? 0.0).toDouble(),
-              workingHours: data['workingHours'] ?? '',
-              holidays: data['holidays'] ?? '',
-              images: List<String>.from(data['images'] ?? []),
-              hasHomeDelivery: data['hasHomeDelivery'] ?? false,
-              deliveryFee: data['deliveryFee']?.toDouble(),
-              minimumOrderForDelivery: data['minimumOrderForDelivery']?.toDouble(),
-              services: List<String>.from(data['services'] ?? []),
-              status: data['status'] ?? 'pending',
-              requestDate: DateTime.now(),
-              ownerName: data['ownerName'] ?? '',
-              ownerPhone: data['ownerPhone'] ?? '',
-              ownerEmail: data['ownerEmail'] ?? '',
-              hasInsurance: data['hasInsurance'] ?? false,
-              insuranceCompanies: data['insuranceCompanies'] != null
-                  ? List<String>.from(data['insuranceCompanies'])
-                  : [],
-              description: data['description'],
-            );
-          })
-          .toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return PharmacyRequestModel(
+          id: doc.id,
+          name: data['name'] ?? '',
+          address: data['address'] ?? '',
+          phones: data['phones'] != null
+              ? List<String>.from(data['phones'])
+              : (data['phone'] != null ? [data['phone']] : []),
+          whatsapp: data['whatsapp'] ?? '',
+
+          latitude: (data['latitude'] ?? 0.0).toDouble(),
+          longitude: (data['longitude'] ?? 0.0).toDouble(),
+          workingHours: data['workingHours'] ?? '',
+          holidays: data['holidays'] ?? '',
+          images: List<String>.from(data['images'] ?? []),
+          hasHomeDelivery: data['hasHomeDelivery'] ?? false,
+          deliveryFee: data['deliveryFee']?.toDouble(),
+          minimumOrderForDelivery: data['minimumOrderForDelivery']?.toDouble(),
+          services: List<String>.from(data['services'] ?? []),
+          status: data['status'] ?? 'pending',
+          requestDate: DateTime.now(),
+          ownerName: data['ownerName'] ?? '',
+          ownerPhone: data['ownerPhone'] ?? '',
+          ownerEmail: data['ownerEmail'] ?? '',
+          hasInsurance: data['hasInsurance'] ?? false,
+          insuranceCompanies: data['insuranceCompanies'] != null
+              ? List<String>.from(data['insuranceCompanies'])
+              : [],
+          description: data['description'],
+        );
+      }).toList();
     } catch (e) {
       throw Exception('Failed to fetch pharmacy requests: $e');
     }
@@ -109,10 +113,10 @@ class AdminRepository {
           .get();
 
       return snapshot.docs
-          .map((doc) => PharmacyRequestModel.fromJson({
-                ...doc.data(),
-                'id': doc.id,
-              }))
+          .map(
+            (doc) =>
+                PharmacyRequestModel.fromJson({...doc.data(), 'id': doc.id}),
+          )
           .toList();
     } catch (e) {
       throw Exception('Failed to fetch pharmacy requests: $e');
@@ -122,15 +126,14 @@ class AdminRepository {
   // Get request by ID
   Future<PharmacyRequestModel> getRequestById(String id) async {
     try {
-      final doc =
-          await _firestore.collection('pharmacy_requests').doc(id).get();
+      final doc = await _firestore
+          .collection('pharmacy_requests')
+          .doc(id)
+          .get();
       if (!doc.exists) {
         throw Exception('Request not found');
       }
-      return PharmacyRequestModel.fromJson({
-        ...doc.data()!,
-        'id': doc.id,
-      });
+      return PharmacyRequestModel.fromJson({...doc.data()!, 'id': doc.id});
     } catch (e) {
       throw Exception('Failed to fetch request: $e');
     }
@@ -139,10 +142,28 @@ class AdminRepository {
   // Approve pharmacy request
   Future<void> approvePharmacyRequest(String requestId) async {
     try {
-      // Simply update the status from pending to approved
+      // Get the pharmacy document first to retrieve authEmails
+      final pharmacyDoc = await _firestore
+          .collection('pharmacies')
+          .doc(requestId)
+          .get();
+
+      if (!pharmacyDoc.exists) {
+        throw Exception('Pharmacy not found');
+      }
+
+      final pharmacyData = pharmacyDoc.data()!;
+      final authEmails = List<String>.from(pharmacyData['authEmails'] ?? []);
+
+      // Update the status from pending to approved
       await _firestore.collection('pharmacies').doc(requestId).update({
         'status': 'approved',
       });
+
+      // ✅ CRITICAL FIX: ربط جميع المستخدمين الموجودين بالإيميلات المحددة بالصيدلية
+      for (final email in authEmails) {
+        await _linkExistingUsersToPharmacy(email, requestId);
+      }
     } catch (e) {
       throw Exception('Failed to approve pharmacy request: $e');
     }
@@ -150,7 +171,9 @@ class AdminRepository {
 
   // Reject pharmacy request
   Future<void> rejectPharmacyRequest(
-      String requestId, String rejectionReason) async {
+    String requestId,
+    String rejectionReason,
+  ) async {
     try {
       await _firestore.collection('pharmacies').doc(requestId).update({
         'status': 'rejected',
@@ -166,7 +189,8 @@ class AdminRepository {
     try {
       await _firestore.collection('pharmacies').doc(requestId).update({
         'status': 'pending',
-        'rejectionReason': FieldValue.delete(), // Remove rejection reason if exists
+        'rejectionReason':
+            FieldValue.delete(), // Remove rejection reason if exists
       });
     } catch (e) {
       throw Exception('Failed to set pharmacy to pending: $e');
@@ -205,9 +229,9 @@ class AdminRepository {
         id: '',
         name: request.name,
         address: request.address,
-        phones: [request.phone], // تحويل الرقم الواحد إلى قائمة
+        phones: request.phones,
         whatsapp: request.whatsapp,
-       
+
         latitude: request.latitude,
         longitude: request.longitude,
         workingHours: request.workingHours,
@@ -229,9 +253,62 @@ class AdminRepository {
         description: request.description,
       ).toJson();
 
-      await _firestore.collection('pharmacies').add(pharmacyData);
+      final pharmacyDoc = await _firestore
+          .collection('pharmacies')
+          .add(pharmacyData);
+      final pharmacyId = pharmacyDoc.id;
+
+      // ✅ CRITICAL FIX: ربط جميع المستخدمين الموجودين بالإيميل المحدد بالصيدلية الجديدة
+      await _linkExistingUsersToPharmacy(request.ownerEmail, pharmacyId);
     } catch (e) {
       throw Exception('Failed to add pharmacy directly: $e');
+    }
+  }
+
+  // ✅ NEW: ربط المستخدمين الموجودين بالصيدلية الجديدة
+  Future<void> _linkExistingUsersToPharmacy(
+    String email,
+    String pharmacyId,
+  ) async {
+    try {
+      // البحث عن المستخدمين بهذا الإيميل
+      final usersSnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (usersSnapshot.docs.isEmpty) {
+        print('⚠️ No existing users found with email: $email');
+        return;
+      }
+
+      // تحديث جميع المستخدمين المطابقين
+      for (final userDoc in usersSnapshot.docs) {
+        await userDoc.reference.update({
+          'role': 'pharmacy',
+          'pharmacyId': pharmacyId,
+        });
+
+        print(
+          '✅ Updated user ${userDoc.id} with pharmacy role and ID: $pharmacyId',
+        );
+
+        // إنشاء pharmacy_subscription للمستخدم
+        await _firestore
+            .collection('pharmacy_subscriptions')
+            .doc(userDoc.id)
+            .set({
+              'subscribedAt': FieldValue.serverTimestamp(),
+              'topic': 'pharmacy_requests',
+              'isActive': true,
+              'pharmacyId': pharmacyId,
+            });
+
+        print('✅ Created pharmacy_subscription for user ${userDoc.id}');
+      }
+    } catch (e) {
+      print('❌ Error linking existing users to pharmacy: $e');
+      // لا نرمي exception هنا لأننا لا نريد فشل إضافة الصيدلية
     }
   }
 
@@ -240,7 +317,7 @@ class AdminRepository {
     try {
       final now = DateTime.now();
       final currentDay = _getDayName(now.weekday);
-      
+
       // Check if today is a holiday
       if (holidays.contains(currentDay)) {
         return false;
@@ -260,7 +337,7 @@ class AdminRepository {
       }
 
       final currentMinutes = now.hour * 60 + now.minute;
-      
+
       // Handle cases where closing time is after midnight
       if (closeTime < openTime) {
         return currentMinutes >= openTime || currentMinutes <= closeTime;
@@ -289,7 +366,7 @@ class AdminRepository {
     try {
       // Remove any AM/PM and extra spaces
       time = time.replaceAll(RegExp(r'[AaPpMm\s]'), '').trim();
-      
+
       final parts = time.split(':');
       if (parts.length != 2) return null;
 
@@ -322,10 +399,7 @@ class AdminRepository {
 
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        return {
-          'id': doc.id,
-          ...data,
-        };
+        return {'id': doc.id, ...data};
       }).toList();
     } catch (e) {
       throw Exception('Failed to fetch clinic requests: $e');
@@ -333,22 +407,21 @@ class AdminRepository {
   }
 
   // Get clinic requests by status
-  Future<List<Map<String, dynamic>>> getClinicRequestsByStatus(String status) async {
+  Future<List<Map<String, dynamic>>> getClinicRequestsByStatus(
+    String status,
+  ) async {
     try {
       Query query = _firestore.collection('clinics');
-      
+
       if (status != 'all') {
         query = query.where('status', isEqualTo: status);
       }
-      
+
       final snapshot = await query.orderBy('createdAt', descending: true).get();
 
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return {
-          'id': doc.id,
-          ...data,
-        };
+        return {'id': doc.id, ...data};
       }).toList();
     } catch (e) {
       throw Exception('Failed to fetch clinic requests: $e');
@@ -396,9 +469,11 @@ class AdminRepository {
     return _firestore
         .collection('laboratories')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => LaboratoryModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // Get pending laboratory requests
@@ -407,9 +482,11 @@ class AdminRepository {
         .collection('laboratories')
         .where('status', isEqualTo: 'pending')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => LaboratoryModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // Get laboratory requests by status
@@ -418,9 +495,11 @@ class AdminRepository {
         .collection('laboratories')
         .where('status', isEqualTo: status)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LaboratoryModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => LaboratoryModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // Approve laboratory request
@@ -494,7 +573,9 @@ class AdminRepository {
   }
 
   // Get nurse requests by status
-  Future<List<Map<String, dynamic>>> getNurseRequestsByStatus(String status) async {
+  Future<List<Map<String, dynamic>>> getNurseRequestsByStatus(
+    String status,
+  ) async {
     try {
       Query query = _firestore.collection('nurses');
 
@@ -564,7 +645,10 @@ class AdminRepository {
   Future<void> addDelivery(dynamic delivery) async {
     try {
       final deliveryData = delivery.toMap();
-      await _firestore.collection('deliveries').doc(delivery.id).set(deliveryData);
+      await _firestore
+          .collection('deliveries')
+          .doc(delivery.id)
+          .set(deliveryData);
     } catch (e) {
       throw Exception('Failed to add delivery: $e');
     }
@@ -573,7 +657,10 @@ class AdminRepository {
   Future<void> addRehabilitationCenter(dynamic center) async {
     try {
       final centerData = center.toMap();
-      await _firestore.collection('rehabilitation_centers').doc(center.id).set(centerData);
+      await _firestore
+          .collection('rehabilitation_centers')
+          .doc(center.id)
+          .set(centerData);
     } catch (e) {
       throw Exception('Failed to add rehabilitation center: $e');
     }

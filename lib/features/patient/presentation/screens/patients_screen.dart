@@ -6,6 +6,7 @@ import '../../../../core/widgets/modern_card.dart';
 import '../../data/models/patient_model.dart';
 import '../cubit/patient_cubit.dart';
 import 'patient_details_screen.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PatientsScreen extends StatefulWidget {
   final String clinicId;
@@ -57,13 +58,18 @@ class _PatientsScreenState extends State<PatientsScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'ابحث بالاسم أو رقم الهاتف...',
-                prefixIcon: const Icon(Icons.search, color: AppTheme.primaryColor),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  color: AppTheme.primaryColor,
+                ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
-                          context.read<PatientCubit>().loadPatients(widget.clinicId);
+                          context.read<PatientCubit>().loadPatients(
+                            widget.clinicId,
+                          );
                         },
                       )
                     : null,
@@ -73,7 +79,10 @@ class _PatientsScreenState extends State<PatientsScreen> {
                   borderRadius: BorderRadius.circular(15),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
               ),
               onChanged: (value) {
                 setState(() {});
@@ -109,9 +118,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
               },
               builder: (context, state) {
                 if (state is PatientLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: AppLoadingIndicator());
                 } else if (state is PatientLoaded) {
                   if (state.patients.isEmpty) {
                     return Center(
@@ -154,9 +161,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     },
                   );
                 } else if (state is PatientActionLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
+                  return const Center(child: AppLoadingIndicator());
                 }
 
                 return const SizedBox.shrink();
@@ -194,11 +199,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
               gradient: AppTheme.clinicGradient,
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 30,
-            ),
+            child: const Icon(Icons.person, color: Colors.white, size: 30),
           ),
           const SizedBox(width: 16),
 
@@ -226,10 +227,7 @@ class _PatientsScreenState extends State<PatientsScreen> {
                     const SizedBox(width: 4),
                     Text(
                       patient.phoneNumber,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),

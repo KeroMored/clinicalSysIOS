@@ -31,7 +31,10 @@ class ReferralModel extends Equatable {
     final random = Random();
     final chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // بدون أحرف ملتبسة
     final prefix = userId.substring(0, min(3, userId.length)).toUpperCase();
-    final suffix = List.generate(4, (_) => chars[random.nextInt(chars.length)]).join();
+    final suffix = List.generate(
+      4,
+      (_) => chars[random.nextInt(chars.length)],
+    ).join();
     return '$prefix$suffix';
   }
 
@@ -89,16 +92,16 @@ class ReferralModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        userName,
-        referralCode,
-        totalReferrals,
-        pointsEarned,
-        discountEarned,
-        createdAt,
-        isActive,
-      ];
+    id,
+    userId,
+    userName,
+    referralCode,
+    totalReferrals,
+    pointsEarned,
+    discountEarned,
+    createdAt,
+    isActive,
+  ];
 }
 
 /// نموذج عملية الإحالة
@@ -176,8 +179,9 @@ class ReferralTransactionModel extends Equatable {
       'pointsAwardedToReferred': pointsAwardedToReferred,
       'firstBookingId': firstBookingId,
       'referredAt': Timestamp.fromDate(referredAt),
-      'firstBookingAt':
-          firstBookingAt != null ? Timestamp.fromDate(firstBookingAt!) : null,
+      'firstBookingAt': firstBookingAt != null
+          ? Timestamp.fromDate(firstBookingAt!)
+          : null,
       'status': status,
     };
   }
@@ -217,20 +221,20 @@ class ReferralTransactionModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        referrerId,
-        referrerName,
-        referredUserId,
-        referredUserName,
-        referralCode,
-        laboratoryId,
-        pointsAwarded,
-        pointsAwardedToReferred,
-        firstBookingId,
-        referredAt,
-        firstBookingAt,
-        status,
-      ];
+    id,
+    referrerId,
+    referrerName,
+    referredUserId,
+    referredUserName,
+    referralCode,
+    laboratoryId,
+    pointsAwarded,
+    pointsAwardedToReferred,
+    firstBookingId,
+    referredAt,
+    firstBookingAt,
+    status,
+  ];
 }
 
 /// إحصائيات برنامج الإحالة
@@ -256,11 +260,11 @@ class ReferralStatistics extends Equatable {
 
   @override
   List<Object?> get props => [
-        totalReferrals,
-        completedReferrals,
-        pendingReferrals,
-        totalPointsEarned,
-        totalDiscountEarned,
-        topReferrers,
-      ];
+    totalReferrals,
+    completedReferrals,
+    pendingReferrals,
+    totalPointsEarned,
+    totalDiscountEarned,
+    topReferrers,
+  ];
 }

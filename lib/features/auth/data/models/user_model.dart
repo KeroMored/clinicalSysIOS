@@ -81,16 +81,16 @@ class UserModel {
 
   // Check if user is clinic owner
   bool get isClinicOwner => role == 'clinic_owner';
-  
+
   // Check if user is laboratory owner
   bool get isLaboratoryOwner => role == 'laboratory';
-  
+
   // Check if user is radiology owner
   bool get isRadiologyOwner => role == 'radiology';
-  
+
   // Check if user is gym owner
   bool get isGymOwner => role == 'gym';
-  
+
   // Check if user is rehabilitation center owner
   bool get isRehabilitationOwner => role == 'rehabilitation_center';
 
