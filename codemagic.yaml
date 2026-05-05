@@ -1,0 +1,48 @@
+workflows:
+  ios-build:
+    name: iOS Build & Release
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    
+    triggering:
+      events:
+        - push
+        - tag
+      branch:
+        pattern: main
+    
+    scripts:
+      - name: Flutter version
+        script: |
+          flutter --version
+      
+      - name: Get Flutter dependencies
+        script: |
+          flutter pub get
+      
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios && pod install --repo-update
+      
+      - name: Build iOS IPA (Release)
+        script: |
+          flutter build ios --release --no-codesign
+      
+      - name: Build and sign IPA
+        script: |
+          xcodebuild build-for-ipa \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -derivedDataPath build/ios_build
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/**/*.dSYM
+    
+    publishing:
+      app_store_connect:
+        auth: integration
