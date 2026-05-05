@@ -105,6 +105,7 @@ dependencies:
   path_provider: ^2.1.4
   pedometer: ^4.0.2
   permission_handler: ^11.3.1
+  sign_in_with_apple: ^7.0.1
 
 dev_dependencies:
   flutter_test:
@@ -179,9 +180,9 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/clinicLogo.png"
+  image_path: "assets/images/LO.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/clinicLogo.png"
+  adaptive_icon_foreground: "assets/images/LO.png"
 
 # Native Splash Screen Configuration
 flutter_native_splash:

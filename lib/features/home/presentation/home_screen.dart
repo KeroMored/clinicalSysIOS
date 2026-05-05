@@ -96,7 +96,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _dailyStepTrackingService.permissionGrantedNotifier.addListener(
       _onPermissionChanged,
     );
-    Future.microtask(_dailyStepTrackingService.requestPermissionOnFirstLaunch);
+    // Do not auto-prompt activity permission on launch.
+    // Reviewers flagged unexpected Settings app transitions after startup.
     Future.microtask(_ensureDailyTrackingForAuthenticatedUser);
   }
 
@@ -1820,9 +1821,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           .limit(1)
                           .get(),
                       FirebaseFirestore.instance
-                        .collection('settingsforpatiants')
-                        .limit(1)
-                        .get(),
+                          .collection('settingsforpatiants')
+                          .limit(1)
+                          .get(),
                     ]),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
@@ -1832,15 +1833,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         final radiologySnapshot = snapshot.data![3];
                         final gymSnapshot = snapshot.data![4];
                         final rehabSnapshot = snapshot.data![5];
-                      final settingsSnapshot = snapshot.data![6];
+                        final settingsSnapshot = snapshot.data![6];
 
-                      bool hideClinicManagement = false;
-                      if (settingsSnapshot.docs.isNotEmpty) {
-                        final settingsData = settingsSnapshot.docs.first.data()
-                          as Map<String, dynamic>;
-                        hideClinicManagement =
-                          settingsData['ishidden'] == true;
-                      }
+                        bool hideClinicManagement = false;
+                        if (settingsSnapshot.docs.isNotEmpty) {
+                          final settingsData =
+                              settingsSnapshot.docs.first.data()
+                                  as Map<String, dynamic>;
+                          hideClinicManagement =
+                              settingsData['ishidden'] == true;
+                        }
 
                         // Priority order: Pharmacy > Clinic > Laboratory > Radiology > Gym > Rehabilitation
                         if (pharmacySnapshot.docs.isNotEmpty) {

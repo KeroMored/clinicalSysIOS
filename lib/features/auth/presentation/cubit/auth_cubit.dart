@@ -74,6 +74,29 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // Sign in with Apple
+  Future<void> signInWithApple() async {
+    try {
+      print('🍎 [AuthCubit] Starting Apple Sign-In flow...');
+      emit(AuthLoading());
+
+      final user = await _authRepository.signInWithApple();
+      
+      print('🍎 [AuthCubit] Auth repository returned: ${user?.email}');
+
+      if (user != null) {
+        print('🍎 [AuthCubit] Apple Sign-In success! Emitting Authenticated state');
+        emit(Authenticated(user));
+      } else {
+        print('🍎 [AuthCubit] Apple Sign-In returned null (user cancelled)');
+        emit(Unauthenticated());
+      }
+    } catch (e) {
+      print('❌ [AuthCubit] Apple Sign-In error: $e');
+      emit(AuthError('فشل تسجيل الدخول بواسطة Apple: ${e.toString()}'));
+    }
+  }
+
   // Sign out - FAST (no loading state)
   Future<void> signOut() async {
     try {

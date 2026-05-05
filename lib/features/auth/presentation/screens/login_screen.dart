@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../cubit/auth_cubit.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
@@ -50,6 +52,9 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final showAppleButton =
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -169,6 +174,10 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   const SizedBox(height: 12),
                                   _buildGoogleButton(isLoading),
+                                  if (showAppleButton) ...[
+                                    const SizedBox(height: 8),
+                                    _buildAppleButton(isLoading),
+                                  ],
                                   const SizedBox(height: 8),
                                   const SizedBox(height: 10),
                                   OutlinedButton(
@@ -195,47 +204,48 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ),
                             const SizedBox(height: 14),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: const Color(0xFFDDE7EF),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text(
-                                    'مميزات تسجيل الدخول',
-                                    style: TextStyle(
-                                      color: _textPrimary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  _BenefitItem(
-                                    icon: Icons.store_rounded,
-                                    text: 'إدارة مكانك الطبي بسهولة',
-                                  ),
-                                  _BenefitItem(
-                                    icon: Icons.shopping_bag_rounded,
-                                    text: 'طلب الأدوية من الصيدليات',
-                                  ),
-                                  _BenefitItem(
-                                    icon: Icons.calendar_month_rounded,
-                                    text: 'حجز المواعيد ومتابعة الخدمات',
-                                  ),
-                                  _BenefitItem(
-                                    icon: Icons.notifications_active_rounded,
-                                    text: 'تنبيهات ومتابعة أسرع للحجوزات',
-                                  ),
-                                ],
-                              ),
-                            ),
+
+                            // Container(
+                            //   width: double.infinity,
+                            //   padding: const EdgeInsets.all(14),
+                            //   decoration: BoxDecoration(
+                            //     color: Colors.white,
+                            //     borderRadius: BorderRadius.circular(18),
+                            //     border: Border.all(
+                            //       color: const Color(0xFFDDE7EF),
+                            //     ),
+                            //   ),
+                            //   child: Column(
+                            //     crossAxisAlignment: CrossAxisAlignment.start,
+                            //     children: const [
+                            //       Text(
+                            //         'مميزات تسجيل الدخول',
+                            //         style: TextStyle(
+                            //           color: _textPrimary,
+                            //           fontSize: 13,
+                            //           fontWeight: FontWeight.w800,
+                            //         ),
+                            //       ),
+                            //       SizedBox(height: 10),
+                            //       _BenefitItem(
+                            //         icon: Icons.store_rounded,
+                            //         text: 'إدارة مكانك الطبي بسهولة',
+                            //       ),
+                            //       _BenefitItem(
+                            //         icon: Icons.shopping_bag_rounded,
+                            //         text: 'طلب الأدوية من الصيدليات',
+                            //       ),
+                            //       _BenefitItem(
+                            //         icon: Icons.calendar_month_rounded,
+                            //         text: 'حجز المواعيد ومتابعة الخدمات',
+                            //       ),
+                            //       _BenefitItem(
+                            //         icon: Icons.notifications_active_rounded,
+                            //         text: 'تنبيهات ومتابعة أسرع للحجوزات',
+                            //       ),
+                            //     ],
+                            //   ),
+                            // ),
                           ],
                         ),
                       ),
@@ -357,6 +367,73 @@ class _LoginScreenState extends State<LoginScreen>
                       isLoading
                           ? 'جاري تسجيل الدخول...'
                           : 'تسجيل الدخول بواسطة Google',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppleButton(bool isLoading) {
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.16),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: isLoading
+              ? null
+              : () => context.read<AuthCubit>().signInWithApple(),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isLoading)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: AppLoadingIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  else
+                    const FaIcon(
+                      FontAwesomeIcons.apple,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      isLoading
+                          ? 'جاري تسجيل الدخول...'
+                          : 'تسجيل الدخول بواسطة Apple',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,

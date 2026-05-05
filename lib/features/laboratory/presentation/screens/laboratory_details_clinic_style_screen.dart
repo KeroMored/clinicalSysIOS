@@ -31,14 +31,36 @@ class _LaboratoryDetailsClinicStyleScreenState
   static const Color _primaryColor = Color(0xFF0F766E);
   static const Color _primaryDark = Color(0xFF115E59);
   static const Color _titleColor = Color(0xFF134E4A);
+  static const String _bookingSettingsCollection = 'app_settings';
+  static const String _bookingSettingsDoc = 'booking';
 
   late LaboratoryModel _laboratory;
+  late final Future<bool> _isBookingEnabledFuture;
   bool _showAllTests = false;
 
   @override
   void initState() {
     super.initState();
     _laboratory = widget.laboratory;
+    _isBookingEnabledFuture = _fetchIsBookingEnabled();
+  }
+
+  Future<bool> _fetchIsBookingEnabled() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(_bookingSettingsCollection)
+          .doc(_bookingSettingsDoc)
+          .get();
+
+      final data = doc.data();
+      if (data == null) return true;
+
+      final value = data['isBooking'];
+      return value is bool ? value : true;
+    } catch (e) {
+      debugPrint('Error loading booking settings: $e');
+      return true;
+    }
   }
 
   bool _isLabOpenNow() {
@@ -837,69 +859,92 @@ class _LaboratoryDetailsClinicStyleScreenState
                           const SizedBox(height: 12),
 
                           Container(
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [_primaryColor, _primaryDark],
-                                begin: Alignment.centerRight,
-                                end: Alignment.centerLeft,
-                              ),
-                              borderRadius: BorderRadius.circular(28),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _primaryColor.withValues(alpha: 0.25),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 7),
-                                ),
-                              ],
-                            ),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () async {
-                                  final isAuthenticated =
-                                      await AuthHelpers.requireAuth(
-                                        context,
-                                        message:
-                                            'يجب تسجيل الدخول لحجز موعد في المعمل',
-                                      );
+                            child: FutureBuilder<bool>(
+                              future: _isBookingEnabledFuture,
+                              builder: (context, snapshot) {
+                                final isBookingEnabled = snapshot.data ?? true;
+                                if (!isBookingEnabled) {
+                                  return const SizedBox.shrink();
+                                }
 
-                                  if (!isAuthenticated || !mounted) return;
+                                return Column(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [_primaryColor, _primaryDark],
+                                          begin: Alignment.centerRight,
+                                          end: Alignment.centerLeft,
+                                        ),
+                                        borderRadius:
+                                            BorderRadius.circular(28),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: _primaryColor.withValues(
+                                              alpha: 0.25,
+                                            ),
+                                            blurRadius: 14,
+                                            offset: const Offset(0, 7),
+                                          ),
+                                        ],
+                                      ),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () async {
+                                            final isAuthenticated =
+                                                await AuthHelpers.requireAuth(
+                                                  context,
+                                                  message:
+                                                      'يجب تسجيل الدخول لحجز موعد في المعمل',
+                                                );
 
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => LabBookingScreen(
-                                        laboratory: _laboratory,
+                                            if (!isAuthenticated || !mounted) {
+                                              return;
+                                            }
+
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    LabBookingScreen(
+                                                      laboratory: _laboratory,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.calendar_month_rounded,
+                                            size: 22,
+                                          ),
+                                          label: const Text(
+                                            'احجز موعد الآن',
+                                            style: TextStyle(
+                                              fontSize: 17,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.transparent,
+                                            shadowColor: Colors.transparent,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(28),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.calendar_month_rounded,
-                                  size: 22,
-                                ),
-                                label: const Text(
-                                  'احجز موعد الآن',
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(28),
-                                  ),
-                                ),
-                              ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                );
+                              },
                             ),
                           ),
-                          const SizedBox(height: 16),
 
                           Container(
                             padding: const EdgeInsets.all(20),

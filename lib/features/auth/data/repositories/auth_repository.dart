@@ -1,13 +1,19 @@
+import 'dart:convert';
 import 'dart:async';
+import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../../core/services/notification_service.dart';
 import '../models/user_model.dart';
 
 class AuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static const String _iosGoogleClientId =
+      '718616577077-gh7g5l90ouvpimafmqltnnqe5vcqbms9.apps.googleusercontent.com';
+  final GoogleSignIn _googleSignIn = GoogleSignIn(clientId: _iosGoogleClientId);
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final NotificationService _notificationService = NotificationService();
 
@@ -56,6 +62,86 @@ class AuthRepository {
     }
   }
 
+  String _displayNameFromEmail(String email) {
+    var userName = email.split('@')[0];
+    userName = userName.replaceAll('.', ' ').replaceAll('_', ' ');
+    return userName
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        })
+        .join(' ');
+  }
+
+  String _displayNameFromAppleCredential(
+    AuthorizationCredentialAppleID credential,
+  ) {
+    final parts = <String>[
+      if ((credential.givenName ?? '').trim().isNotEmpty)
+        credential.givenName!.trim(),
+      if ((credential.familyName ?? '').trim().isNotEmpty)
+        credential.familyName!.trim(),
+    ];
+    return parts.join(' ').trim();
+  }
+
+  Future<UserModel> _upsertSignedInUser(
+    User firebaseUser, {
+    String? displayNameOverride,
+    String? photoUrlOverride,
+    String? emailOverride,
+  }) async {
+    final userDoc = await _firestore
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .get();
+
+    final email = (emailOverride ?? firebaseUser.email ?? '').trim();
+    final normalizedEmail = email.isEmpty
+        ? 'apple_${firebaseUser.uid}@noemail.local'
+        : email;
+
+    String userName = (displayNameOverride ?? firebaseUser.displayName ?? '')
+        .trim();
+    if (userName.isEmpty) {
+      userName = _displayNameFromEmail(normalizedEmail);
+    }
+
+    if (userDoc.exists) {
+      final user = UserModel.fromJson(userDoc.data()!);
+
+      await _cleanupOldSubscriptions(user, firebaseUser.uid);
+      _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
+
+      if (user.role == 'pharmacy') {
+        _notificationService.subscribeToPharmacyTopic(firebaseUser.uid);
+      }
+
+      return user;
+    }
+
+    final role = await _determineUserRole(normalizedEmail);
+
+    final newUser = UserModel(
+      uid: firebaseUser.uid,
+      email: normalizedEmail,
+      displayName: userName,
+      photoUrl: photoUrlOverride ?? firebaseUser.photoURL ?? '',
+      role: role,
+      pharmacyId: null,
+    );
+
+    _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toJson());
+    _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
+
+    if (role == 'pharmacy') {
+      _setupPharmacyUser(firebaseUser.uid, normalizedEmail);
+    }
+
+    return newUser;
+  }
+
   // Sign in with Google - ULTRA FAST VERSION
   Future<UserModel?> signInWithGoogle() async {
     try {
@@ -85,79 +171,98 @@ class AuthRepository {
       if (firebaseUser == null) {
         throw Exception('Failed to sign in');
       }
-
-      // Extract name from email (before @)
-      String userName = firebaseUser.displayName ?? '';
-      if (userName.isEmpty && firebaseUser.email != null) {
-        // Get the part before @ and capitalize
-        userName = firebaseUser.email!.split('@')[0];
-        // Replace dots and underscores with spaces and capitalize
-        userName = userName.replaceAll('.', ' ').replaceAll('_', ' ');
-        // Capitalize first letter of each word
-        userName = userName
-            .split(' ')
-            .map((word) {
-              if (word.isEmpty) return word;
-              return word[0].toUpperCase() + word.substring(1);
-            })
-            .join(' ');
-      }
-
-      // FAST PATH: Check if user exists in cache first
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .get();
-
-      if (userDoc.exists) {
-        // User exists - return immediately from cache
-        final user = UserModel.fromJson(userDoc.data()!);
-
-        // ✅ CLEANUP: إلغاء الاشتراك من topics إذا تم تغيير الدور
-        // إذا كان المستخدم كان pharmacy/clinic لكن تم تغييره إلى user، يجب إلغاء الاشتراك
-        await _cleanupOldSubscriptions(user, firebaseUser.uid);
-
-        // Handle notifications in background (fire and forget)
-        // ALL users subscribe to general topic
-        _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
-
-        if (user.role == 'pharmacy') {
-          _notificationService.subscribeToPharmacyTopic(firebaseUser.uid);
-        }
-
-        return user;
-      }
-
-      // NEW USER: Determine role and create (only happens once per user)
-      final role = await _determineUserRole(firebaseUser.email!);
-
-      final newUser = UserModel(
-        uid: firebaseUser.uid,
-        email: firebaseUser.email!,
-        displayName: userName,
-        photoUrl: firebaseUser.photoURL ?? '',
-        role: role,
-        pharmacyId: null, // Will be set in background
+      return _upsertSignedInUser(
+        firebaseUser,
+        displayNameOverride: googleUser.displayName,
       );
-
-      // Save user (fire and forget - don't wait)
-      _firestore
-          .collection('users')
-          .doc(firebaseUser.uid)
-          .set(newUser.toJson());
-
-      // Subscribe ALL new users to general topic
-      _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
-
-      // Handle pharmacy setup in background (fire and forget)
-      if (role == 'pharmacy') {
-        _setupPharmacyUser(firebaseUser.uid, firebaseUser.email!);
-      }
-
-      return newUser;
     } catch (e) {
       throw Exception('Failed to sign in with Google: $e');
     }
+  }
+
+  // Sign in with Apple
+  Future<UserModel?> signInWithApple() async {
+    try {
+      print('🍎 [Apple Sign-In] Checking availability...');
+      final isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        throw Exception('Apple Sign-In غير متاح على هذا الجهاز حالياً');
+      }
+
+      print('🍎 [Apple Sign-In] Generating nonce...');
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256ofString(rawNonce);
+
+      print('🍎 [Apple Sign-In] Requesting Apple ID credential...');
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      print('🍎 [Apple Sign-In] Got credential, extracting identity token...');
+      final identityToken = appleCredential.identityToken;
+      if (identityToken == null || identityToken.isEmpty) {
+        throw Exception('Missing identity token from Apple');
+      }
+
+      print('🍎 [Apple Sign-In] Creating OAuth credential...');
+      final oauthCredential = OAuthProvider(
+        'apple.com',
+      ).credential(idToken: identityToken, rawNonce: rawNonce);
+
+      print('🍎 [Apple Sign-In] Signing in to Firebase...');
+      final UserCredential userCredential = await _firebaseAuth
+          .signInWithCredential(oauthCredential);
+
+      final User? firebaseUser = userCredential.user;
+      if (firebaseUser == null) {
+        throw Exception('Failed to sign in with Apple');
+      }
+
+      print('🍎 [Apple Sign-In] Firebase auth successful for ${firebaseUser.uid}');
+
+      final displayNameOverride = _displayNameFromAppleCredential(
+        appleCredential,
+      );
+
+      print('🍎 [Apple Sign-In] Creating/Updating user document...');
+      return _upsertSignedInUser(
+        firebaseUser,
+        displayNameOverride: displayNameOverride.isEmpty
+            ? null
+            : displayNameOverride,
+        emailOverride: appleCredential.email,
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      print('🍎 [Apple Sign-In] Authorization exception: ${e.code}');
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return null;
+      }
+      throw Exception('تعذر إكمال تسجيل الدخول بواسطة Apple: ${e.toString()}');
+    } on FirebaseAuthException catch (e) {
+      print('🍎 [Apple Sign-In] Firebase auth exception: ${e.code} - ${e.message}');
+      throw Exception('فشل تسجيل الدخول بواسطة Apple: ${e.message ?? e.code}');
+    } catch (e) {
+      print('🍎 [Apple Sign-In] Unexpected error: $e');
+      throw Exception('أخطأ في تسجيل الدخول بواسطة Apple: $e');
+    }
+  }
+
+  String _sha256ofString(String input) {
+    return sha256.convert(utf8.encode(input)).toString();
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 
   // Background pharmacy setup (fire and forget)

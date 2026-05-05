@@ -907,7 +907,34 @@ class LaboratoryDetailsScreen extends StatefulWidget {
 class _LaboratoryDetailsScreenState extends State<LaboratoryDetailsScreen> {
   static const Color _primaryColor = Color(0xFF0F766E);
   static const Color _primaryDark = Color(0xFF115E59);
+  static const String _bookingSettingsCollection = 'app_settings';
+  static const String _bookingSettingsDoc = 'booking';
   bool _showAllTests = false; // لتتبع عرض جميع التحاليل
+  late final Future<bool> _isBookingEnabledFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _isBookingEnabledFuture = _fetchIsBookingEnabled();
+  }
+
+  Future<bool> _fetchIsBookingEnabled() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(_bookingSettingsCollection)
+          .doc(_bookingSettingsDoc)
+          .get();
+
+      final data = doc.data();
+      if (data == null) return true;
+
+      final value = data['isBooking'];
+      return value is bool ? value : true;
+    } catch (e) {
+      debugPrint('Error loading booking settings: $e');
+      return true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1522,56 +1549,75 @@ class _LaboratoryDetailsScreenState extends State<LaboratoryDetailsScreen> {
                           ],
 
                           // Book Now Button
-                          Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.laboratoryGradient,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _primaryColor.withValues(alpha: 0.4),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LabBookingScreen(
-                                      laboratory: currentLab,
-                                    ),
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                          FutureBuilder<bool>(
+                            future: _isBookingEnabledFuture,
+                            builder: (context, snapshot) {
+                              final isBookingEnabled = snapshot.data ?? true;
+                              if (!isBookingEnabled) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return Column(
                                 children: [
-                                  Icon(Icons.calendar_today, size: 24),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'احجز الآن',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                  Container(
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      gradient: AppTheme.laboratoryGradient,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: _primaryColor.withValues(
+                                            alpha: 0.4,
+                                          ),
+                                          blurRadius: 12,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                LabBookingScreen(
+                                                  laboratory: currentLab,
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.transparent,
+                                        shadowColor: Colors.transparent,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                        ),
+                                      ),
+                                      child: const Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.calendar_today, size: 24),
+                                          SizedBox(width: 12),
+                                          Text(
+                                            'احجز الآن',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
+                                  const SizedBox(height: 20),
                                 ],
-                              ),
-                            ),
+                              );
+                            },
                           ),
-                          const SizedBox(height: 20),
                         ],
                       ),
                     ),

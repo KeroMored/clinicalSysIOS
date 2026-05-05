@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '718616577077',
     projectId: 'clinicalsystem-4da35',
     storageBucket: 'clinicalsystem-4da35.firebasestorage.app',
-    iosBundleId: 'com.example.clinicalsystem',
+    iosBundleId: 'com.mallawy.clinicalsystem',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
