@@ -54,9 +54,26 @@ void _warmUpFirestore() {
   // Intentionally disabled to minimize startup reads.
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+bool _fallbackShown = false;
 
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  FlutterError.onError = (details) {
+    Zone.current.handleUncaughtError(
+      details.exception,
+      details.stack ?? StackTrace.current,
+    );
+  };
+
+  runZonedGuarded(() async {
+    await _startApp();
+  }, (error, stack) {
+    _runFallbackApp();
+    print('❌ Startup crash: $error');
+  });
+}
+
+Future<void> _startApp() async {
   // Initialize locale for calendar
   await initializeDateFormatting('ar', null);
 
@@ -95,6 +112,43 @@ void main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     unawaited(_startDeferredAppInitialization());
   });
+}
+
+void _runFallbackApp() {
+  if (_fallbackShown) return;
+  _fallbackShown = true;
+  runApp(const _StartupErrorApp());
+}
+
+class _StartupErrorApp extends StatelessWidget {
+  const _StartupErrorApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Directionality(
+      textDirection: TextDirection.rtl,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: Color(0xFFF3F8FB),
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'حدث خطأ أثناء تشغيل التطبيق. برجاء إعادة المحاولة.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> _startDeferredAppInitialization() async {
