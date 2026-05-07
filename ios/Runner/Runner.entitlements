@@ -14,5 +14,9 @@
 	<array>
 		<string>applinks:mallawy.com</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.mallawy.clinicalsystem</string>
+	</array>
 </dict>
 </plist>
