@@ -132,7 +132,7 @@ class _MedicineRequestContactInfoScreenState
           .add(requestData);
 
       // جدولة إشعار تذكير بعد 24 ساعة (مرة واحدة فقط)
-      MedicineNotificationService.scheduleMedicineRequestFollowUp(docRef.id);
+     // MedicineNotificationService.scheduleMedicineRequestFollowUp(docRef.id);
 
       // Save contact info to user profile
       final name = _nameController.text.trim();

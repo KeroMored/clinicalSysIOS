@@ -244,9 +244,9 @@ class _MedicineRequestsListScreenState
           });
 
       // Stop all follow-up reminders for this request once user confirms contact.
-      await MedicineNotificationService.cancelMedicineRequestFollowUp(
-        requestId,
-      );
+      // await MedicineNotificationService.cancelMedicineRequestFollowUp(
+      //   requestId,
+      // );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -274,9 +274,9 @@ class _MedicineRequestsListScreenState
           .delete();
 
       // Also cancel reminders when request is deleted.
-      await MedicineNotificationService.cancelMedicineRequestFollowUp(
-        requestId,
-      );
+      // await MedicineNotificationService.cancelMedicineRequestFollowUp(
+      //   requestId,
+      // );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

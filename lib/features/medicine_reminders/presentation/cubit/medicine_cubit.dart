@@ -61,9 +61,9 @@ class MedicineCubit extends Cubit<MedicineState> {
 
       String successMessage = 'تم إضافة الدواء بنجاح';
       try {
-        await MedicineNotificationService.scheduleMedicineNotifications(
-          savedMedicine,
-        );
+        // await MedicineNotificationService.scheduleMedicineNotifications(
+        //   savedMedicine,
+        // );
       } catch (e) {
         debugPrint('addMedicine notification schedule error: $e');
         successMessage =
@@ -103,9 +103,9 @@ class MedicineCubit extends Cubit<MedicineState> {
 
       String successMessage = 'تم تحديث الدواء بنجاح';
       try {
-        await MedicineNotificationService.updateMedicineNotifications(
-          updatedMedicine,
-        );
+        // await MedicineNotificationService.updateMedicineNotifications(
+        //   updatedMedicine,
+        // );
       } catch (e) {
         debugPrint('updateMedicine notification update error: $e');
         successMessage =
@@ -131,13 +131,13 @@ class MedicineCubit extends Cubit<MedicineState> {
 
       // Do not fail deletion if notification cancellation throws.
       try {
-        await MedicineNotificationService.cancelMedicineNotifications(id);
+     //   await MedicineNotificationService.cancelMedicineNotifications(id);
       } catch (e) {
         debugPrint('deleteMedicine notification cancel error: $e');
       }
 
       try {
-        await MedicineNotificationService.removeMedicineLocalAssets(id);
+      //  await MedicineNotificationService.removeMedicineLocalAssets(id);
       } catch (e) {
         debugPrint('deleteMedicine local assets cleanup error: $e');
       }
@@ -167,9 +167,9 @@ class MedicineCubit extends Cubit<MedicineState> {
       final medicine = await _repository.getMedicineById(id);
       if (medicine != null) {
         try {
-          await MedicineNotificationService.updateMedicineNotifications(
-            medicine.copyWith(isActive: isActive),
-          );
+          // await MedicineNotificationService.updateMedicineNotifications(
+          //   medicine.copyWith(isActive: isActive),
+          // );
         } catch (e) {
           debugPrint('toggleMedicineStatus notification update error: $e');
           _safeEmit(
