@@ -89,7 +89,7 @@ dependencies:
   # Local Notifications
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
-  #awesome_notifications: ^0.10.1
+  awesome_notifications: ^0.10.1
   shimmer: ^3.0.0
   flutter_spinkit: ^5.2.2
   

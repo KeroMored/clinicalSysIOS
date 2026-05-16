@@ -1,4 +1,4 @@
-//import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
@@ -9,54 +9,50 @@ class DoctorOfTheDayNotification {
   factory DoctorOfTheDayNotification() => _instance;
   DoctorOfTheDayNotification._internal();
 
-  // Initialize Awesome Notifications
-  // static Future<void> initialize() async {
-  //   await AwesomeNotifications().initialize(null, [
-  //     NotificationChannel(
-  //       channelKey: 'doctor_of_day_channel',
-  //       channelName: 'دكتور اليوم',
-  //       channelDescription: 'إشعارات دكتور اليوم اليومية',
-  //       defaultColor: const Color(0xFF26A69A),
-  //       ledColor: Colors.white,
-  //       importance: NotificationImportance.High,
-  //       playSound: true,
-  //       enableVibration: true,
-  //     ),
-  //   ]);
+  static Future<void> initialize() async {
+    await AwesomeNotifications().initialize(null, [
+      NotificationChannel(
+        channelKey: 'doctor_of_day_channel',
+        channelName: 'دكتور اليوم',
+        channelDescription: 'إشعارات دكتور اليوم اليومية',
+        defaultColor: const Color(0xFF26A69A),
+        ledColor: Colors.white,
+        importance: NotificationImportance.High,
+        playSound: true,
+        enableVibration: true,
+      ),
+    ]);
 
-  //   // Request permissions
-  //   await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
-  //     if (!isAllowed) {
-  //       AwesomeNotifications().requestPermissionToSendNotifications();
-  //     }
-  //   });
-  // }
+    await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
+      if (!isAllowed) {
+        AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+    });
+  }
 
-  // Schedule daily notification at 4:05 PM Egypt time - Simple offline notification
-  // static Future<void> scheduleDailyNotification() async {
-  //   // Cancel only this feature schedule to avoid expensive global operations.
-  //   await AwesomeNotifications().cancelSchedule(100);
+  static Future<void> scheduleDailyNotification() async {
+    await AwesomeNotifications().cancelSchedule(100);
 
-  //   await AwesomeNotifications().createNotification(
-  //     content: NotificationContent(
-  //       id: 100,
-  //       channelKey: 'doctor_of_day_channel',
-  //       title: '👨‍⚕️ دكتور اليوم',
-  //       body: 'شوف دكتور النهاردة 💊',
-  //       notificationLayout: NotificationLayout.Default,
-  //       wakeUpScreen: true,
-  //       category: NotificationCategory.Reminder,
-  //     ),
-  //     schedule: NotificationCalendar(
-  //       hour: 19, // 7 PM
-  //       minute: 00,
-  //       second: 0,
-  //       repeats: true, // Repeat daily
-  //     ),
-  //   );
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 100,
+        channelKey: 'doctor_of_day_channel',
+        title: '👨‍⚕️ دكتور اليوم',
+        body: 'شوف دكتور النهاردة 💊',
+        notificationLayout: NotificationLayout.Default,
+        wakeUpScreen: true,
+        category: NotificationCategory.Reminder,
+      ),
+      schedule: NotificationCalendar(
+        hour: 19,
+        minute: 00,
+        second: 0,
+        repeats: true,
+      ),
+    );
 
-  //   debugPrint('Daily notification scheduled for 7:00 PM');
-  // }
+    debugPrint('Daily notification scheduled for 7:00 PM');
+  }
 
   // // Get today's featured doctors (10 doctors with varied specializations)
   static Future<List<Map<String, dynamic>>> getTodaysFeaturedDoctors() async {
@@ -128,32 +124,28 @@ class DoctorOfTheDayNotification {
     return doctors.isNotEmpty ? doctors.first : null;
   }
 
-  // // Send immediate test notification
-  // static Future<void> sendTestNotification() async {
-  //   await AwesomeNotifications().createNotification(
-  //     content: NotificationContent(
-  //       id: 101,
-  //       channelKey: 'doctor_of_day_channel',
-  //       title: '👨‍⚕️ دكتور اليوم',
-  //       body: 'شوف دكتور النهاردة 💊',
-  //       notificationLayout: NotificationLayout.Default,
-  //       wakeUpScreen: true,
-  //     ),
-  //   );
-  // }
+  static Future<void> sendTestNotification() async {
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 101,
+        channelKey: 'doctor_of_day_channel',
+        title: '👨‍⚕️ دكتور اليوم',
+        body: 'شوف دكتور النهاردة 💊',
+        notificationLayout: NotificationLayout.Default,
+        wakeUpScreen: true,
+      ),
+    );
+  }
 
-  // Cancel all notifications
-  // static Future<void> cancelAllNotifications() async {
-  //   await AwesomeNotifications().cancelAll();
-  // }
+  static Future<void> cancelAllNotifications() async {
+    await AwesomeNotifications().cancelAll();
+  }
 
-  // Check if notifications are enabled
-  // static Future<bool> areNotificationsEnabled() async {
-  //   return await AwesomeNotifications().isNotificationAllowed();
-  // }
+  static Future<bool> areNotificationsEnabled() async {
+    return await AwesomeNotifications().isNotificationAllowed();
+  }
 
-  // Request notification permission
-  // static Future<bool> requestPermission() async {
-  //   return await AwesomeNotifications().requestPermissionToSendNotifications();
-  // }
+  static Future<bool> requestPermission() async {
+    return await AwesomeNotifications().requestPermissionToSendNotifications();
+  }
 }
