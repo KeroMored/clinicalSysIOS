@@ -1,73 +1,277 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart' show Color;
-import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
 import '../data/models/medicine_model.dart';
 
 class MedicineNotificationService {
   static const String channelKey = 'medicine_reminders';
   static const String channelName = 'تذكير الأدوية';
   static const String channelDescription = 'إشعارات لتذكيرك بمواعيد أدويتك';
-  static bool _isInitialized = false;
 
   static const String requestFollowUpChannelKey = 'medicine_request_followup';
   static const String _medicineImagesFolder = 'medicine_notification_images';
 
-  static Future<void> initialize() async {
-    if (_isInitialized) return;
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+  static bool _localNotificationsReady = false;
+  static bool _timeZonesReady = false;
 
-    await AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-          channelKey: channelKey,
-          channelName: channelName,
-          channelDescription: channelDescription,
-          defaultColor: const Color(0xFF06B6D4),
-          ledColor: const Color(0xFF06B6D4),
-          importance: NotificationImportance.Max,
-          playSound: true,
-          enableVibration: true,
-          enableLights: true,
-          criticalAlerts: true,
-          locked: true,
-        ),
-        NotificationChannel(
-          channelKey: requestFollowUpChannelKey,
-          channelName: 'متابعة طلبات الدواء',
-          channelDescription: 'تذكير بتأكيد التواصل مع الصيدلية',
-          defaultColor: const Color(0xFF00BCD4),
-          ledColor: const Color(0xFF00BCD4),
-          importance: NotificationImportance.High,
-          playSound: true,
-          enableVibration: true,
-          enableLights: true,
-        ),
-      ],
+  static Future<void> initialize() async {
+    if (_localNotificationsReady) return;
+
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
     );
 
-    await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
-      if (!isAllowed) {
-        AwesomeNotifications().requestPermissionToSendNotifications();
-      }
-    });
+    await _localNotifications.initialize(initSettings);
+
+    const medicineChannel = AndroidNotificationChannel(
+      channelKey,
+      channelName,
+      description: channelDescription,
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      enableLights: true,
+    );
+
+    const followUpChannel = AndroidNotificationChannel(
+      requestFollowUpChannelKey,
+      'متابعة طلبات الدواء',
+      description: 'تذكير بتأكيد التواصل مع الصيدلية',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+      enableLights: true,
+    );
+
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await androidPlugin?.createNotificationChannel(medicineChannel);
+    await androidPlugin?.createNotificationChannel(followUpChannel);
+    await androidPlugin?.requestNotificationsPermission();
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
 
     await _ensureExactAlarmPermission();
 
-    _isInitialized = true;
+    _localNotificationsReady = true;
   }
 
   static Future<void> _ensureInitialized() async {
-    if (_isInitialized) return;
+    if (_localNotificationsReady) return;
     await initialize();
+  }
+
+  static void _ensureTimeZonesReady() {
+    if (_timeZonesReady) return;
+    tz.initializeTimeZones();
+    _timeZonesReady = true;
+  }
+
+  static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    _ensureTimeZonesReady();
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+
+  static tz.TZDateTime _nextInstanceOfWeekday(
+    int weekday,
+    int hour,
+    int minute,
+  ) {
+    _ensureTimeZonesReady();
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+    while (scheduledDate.weekday != weekday || scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+
+  static int _daysInMonth(int year, int month) {
+    final beginningNextMonth = DateTime(year, month + 1, 1);
+    final lastDay = beginningNextMonth.subtract(const Duration(days: 1));
+    return lastDay.day;
+  }
+
+  static tz.TZDateTime _nextInstanceOfMonthDay(
+    int day,
+    int hour,
+    int minute,
+  ) {
+    _ensureTimeZonesReady();
+    final now = tz.TZDateTime.now(tz.local);
+    final maxDay = _daysInMonth(now.year, now.month);
+    final safeDay = day.clamp(1, maxDay);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      safeDay,
+      hour,
+      minute,
+    );
+    if (scheduledDate.isBefore(now)) {
+      final nextMonth = DateTime(now.year, now.month + 1, 1);
+      final nextMonthMaxDay = _daysInMonth(nextMonth.year, nextMonth.month);
+      final nextSafeDay = day.clamp(1, nextMonthMaxDay);
+      scheduledDate = tz.TZDateTime(
+        tz.local,
+        nextMonth.year,
+        nextMonth.month,
+        nextSafeDay,
+        hour,
+        minute,
+      );
+    }
+    return scheduledDate;
+  }
+
+  static NotificationDetails _buildMedicineNotificationDetails({
+    required String title,
+    required String body,
+    String? localImagePath,
+  }) {
+    final hasLocalImage =
+        localImagePath != null &&
+        localImagePath.trim().isNotEmpty &&
+        File(localImagePath).existsSync();
+
+    final styleInformation = hasLocalImage
+        ? BigPictureStyleInformation(
+            FilePathAndroidBitmap(localImagePath),
+            contentTitle: title,
+            summaryText: body,
+          )
+        : BigTextStyleInformation(
+            body,
+            contentTitle: title,
+          );
+
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelKey,
+        channelName,
+        channelDescription: channelDescription,
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        color: const Color(0xFF06B6D4),
+        fullScreenIntent: true,
+        category: AndroidNotificationCategory.alarm,
+        styleInformation: styleInformation,
+        playSound: true,
+        enableVibration: true,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+      ),
+    );
+  }
+
+  static NotificationDetails _buildFollowUpNotificationDetails({
+    required String title,
+    required String body,
+  }) {
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        requestFollowUpChannelKey,
+        'متابعة طلبات الدواء',
+        channelDescription: 'تذكير بتأكيد التواصل مع الصيدلية',
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        color: const Color(0xFF00BCD4),
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+        playSound: true,
+        enableVibration: true,
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+      ),
+    );
+  }
+
+  static Future<void> _scheduleMedicineNotification({
+    required int id,
+    required MedicineModel medicine,
+    required tz.TZDateTime scheduledDate,
+    required String title,
+    required String body,
+    String? localImagePath,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    await _localNotifications.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledDate,
+      _buildMedicineNotificationDetails(
+        title: title,
+        body: body,
+        localImagePath: localImagePath,
+      ),
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: matchDateTimeComponents,
+      payload: jsonEncode({
+        'type': 'medicine_reminder',
+        'medicineId': medicine.id,
+        'medicineName': medicine.displayName,
+      }),
+    );
   }
 
   static Future<void> scheduleMedicineNotifications(
     MedicineModel medicine,
   ) async {
     await _ensureInitialized();
+    _ensureTimeZonesReady();
 
     await cancelMedicineNotifications(medicine.id);
 
@@ -76,6 +280,8 @@ class MedicineNotificationService {
     }
 
     final localImagePath = await _cacheMedicineImageForNotifications(medicine);
+    final title = '🔔 موعد الدواء';
+    final body = 'حان موعد ${medicine.displayName}';
 
     for (int i = 0; i < medicine.reminderTimes.length; i++) {
       final timeString = medicine.reminderTimes[i];
@@ -85,18 +291,16 @@ class MedicineNotificationService {
 
       final notificationId = _generateNotificationId(medicine.id, i);
 
-      NotificationSchedule? schedule;
-      bool needsDefaultSchedule = true;
-
       switch (medicine.repeatType) {
         case RepeatType.daily:
-          schedule = NotificationCalendar(
-            hour: hour,
-            minute: minute,
-            second: 0,
-            repeats: true,
-            allowWhileIdle: true,
-            preciseAlarm: true,
+          await _scheduleMedicineNotification(
+            id: notificationId,
+            medicine: medicine,
+            scheduledDate: _nextInstanceOfTime(hour, minute),
+            title: title,
+            body: body,
+            localImagePath: localImagePath,
+            matchDateTimeComponents: DateTimeComponents.time,
           );
           break;
 
@@ -108,46 +312,39 @@ class MedicineNotificationService {
                 medicine.id,
                 (i * 10 + weekday).toInt(),
               );
-              await AwesomeNotifications().createNotification(
-                content: _buildMedicineReminderContent(
-                  id: weekdayNotificationId,
-                  medicine: medicine,
-                  localImagePath: localImagePath,
+              await _scheduleMedicineNotification(
+                id: weekdayNotificationId,
+                medicine: medicine,
+                scheduledDate: _nextInstanceOfWeekday(
+                  weekday,
+                  hour,
+                  minute,
                 ),
-                actionButtons: [
-                  NotificationActionButton(
-                    key: 'STOP',
-                    label: 'تم أخذ الدواء ✓',
-                    actionType: ActionType.DismissAction,
-                    color: const Color(0xFF10B981),
-                    autoDismissible: true,
-                  ),
-                ],
-                schedule: NotificationCalendar(
-                  hour: hour,
-                  minute: minute,
-                  second: 0,
-                  weekday: weekday,
-                  repeats: true,
-                  allowWhileIdle: true,
-                  preciseAlarm: true,
-                ),
+                title: title,
+                body: body,
+                localImagePath: localImagePath,
+                matchDateTimeComponents:
+                    DateTimeComponents.dayOfWeekAndTime,
               );
             }
-            needsDefaultSchedule = false;
           }
           break;
 
         case RepeatType.monthly:
           if (medicine.monthlyDay != null) {
-            schedule = NotificationCalendar(
-              hour: hour,
-              minute: minute,
-              second: 0,
-              day: medicine.monthlyDay,
-              repeats: true,
-              allowWhileIdle: true,
-              preciseAlarm: true,
+            await _scheduleMedicineNotification(
+              id: notificationId,
+              medicine: medicine,
+              scheduledDate: _nextInstanceOfMonthDay(
+                medicine.monthlyDay!,
+                hour,
+                minute,
+              ),
+              title: title,
+              body: body,
+              localImagePath: localImagePath,
+              matchDateTimeComponents:
+                  DateTimeComponents.dayOfMonthAndTime,
             );
           }
           break;
@@ -160,55 +357,23 @@ class MedicineNotificationService {
                 medicine.id,
                 (i * 10 + weekday).toInt(),
               );
-              await AwesomeNotifications().createNotification(
-                content: _buildMedicineReminderContent(
-                  id: weekdayNotificationId,
-                  medicine: medicine,
-                  localImagePath: localImagePath,
+              await _scheduleMedicineNotification(
+                id: weekdayNotificationId,
+                medicine: medicine,
+                scheduledDate: _nextInstanceOfWeekday(
+                  weekday,
+                  hour,
+                  minute,
                 ),
-                actionButtons: [
-                  NotificationActionButton(
-                    key: 'STOP',
-                    label: 'تم أخذ الدواء ✓',
-                    actionType: ActionType.DismissAction,
-                    color: const Color(0xFF10B981),
-                    autoDismissible: true,
-                  ),
-                ],
-                schedule: NotificationCalendar(
-                  hour: hour,
-                  minute: minute,
-                  second: 0,
-                  weekday: weekday,
-                  repeats: true,
-                  allowWhileIdle: true,
-                  preciseAlarm: true,
-                ),
+                title: title,
+                body: body,
+                localImagePath: localImagePath,
+                matchDateTimeComponents:
+                    DateTimeComponents.dayOfWeekAndTime,
               );
             }
-            needsDefaultSchedule = false;
           }
           break;
-      }
-
-      if (needsDefaultSchedule && schedule != null) {
-        await AwesomeNotifications().createNotification(
-          content: _buildMedicineReminderContent(
-            id: notificationId,
-            medicine: medicine,
-            localImagePath: localImagePath,
-          ),
-          actionButtons: [
-            NotificationActionButton(
-              key: 'STOP',
-              label: 'تم أخذ الدواء ✓',
-              actionType: ActionType.DismissAction,
-              color: const Color(0xFF10B981),
-              autoDismissible: true,
-            ),
-          ],
-          schedule: schedule,
-        );
       }
     }
   }
@@ -217,7 +382,7 @@ class MedicineNotificationService {
     final baseId = medicineId.hashCode;
     for (int i = 0; i < 100; i++) {
       final notificationId = (baseId + i).abs() % 2147483647;
-      await AwesomeNotifications().cancel(notificationId);
+      await _localNotifications.cancel(notificationId);
     }
   }
 
@@ -244,30 +409,31 @@ class MedicineNotificationService {
     }
   }
 
+  static String? _payloadType(String? payload) {
+    if (payload == null || payload.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map && decoded['type'] is String) {
+        return decoded['type'] as String;
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
   static Future<int> getScheduledNotificationsCount() async {
-    final scheduledNotifications =
-        await AwesomeNotifications().listScheduledNotifications();
-    return scheduledNotifications
-        .where((n) => n.content?.channelKey == channelKey)
+    await _ensureInitialized();
+    final scheduled = await _localNotifications.pendingNotificationRequests();
+    return scheduled
+        .where((request) => _payloadType(request.payload) == 'medicine_reminder')
         .length;
   }
 
   static Future<void> scheduleMedicineRequestFollowUp(String requestId) async {
     await _ensureInitialized();
+    _ensureTimeZonesReady();
 
-    await AwesomeNotifications().setChannel(
-      NotificationChannel(
-        channelKey: requestFollowUpChannelKey,
-        channelName: 'متابعة طلبات الدواء',
-        channelDescription: 'تذكير بتأكيد التواصل مع الصيدلية',
-        defaultColor: const Color(0xFF00BCD4),
-        ledColor: const Color(0xFF00BCD4),
-        importance: NotificationImportance.High,
-        playSound: true,
-        enableVibration: true,
-        enableLights: true,
-      ),
-    );
     final immediateNotificationId = _generateRequestFollowUpId(
       requestId,
       slot: 1,
@@ -277,56 +443,51 @@ class MedicineNotificationService {
       slot: 2,
     );
 
-    await AwesomeNotifications().cancel(immediateNotificationId);
-    await AwesomeNotifications().cancel(dayLaterNotificationId);
+    await _localNotifications.cancel(immediateNotificationId);
+    await _localNotifications.cancel(dayLaterNotificationId);
 
-    final immediateTime = DateTime.now().add(const Duration(seconds: 3));
-    final dayLaterTime = DateTime.now().add(const Duration(hours: 24));
+    final now = tz.TZDateTime.now(tz.local);
+    final immediateTime = now.add(const Duration(seconds: 3));
+    final dayLaterTime = now.add(const Duration(hours: 24));
 
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: immediateNotificationId,
-        channelKey: requestFollowUpChannelKey,
+    await _localNotifications.zonedSchedule(
+      immediateNotificationId,
+      '🛒 تذكير سريع بطلب الدواء',
+      'لو في صيدلية اتواصلت معاك، افتح السلة واضغط "تم التواصل" على طلبك.',
+      immediateTime,
+      _buildFollowUpNotificationDetails(
         title: '🛒 تذكير سريع بطلب الدواء',
         body:
             'لو في صيدلية اتواصلت معاك، افتح السلة واضغط "تم التواصل" على طلبك.',
-        notificationLayout: NotificationLayout.BigText,
-        autoDismissible: true,
-        payload: {
-          'type': 'medicine_request_followup',
-          'requestId': requestId,
-          'slot': 'immediate',
-        },
       ),
-      schedule: NotificationCalendar.fromDate(
-        date: immediateTime,
-        repeats: false,
-        allowWhileIdle: true,
-        preciseAlarm: true,
-      ),
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: jsonEncode({
+        'type': 'medicine_request_followup',
+        'requestId': requestId,
+        'slot': 'immediate',
+      }),
     );
 
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: dayLaterNotificationId,
-        channelKey: requestFollowUpChannelKey,
+    await _localNotifications.zonedSchedule(
+      dayLaterNotificationId,
+      '🛒 تذكير: هل تواصلت معك صيدلية؟',
+      'لو في صيدلية اتواصلت معاك، افتح السلة واضغط "تم التواصل" على طلبك حتى لا تزعجك صيدليات أخرى.',
+      dayLaterTime,
+      _buildFollowUpNotificationDetails(
         title: '🛒 تذكير: هل تواصلت معك صيدلية؟',
         body:
             'لو في صيدلية اتواصلت معاك، افتح السلة واضغط "تم التواصل" على طلبك حتى لا تزعجك صيدليات أخرى.',
-        notificationLayout: NotificationLayout.BigText,
-        autoDismissible: true,
-        payload: {
-          'type': 'medicine_request_followup',
-          'requestId': requestId,
-          'slot': 'day_later',
-        },
       ),
-      schedule: NotificationCalendar.fromDate(
-        date: dayLaterTime,
-        repeats: false,
-        allowWhileIdle: true,
-        preciseAlarm: true,
-      ),
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: jsonEncode({
+        'type': 'medicine_request_followup',
+        'requestId': requestId,
+        'slot': 'day_later',
+      }),
     );
   }
 
@@ -339,18 +500,17 @@ class MedicineNotificationService {
       requestId,
       slot: 2,
     );
-    await AwesomeNotifications().cancel(immediateNotificationId);
-    await AwesomeNotifications().cancel(dayLaterNotificationId);
+    await _localNotifications.cancel(immediateNotificationId);
+    await _localNotifications.cancel(dayLaterNotificationId);
   }
 
   static Future<void> _ensureExactAlarmPermission() async {
     try {
-      final isAllowed = await AwesomeNotifications().isNotificationAllowed();
-      if (!isAllowed) return;
-
-      await AwesomeNotifications().requestPermissionToSendNotifications(
-        permissions: [NotificationPermission.PreciseAlarms],
-      );
+      final android = _localNotifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+      await android?.requestExactAlarmsPermission();
+      await android?.requestFullScreenIntentPermission();
     } catch (_) {
       return;
     }
@@ -359,40 +519,6 @@ class MedicineNotificationService {
   static int _generateRequestFollowUpId(String requestId, {required int slot}) {
     final base = 900000000 + requestId.hashCode.abs();
     return (base + slot) % 2147483647;
-  }
-
-  static NotificationContent _buildMedicineReminderContent({
-    required int id,
-    required MedicineModel medicine,
-    String? localImagePath,
-  }) {
-    final imageForNotification =
-        (localImagePath != null && localImagePath.trim().isNotEmpty)
-            ? localImagePath
-            : medicine.imageUrl;
-    final hasImage =
-        imageForNotification != null && imageForNotification.trim().isNotEmpty;
-
-    return NotificationContent(
-      id: id,
-      channelKey: channelKey,
-      title: '🔔 موعد الدواء',
-      body: 'حان موعد ${medicine.displayName}',
-      notificationLayout:
-          hasImage ? NotificationLayout.BigPicture : NotificationLayout.Default,
-      bigPicture: hasImage ? imageForNotification : null,
-      largeIcon: hasImage ? imageForNotification : null,
-      category: NotificationCategory.Alarm,
-      wakeUpScreen: true,
-      fullScreenIntent: true,
-      autoDismissible: false,
-      backgroundColor: const Color(0xFF06B6D4),
-      payload: {
-        'medicineId': medicine.id,
-        'medicineName': medicine.displayName,
-        'action': 'alarm',
-      },
-    );
   }
 
   static Future<File> _localImageFileForMedicine(String medicineId) async {

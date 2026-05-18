@@ -1,7 +1,10 @@
-import 'package:awesome_notifications/awesome_notifications.dart';
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class DoctorOfTheDayNotification {
   static final DoctorOfTheDayNotification _instance =
@@ -9,46 +12,120 @@ class DoctorOfTheDayNotification {
   factory DoctorOfTheDayNotification() => _instance;
   DoctorOfTheDayNotification._internal();
 
-  static Future<void> initialize() async {
-    await AwesomeNotifications().initialize(null, [
-      NotificationChannel(
-        channelKey: 'doctor_of_day_channel',
-        channelName: 'دكتور اليوم',
-        channelDescription: 'إشعارات دكتور اليوم اليومية',
-        defaultColor: const Color(0xFF26A69A),
-        ledColor: Colors.white,
-        importance: NotificationImportance.High,
-        playSound: true,
-        enableVibration: true,
-      ),
-    ]);
+  static const String _channelId = 'doctor_of_day_channel';
+  static const String _channelName = 'دكتور اليوم';
+  static const String _channelDescription = 'إشعارات دكتور اليوم اليومية';
 
-    await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
-      if (!isAllowed) {
-        AwesomeNotifications().requestPermissionToSendNotifications();
-      }
-    });
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+  static bool _localNotificationsReady = false;
+  static bool _timeZonesReady = false;
+
+  static Future<void> initialize() async {
+    await _ensureLocalNotificationsReady();
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
+  }
+
+  static void _ensureTimeZonesReady() {
+    if (_timeZonesReady) return;
+    tz.initializeTimeZones();
+    _timeZonesReady = true;
+  }
+
+  static Future<void> _ensureLocalNotificationsReady() async {
+    if (_localNotificationsReady) return;
+
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
+
+    await _localNotifications.initialize(initSettings);
+
+    const channel = AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: _channelDescription,
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
+
+    _localNotificationsReady = true;
+  }
+
+  static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    _ensureTimeZonesReady();
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    return scheduledDate;
+  }
+
+  static NotificationDetails _buildNotificationDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
   }
 
   static Future<void> scheduleDailyNotification() async {
-    await AwesomeNotifications().cancelSchedule(100);
+    await _ensureLocalNotificationsReady();
+    await _localNotifications.cancel(100);
 
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 100,
-        channelKey: 'doctor_of_day_channel',
-        title: '👨‍⚕️ دكتور اليوم',
-        body: 'شوف دكتور النهاردة 💊',
-        notificationLayout: NotificationLayout.Default,
-        wakeUpScreen: true,
-        category: NotificationCategory.Reminder,
-      ),
-      schedule: NotificationCalendar(
-        hour: 19,
-        minute: 00,
-        second: 0,
-        repeats: true,
-      ),
+    final scheduledDate = _nextInstanceOfTime(19, 0);
+
+    await _localNotifications.zonedSchedule(
+      100,
+      '👨‍⚕️ دكتور اليوم',
+      'شوف دكتور النهاردة 💊',
+      scheduledDate,
+      _buildNotificationDetails(),
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
 
     debugPrint('Daily notification scheduled for 7:00 PM');
@@ -125,27 +202,49 @@ class DoctorOfTheDayNotification {
   }
 
   static Future<void> sendTestNotification() async {
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: 101,
-        channelKey: 'doctor_of_day_channel',
-        title: '👨‍⚕️ دكتور اليوم',
-        body: 'شوف دكتور النهاردة 💊',
-        notificationLayout: NotificationLayout.Default,
-        wakeUpScreen: true,
-      ),
+    await _ensureLocalNotificationsReady();
+    await _localNotifications.show(
+      101,
+      '👨‍⚕️ دكتور اليوم',
+      'شوف دكتور النهاردة 💊',
+      _buildNotificationDetails(),
     );
   }
 
   static Future<void> cancelAllNotifications() async {
-    await AwesomeNotifications().cancelAll();
+    await _localNotifications.cancelAll();
   }
 
   static Future<bool> areNotificationsEnabled() async {
-    return await AwesomeNotifications().isNotificationAllowed();
+    await _ensureLocalNotificationsReady();
+    final ios = _localNotifications.resolvePlatformSpecificImplementation<
+      IOSFlutterLocalNotificationsPlugin
+    >();
+    if (ios != null) {
+      final status = await ios.checkPermissions();
+      return status?.isEnabled ?? false;
+    }
+
+    return true;
   }
 
   static Future<bool> requestPermission() async {
-    return await AwesomeNotifications().requestPermissionToSendNotifications();
+    await _ensureLocalNotificationsReady();
+    final ios = _localNotifications.resolvePlatformSpecificImplementation<
+      IOSFlutterLocalNotificationsPlugin
+    >();
+    if (ios != null) {
+      return (await ios.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          )) ??
+          false;
+    }
+
+    final android = _localNotifications.resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin
+    >();
+    return (await android?.requestNotificationsPermission()) ?? true;
   }
 }
