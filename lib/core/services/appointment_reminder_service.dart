@@ -149,7 +149,6 @@ class AppointmentReminderService {
       ],
     );
   }
-  }
 
   // /// جدولة تذكير مخصص لموعد محدد
   Future<void> scheduleCustomReminder(
@@ -220,4 +219,5 @@ class AppointmentReminderService {
   Future<void> cancelAllReminders() async {
     await AwesomeNotifications().cancelAllSchedules();
   }
+}
 

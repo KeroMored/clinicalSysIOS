@@ -6,8 +6,6 @@
 		<string>ar</string>
 		<key>CFBundleDisplayName</key>
 		<string>Mallawy Health Care</string>
-		<key>AwnAppGroupName</key>
-		<string>group.com.mallawy.clinicalsystem</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
