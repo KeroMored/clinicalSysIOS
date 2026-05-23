@@ -129,17 +129,17 @@ class _LoginScreenState extends State<LoginScreen>
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'تسجيل الدخول يفتح لك كل الخدمات الطبية بسهولة',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: _textSecondary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                height: 1.5,
-                              ),
-                            ),
+                            // const SizedBox(height: 6),
+                            // const Text(
+                            //   'تسجيل الدخول يفتح لك كل الخدمات الطبية بسهولة',
+                            //   textAlign: TextAlign.center,
+                            //   style: TextStyle(
+                            //     color: _textSecondary,
+                            //     fontSize: 13,
+                            //     fontWeight: FontWeight.w600,
+                            //     height: 1.5,
+                            //   ),
+                            // ),
                             const SizedBox(height: 18),
                             Container(
                               width: double.infinity,
