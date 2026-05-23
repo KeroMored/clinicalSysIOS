@@ -69,6 +69,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   static const Color _background = Color(0xFFF7FAFC);
   static const Color _textPrimary = Color(0xFF0F172A);
   static const Color _textSecondary = Color(0xFF64748B);
+  static const String _bookingSettingsCollection = 'app_settings';
+  static const String _bookingSettingsDoc = 'booking';
 
   final DailyStepTrackingService _dailyStepTrackingService =
       DailyStepTrackingService();
@@ -79,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isSearchLoading = false;
   String _searchQuery = '';
   List<_HomeSearchResult> _searchResults = const [];
+  late final Future<bool> _isBookingEnabledFuture;
 
   void _onPermissionChanged() {
     final authState = context.read<AuthCubit>().state;
@@ -89,10 +92,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<bool> _fetchIsBookingEnabled() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(_bookingSettingsCollection)
+          .doc(_bookingSettingsDoc)
+          .get();
+
+      final data = doc.data();
+      if (data == null) return true;
+
+      final value = data['isBooking'];
+      return value is bool ? value : true;
+    } catch (e) {
+      debugPrint('Error loading booking settings: $e');
+      return true;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _isBookingEnabledFuture = _fetchIsBookingEnabled();
     _dailyStepTrackingService.permissionGrantedNotifier.addListener(
       _onPermissionChanged,
     );
@@ -417,7 +439,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: _buildCartAction(authState),
+            child: FutureBuilder<bool>(
+              future: _isBookingEnabledFuture,
+              builder: (context, snapshot) {
+                final isBookingEnabled = snapshot.data ?? true;
+                if (!isBookingEnabled) {
+                  return const SizedBox.shrink();
+                }
+                return _buildCartAction(authState);
+              },
+            ),
           ),
         ],
       ),
@@ -1276,7 +1307,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Expanded(
               child: _HomePrimaryServiceCard(
                 title: 'الصيدليات',
-                subtitle: 'طلب أدوية أونلاين',
+                subtitle: '',//طلب أدوية أونلاين
                 icon: Icons.medication_rounded,
                 backgroundColor: Colors.white,
                 accentColor: pharmacyAccent,
@@ -1295,7 +1326,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Expanded(
               child: _HomePrimaryServiceCard(
                 title: 'العيادات',
-                subtitle: 'احجز موعدك الآن',
+                subtitle: '',//احجز موعدك الآن
                 icon: Icons.medical_services_rounded,
                 backgroundColor: Colors.white,
                 accentColor: clinicAccent,

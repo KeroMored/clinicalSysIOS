@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -29,10 +30,33 @@ class PharmacyDetailsScreen extends StatefulWidget {
 }
 
 class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
+  static const String _bookingSettingsCollection = 'app_settings';
+  static const String _bookingSettingsDoc = 'booking';
+  late final Future<bool> _isBookingEnabledFuture;
+
   @override
   void initState() {
     super.initState();
+    _isBookingEnabledFuture = _fetchIsBookingEnabled();
     context.read<PharmacyCubit>().loadPharmacyDetails(widget.pharmacyId);
+  }
+
+  Future<bool> _fetchIsBookingEnabled() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(_bookingSettingsCollection)
+          .doc(_bookingSettingsDoc)
+          .get();
+
+      final data = doc.data();
+      if (data == null) return true;
+
+      final value = data['isBooking'];
+      return value is bool ? value : true;
+    } catch (e) {
+      debugPrint('Error loading booking settings: $e');
+      return true;
+    }
   }
 
   String _formatTimeToArabic(String time) {
@@ -534,10 +558,22 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
             const SizedBox(height: 10),
           ],
 
-          const SizedBox(height: 12),
-          _buildOffersButton(context, pharmacy),
-
-          const SizedBox(height: 12),
+          FutureBuilder<bool>(
+            future: _isBookingEnabledFuture,
+            builder: (context, snapshot) {
+              final isBookingEnabled = snapshot.data ?? true;
+              if (!isBookingEnabled) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  const SizedBox(height: 12),
+                  _buildOffersButton(context, pharmacy),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
+          ),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
