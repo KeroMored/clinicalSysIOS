@@ -232,7 +232,7 @@ class AdminHomePage extends StatelessWidget {
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                        icon: FontAwesomeIcons.handHoldingHeart,
+                        icon: Icons.healing,
                         title: 'الموافقة على مراكز التأهيل',
                         gradient: AppTheme.rehabilitationGradient,
                         onTap: () => Navigator.push(
@@ -607,7 +607,7 @@ class AdminHomePage extends StatelessWidget {
                     ),
                     _buildAddServiceCard(
                       context,
-                      icon: FontAwesomeIcons.handHoldingHeart,
+                      icon: Icons.healing,
                       title: 'إضافة مركز تأهيل',
                       gradient: AppTheme.rehabilitationGradient,
                       onTap: () => Navigator.push(
