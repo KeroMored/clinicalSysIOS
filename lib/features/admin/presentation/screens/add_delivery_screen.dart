@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddDeliveryScreen extends StatefulWidget {
@@ -246,7 +245,7 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
                         decoration: InputDecoration(
                           labelText: 'رقم الواتساب',
                           prefixIcon: Icon(
-                            MdiIcons.whatsapp,
+                            Icons.chat,
                             color: Color(0xFF25D366),
                           ),
                           border: OutlineInputBorder(

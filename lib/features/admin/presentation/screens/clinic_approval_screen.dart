@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../cubit/admin_cubit.dart';
@@ -252,7 +251,7 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
             _buildInfoRow(Icons.phone, clinicData['phone'] ?? ''),
             if (clinicData['whatsapp'] != null) ...[
               const SizedBox(height: 8),
-              _buildInfoRow(MdiIcons.whatsapp, clinicData['whatsapp']),
+              _buildInfoRow(Icons.chat, clinicData['whatsapp']),
             ],
             const SizedBox(height: 8),
             _buildInfoRow(

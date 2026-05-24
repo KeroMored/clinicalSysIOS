@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -516,7 +515,7 @@ class _NearExpireItemCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () =>
                             _openWhatsApp(context, item.pharmacyWhatsapp),
-                        icon: Icon(MdiIcons.whatsapp, size: 18),
+                        icon: Icon(Icons.chat, size: 18),
                         label: const Text('واتساب'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF25D366),

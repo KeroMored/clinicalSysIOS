@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/gym_model.dart';
@@ -247,7 +246,7 @@ class _GymControlPageState extends State<GymControlPage> {
 
                       // WhatsApp
                       _buildInfoRow(
-                        MdiIcons.whatsapp,
+                        Icons.chat,
                         'واتساب',
                         _gym!.whatsapp,
                       ),

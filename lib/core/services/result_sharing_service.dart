@@ -1,4 +1,3 @@
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -194,8 +193,7 @@ ${result.pdfUrl}
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _ShareButton(
-                  icon: MdiIcons
-                      .whatsapp, // WhatsApp icon not available in Material
+                  icon: Icons.chat, // WhatsApp icon
                   label: 'WhatsApp',
                   color: Color(0xFF25D366),
                   onTap: () async {

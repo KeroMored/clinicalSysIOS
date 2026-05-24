@@ -5,7 +5,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../clinic/data/models/clinic_model.dart';
 import '../../../clinic/data/models/clinic_department.dart';
 import '../../../clinic/data/repositories/clinic_repository.dart';
@@ -1106,7 +1105,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                           decoration: InputDecoration(
                             labelText: 'رقم واتساب (اختياري)',
                             prefixIcon: Icon(
-                              MdiIcons.whatsapp,
+                              Icons.chat,
                               color: const Color(0xFF06B6D4),
                             ),
                             border: OutlineInputBorder(

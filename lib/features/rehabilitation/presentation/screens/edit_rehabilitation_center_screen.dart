@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/rehabilitation_center_model.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
@@ -399,7 +398,7 @@ class _EditRehabilitationCenterScreenState
                       controller: _whatsappController,
                       decoration: InputDecoration(
                         labelText: 'واتساب (اختياري)',
-                        prefixIcon: Icon(MdiIcons.whatsapp),
+                        prefixIcon: Icon(Icons.chat),
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.phone,

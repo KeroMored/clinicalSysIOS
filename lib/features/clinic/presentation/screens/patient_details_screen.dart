@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/patient_model.dart';
 import '../cubit/patient_cubit.dart';
@@ -291,7 +290,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
               ),
               const SizedBox(width: 6),
               _buildContactButton(
-                icon: MdiIcons.whatsapp,
+                icon: Icons.chat,
                 color: const Color(0xFF16A34A),
                 onTap: () => _openWhatsApp(
                   patient.whatsappNumber ?? patient.phoneNumber,

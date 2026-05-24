@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../laboratory/data/models/laboratory_model.dart';
 import '../../../laboratory/data/models/working_hours.dart';
@@ -206,7 +205,7 @@ class LaboratoryDetailApprovalScreen extends StatelessWidget {
                             child: ElevatedButton.icon(
                               onPressed: () =>
                                   _openWhatsApp(laboratory.ownerPhone),
-                              icon: Icon(MdiIcons.whatsapp),
+                              icon: Icon(Icons.chat),
                               label: const Text('واتساب'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF25D366),

@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/medicine_request_model.dart';
@@ -480,7 +479,7 @@ class MyMedicineRequestsScreen extends StatelessWidget {
             if (request.whatsappNumber != null) ...[
               const SizedBox(height: 8),
               _buildInfoRow(
-                icon: MdiIcons.whatsapp,
+                icon: Icons.chat,
                 label: 'واتساب',
                 value: request.whatsappNumber!,
                 color: const Color(0xFF25D366),

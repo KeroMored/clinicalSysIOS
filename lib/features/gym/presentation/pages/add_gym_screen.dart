@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:io';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
@@ -343,7 +342,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                   _buildTextField(
                     controller: _whatsappController,
                     label: 'واتساب',
-                    icon: MdiIcons.whatsapp,
+                    icon: Icons.chat,
                     keyboardType: TextInputType.phone,
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'مطلوب' : null,

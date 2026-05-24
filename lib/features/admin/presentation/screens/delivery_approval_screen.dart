@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../delivery/data/models/delivery_model.dart';
@@ -339,7 +338,7 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
               }),
             ],
             _buildInfoRow(
-              MdiIcons.whatsapp,
+              Icons.chat,
               'واتساب',
               delivery.deliveryWhatsApp,
             ),

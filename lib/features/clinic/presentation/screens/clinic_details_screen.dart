@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/clinic_department.dart';
@@ -903,7 +902,7 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                                     ),
                                     child: ElevatedButton.icon(
                                       onPressed: () => _openWhatsApp(context),
-                                      icon: Icon(MdiIcons.whatsapp, size: 20),
+                                      icon: Icon(Icons.chat, size: 20),
                                       label: const Text(
                                         'واتساب',
                                         style: TextStyle(

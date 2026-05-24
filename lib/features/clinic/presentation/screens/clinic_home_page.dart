@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/clinic_department.dart';
 import 'clinics_search_delegate.dart';
 import 'clinics_list_screen.dart';
@@ -128,20 +127,20 @@ class ClinicHomePage extends StatelessWidget {
     int index,
   ) {
     final icons = {
-      ClinicDepartment.pediatrics: MdiIcons.baby,
-      ClinicDepartment.dentistry: MdiIcons.toothOutline,
-      ClinicDepartment.internalMedicine: MdiIcons.stethoscope,
-      ClinicDepartment.dermatology: MdiIcons.faceWoman,
-      ClinicDepartment.orthopedics: MdiIcons.bone,
-      ClinicDepartment.cardiology: MdiIcons.heartPulse,
-      ClinicDepartment.ophthalmology: MdiIcons.eye,
-      ClinicDepartment.ent: MdiIcons.earHearing,
-      ClinicDepartment.obstetrics: MdiIcons.humanFemale,
-      ClinicDepartment.urology: MdiIcons.waterCheck,
-      ClinicDepartment.psychiatry: MdiIcons.brain,
-      ClinicDepartment.generalSurgery: MdiIcons.hospitalBox,
-      ClinicDepartment.physiotherapy: MdiIcons.walk,
-      ClinicDepartment.other: MdiIcons.hospital,
+      ClinicDepartment.pediatrics: Icons.child_care,
+      ClinicDepartment.dentistry: Icons.medical_services,
+      ClinicDepartment.internalMedicine: Icons.medical_information,
+      ClinicDepartment.dermatology: Icons.face,
+      ClinicDepartment.orthopedics: Icons.accessibility,
+      ClinicDepartment.cardiology: Icons.favorite,
+      ClinicDepartment.ophthalmology: Icons.visibility,
+      ClinicDepartment.ent: Icons.hearing,
+      ClinicDepartment.obstetrics: Icons.pregnant_woman,
+      ClinicDepartment.urology: Icons.water_drop,
+      ClinicDepartment.psychiatry: Icons.psychology,
+      ClinicDepartment.generalSurgery: Icons.local_hospital,
+      ClinicDepartment.physiotherapy: Icons.directions_walk,
+      ClinicDepartment.other: Icons.local_hospital,
     };
 
     final colors = {
@@ -161,7 +160,7 @@ class ClinicHomePage extends StatelessWidget {
       ClinicDepartment.other: const Color(0xFF64748B),
     };
 
-    final icon = icons[department] ?? MdiIcons.hospital;
+    final icon = icons[department] ?? Icons.local_hospital;
     final color = colors[department] ?? const Color(0xFF0891B2);
 
     return Container(

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/repositories/pharmacy_repository.dart';
 import '../screens/pharmacy_details_screen.dart';
 import '../screens/pharmacy_offer_detail_screen.dart';
@@ -398,7 +397,7 @@ class OfferCard extends StatelessWidget {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () => _openWhatsApp(context),
-                              icon: Icon(MdiIcons.whatsapp, size: 16),
+                              icon: Icon(Icons.chat, size: 16),
                               label: const Text(
                                 'واتساب',
                                 style: TextStyle(fontSize: 13),

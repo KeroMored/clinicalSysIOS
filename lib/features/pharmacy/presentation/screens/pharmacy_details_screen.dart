@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../cubit/pharmacy_cubit.dart';
 import '../../../../core/widgets/rating_widget.dart';
@@ -844,7 +843,7 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      MdiIcons.whatsapp,
+                      Icons.chat,
                       color: const Color(0xFF16A34A),
                       size: 18,
                     ),
@@ -875,7 +874,7 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                   ),
                   IconButton(
                     onPressed: () => _openWhatsApp(pharmacy.whatsapp),
-                    icon: Icon(MdiIcons.whatsapp, color: Color(0xFF16A34A)),
+                    icon: Icon(Icons.chat, color: Color(0xFF16A34A)),
                   ),
                 ],
               ),

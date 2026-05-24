@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:io';
 import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
@@ -444,7 +443,7 @@ class _AddRehabilitationCenterScreenState
                             controller: _whatsappController,
                             decoration: InputDecoration(
                               labelText: 'واتساب (اختياري)',
-                              prefixIcon: Icon(MdiIcons.whatsapp),
+                              prefixIcon: Icon(Icons.chat),
                               border: OutlineInputBorder(),
                             ),
                             keyboardType: TextInputType.phone,

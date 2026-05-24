@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/pharmacy_model.dart';
 
 class EditPharmacyScreen extends StatefulWidget {
@@ -922,7 +921,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   textAlign: TextAlign.left,
                                   decoration: _buildInputDecoration(
                                     label: 'رقم الواتساب',
-                                    icon: MdiIcons.whatsapp,
+                                    icon: Icons.chat,
                                     iconColor: const Color(0xFF25D366),
                                   ),
                                   style: const TextStyle(

@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:io';
 import '../../data/models/pharmacy_request_model.dart';
 import '../cubit/admin_cubit.dart';
@@ -628,7 +627,7 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
                             _buildTextField(
                               controller: _whatsappController,
                               label: 'رقم الواتساب (اختياري)',
-                              icon: MdiIcons.whatsapp,
+                              icon: Icons.chat,
                               keyboardType: TextInputType.phone,
                             ),
                             const SizedBox(height: 16),

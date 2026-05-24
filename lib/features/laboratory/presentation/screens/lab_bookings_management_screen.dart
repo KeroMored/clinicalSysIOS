@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/laboratory_model.dart';
 import '../../data/models/lab_booking_model.dart';
@@ -1025,7 +1024,7 @@ class _BookingCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: Icon(MdiIcons.whatsapp, color: Color(0xFF25D366)),
+                      icon: Icon(Icons.chat, color: Color(0xFF25D366)),
                       onPressed: () =>
                           _openWhatsApp(context, booking.patientPhone),
                       tooltip: 'واتساب',

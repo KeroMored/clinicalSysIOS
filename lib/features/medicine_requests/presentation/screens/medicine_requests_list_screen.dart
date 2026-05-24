@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -881,7 +880,7 @@ class _MedicineRequestsListScreenState
                               ? request.allMedicines[0].quantity
                               : 1,
                         ),
-                        icon: Icon(MdiIcons.whatsapp, size: 16),
+                        icon: Icon(Icons.chat, size: 16),
                         label: const Text(
                           'واتساب',
                           style: TextStyle(fontWeight: FontWeight.bold),

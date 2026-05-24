@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../features/medicine_reminders/services/medicine_notification_service.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
@@ -623,7 +622,7 @@ class _MedicineRequestContactInfoScreenState
                     labelText: 'رقم الواتساب (اختياري)',
                     hintText: 'أدخل رقم الواتساب (إن وجد)',
                     prefixIcon: Icon(
-                      MdiIcons.whatsapp,
+                      Icons.chat,
                       color: Color(0xFF0E7787),
                     ),
                     filled: true,

@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/booking_model.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -1566,7 +1565,7 @@ class _BookingCard extends StatelessWidget {
                 booking.patientPhone != 'غير محدد' &&
                 booking.patientPhone != 'لا يوجد')
               ListTile(
-                leading: Icon(MdiIcons.whatsapp, color: Colors.green),
+                leading: Icon(Icons.chat, color: Colors.green),
                 title: const Text('واتساب'),
                 onTap: () {
                   Navigator.pop(context);

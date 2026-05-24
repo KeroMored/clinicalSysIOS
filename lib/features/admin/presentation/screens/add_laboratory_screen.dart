@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../../laboratory/data/models/laboratory_model.dart';
 import '../../../laboratory/data/models/working_hours.dart';
 import '../../../laboratory/data/models/lab_tests.dart';
@@ -459,7 +458,7 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
                           decoration: InputDecoration(
                             labelText: 'رقم واتساب (اختياري)',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(MdiIcons.whatsapp),
+                            prefixIcon: Icon(Icons.chat),
                           ),
                         ),
                         const SizedBox(height: 16),
