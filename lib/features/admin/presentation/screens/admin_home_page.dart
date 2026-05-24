@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'approve_pharmacies_screen.dart';
 import 'clinic_approval_screen.dart';
 import 'add_clinic_screen.dart';
@@ -122,7 +121,7 @@ class AdminHomePage extends StatelessWidget {
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                        icon: FontAwesomeIcons.stethoscope,
+                        icon: Icons.local_hospital,
                         title: 'الموافقة على العيادات',
                         gradient: AppTheme.clinicGradient,
                         onTap: () => Navigator.push(
@@ -137,7 +136,7 @@ class AdminHomePage extends StatelessWidget {
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                        icon: FontAwesomeIcons.pills,
+                        icon: Icons.medication,
                         title: 'الموافقة على الصيدليات',
                         gradient: AppTheme.pharmacyGradient,
                         onTap: () => Navigator.push(
@@ -158,7 +157,7 @@ class AdminHomePage extends StatelessWidget {
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                        icon: FontAwesomeIcons.flask,
+                        icon: Icons.science,
                         title: 'الموافقة على المعامل',
                         gradient: AppTheme.laboratoryGradient,
                         onTap: () => Navigator.push(
@@ -194,7 +193,7 @@ class AdminHomePage extends StatelessWidget {
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                        icon: FontAwesomeIcons.userNurse,
+                        icon: Icons.medical_services,
                         title: 'الموافقة على الممرضين',
                         gradient: AppTheme.nursingGradient,
                         onTap: () => Navigator.push(
@@ -209,7 +208,7 @@ class AdminHomePage extends StatelessWidget {
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                        icon: FontAwesomeIcons.truckMedical,
+                        icon: Icons.local_shipping,
                         title: 'الموافقة على الديليفري',
                         gradient: const LinearGradient(
                           colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
@@ -538,7 +537,7 @@ class AdminHomePage extends StatelessWidget {
                   children: [
                     _buildAddServiceCard(
                       context,
-                      icon: FontAwesomeIcons.stethoscope,
+                      icon: Icons.local_hospital,
                       title: 'إضافة عيادة',
                       gradient: AppTheme.clinicGradient,
                       onTap: () => Navigator.push(
@@ -550,7 +549,7 @@ class AdminHomePage extends StatelessWidget {
                     ),
                     _buildAddServiceCard(
                       context,
-                      icon: FontAwesomeIcons.pills,
+                      icon: Icons.medication,
                       title: 'إضافة صيدلية',
                       gradient: AppTheme.pharmacyGradient,
                       onTap: () => Navigator.push(
@@ -562,7 +561,7 @@ class AdminHomePage extends StatelessWidget {
                     ),
                     _buildAddServiceCard(
                       context,
-                      icon: FontAwesomeIcons.flask,
+                      icon: Icons.science,
                       title: 'إضافة معمل',
                       gradient: AppTheme.laboratoryGradient,
                       onTap: () => Navigator.push(
@@ -593,7 +592,7 @@ class AdminHomePage extends StatelessWidget {
                     // ),
                     _buildAddServiceCard(
                       context,
-                      icon: FontAwesomeIcons.truckMedical,
+                      icon: Icons.local_shipping,
                       title: 'إضافة ديليفري',
                       gradient: const LinearGradient(
                         colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],

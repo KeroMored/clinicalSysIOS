@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../cubit/auth_cubit.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
@@ -423,8 +422,8 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     )
                   else
-                    const FaIcon(
-                      FontAwesomeIcons.apple,
+                    const Icon(
+                      Icons.apple,
                       color: Colors.white,
                       size: 18,
                     ),
