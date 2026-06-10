@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mored.MallawyHealthCare">
+    package="com.mallawy.mallawycare">
     <!-- Permissions for Camera -->
     <uses-permission android:name="android.permission.CAMERA"/>
     
@@ -34,7 +34,7 @@
     <uses-permission android:name="android.permission.CALL_PHONE"/>
     
     <application
-        android:label="Mallawy Care"
+        android:label="ملوي كير"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
