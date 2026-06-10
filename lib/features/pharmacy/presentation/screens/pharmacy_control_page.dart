@@ -8,7 +8,7 @@ import 'add_offer_screen.dart';
 import 'add_near_expire_item_screen.dart';
 import 'pharmacy_details_screen.dart';
 import 'pharmacy_offers_list_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class PharmacyControlPage extends StatefulWidget {
   const PharmacyControlPage({super.key});

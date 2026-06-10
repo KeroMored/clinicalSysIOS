@@ -41,8 +41,8 @@
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
 
-# Keep model classes (MallawyHealthCare)
--keep class com.mored.MallawyHealthCare.** { *; }
+# Keep model classes (mallawycare)
+-keep class com.mored.mallawycare.** { *; }
 
 # Keep native methods
 -keepclasseswithmembernames class * {

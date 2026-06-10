@@ -7,7 +7,7 @@ import 'edit_gym_screen.dart';
 import 'gym_details_screen.dart';
 import 'gym_content_management_screen.dart';
 import 'send_gym_notification_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class GymControlPage extends StatefulWidget {
   final String gymEmail;

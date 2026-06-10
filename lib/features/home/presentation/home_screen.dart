@@ -53,7 +53,7 @@ import '../../admin/presentation/screens/admin_home_page.dart';
 import '../../emergency_numbers/presentation/screens/emergency_numbers_screen.dart';
 import '../services/daily_step_tracking_service.dart';
 import 'widgets/widgets.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

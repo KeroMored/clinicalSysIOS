@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/laboratory_model.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 /// صفحة إرسال إشعارات من المعمل لجميع المستخدمين
 class SendLabNotificationScreen extends StatefulWidget {

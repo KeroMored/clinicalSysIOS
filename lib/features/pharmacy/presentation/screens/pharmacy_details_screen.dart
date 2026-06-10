@@ -17,7 +17,7 @@ import '../widgets/reviews_dialog.dart';
 import '../widgets/pharmacy_info_section.dart';
 import '../widgets/pharmacy_delivery_section.dart';
 import '../widgets/pharmacy_full_screen_image.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class PharmacyDetailsScreen extends StatefulWidget {
   final String pharmacyId;

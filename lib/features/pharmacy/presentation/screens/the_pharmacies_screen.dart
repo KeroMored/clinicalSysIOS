@@ -1,4 +1,4 @@
-import 'package:clinicalsystem/features/pharmacy/presentation/widgets/pharmacy_card.dart';
+import 'package:mallawycare/features/pharmacy/presentation/widgets/pharmacy_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

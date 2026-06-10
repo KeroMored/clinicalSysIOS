@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/daily_activity_model.dart';
 import '../../services/daily_step_tracking_service.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class DailyActivityCard extends StatefulWidget {
   final VoidCallback? onGuestTap;

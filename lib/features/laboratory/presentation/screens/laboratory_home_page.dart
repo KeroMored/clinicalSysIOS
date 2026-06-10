@@ -15,7 +15,7 @@ import '../../../../core/widgets/report_button.dart';
 import '../../../pharmacy/presentation/widgets/reviews_dialog.dart';
 import 'lab_booking_screen.dart';
 import 'laboratory_details_clinic_style_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class LaboratoryHomePage extends StatefulWidget {
   const LaboratoryHomePage({super.key});

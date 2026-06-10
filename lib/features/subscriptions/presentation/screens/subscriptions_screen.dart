@@ -8,7 +8,7 @@ import '../cubit/subscription_state.dart';
 import '../widgets/subscription_detail_widgets.dart';
 import '../widgets/add_payment_dialog.dart';
 import 'place_subscription_details_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class SubscriptionsScreen extends StatefulWidget {
   const SubscriptionsScreen({super.key});

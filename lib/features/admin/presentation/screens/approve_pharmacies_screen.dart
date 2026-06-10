@@ -6,7 +6,7 @@ import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
 import '../widgets/pharmacy_request_card.dart';
 import 'pharmacy_request_details_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class ApprovePharmaciesScreen extends StatefulWidget {
   const ApprovePharmaciesScreen({super.key});

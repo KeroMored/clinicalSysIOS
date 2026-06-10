@@ -12,7 +12,7 @@
 	</array>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.mallawy.clinicalsystem</string>
+		<string>$(AppIdentifierPrefix)com.mored.mallawycare</string>
 	</array>
 </dict>
 </plist>

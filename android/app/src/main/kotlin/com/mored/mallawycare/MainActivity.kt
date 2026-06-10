@@ -1,4 +1,4 @@
-package com.mored.MallawyHealthCare
+package com.mored.mallawycare
 
 import io.flutter.embedding.android.FlutterActivity
 

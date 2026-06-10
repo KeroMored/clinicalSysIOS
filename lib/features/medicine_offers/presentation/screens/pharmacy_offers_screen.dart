@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../cubit/medicine_offer_cubit.dart';
 import '../widgets/medicine_offer_card.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class PharmacyOffersScreen extends StatefulWidget {
   final String pharmacyId;

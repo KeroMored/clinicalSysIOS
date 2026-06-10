@@ -6,7 +6,7 @@ import '../../../../core/widgets/gradient_button.dart';
 import '../../data/models/gym_model.dart';
 import '../cubit/gym_cubit.dart';
 import '../cubit/gym_state.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class GymApprovalListScreen extends StatefulWidget {
   const GymApprovalListScreen({super.key});

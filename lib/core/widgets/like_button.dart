@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/like_service.dart';
 import '../utils/auth_helpers.dart';
 import '../theme/app_theme.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class LikeButton extends StatefulWidget {
   final String serviceId;

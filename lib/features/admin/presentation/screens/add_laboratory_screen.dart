@@ -11,7 +11,7 @@ import '../../../laboratory/data/repositories/laboratory_repository.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class AddLaboratoryScreen extends StatefulWidget {
   const AddLaboratoryScreen({super.key});

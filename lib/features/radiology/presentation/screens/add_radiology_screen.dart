@@ -4,7 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../data/models/radiology_model.dart';
 import '../../data/models/working_hours.dart';
 import '../cubit/radiology_cubit.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class AddRadiologyScreen extends StatefulWidget {
   const AddRadiologyScreen({super.key});

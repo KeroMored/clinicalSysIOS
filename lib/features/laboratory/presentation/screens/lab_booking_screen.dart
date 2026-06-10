@@ -10,7 +10,7 @@ import 'package:gal/gal.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/laboratory_model.dart';
 import '../../data/models/lab_booking_model.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class LabBookingScreen extends StatefulWidget {
   final LaboratoryModel laboratory;

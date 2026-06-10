@@ -8,7 +8,7 @@ import '../../data/models/radiology_model.dart';
 import '../cubit/radiology_cubit.dart';
 import '../cubit/radiology_state.dart';
 import 'edit_radiology_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class RadiologyOwnerDashboard extends StatefulWidget {
   const RadiologyOwnerDashboard({super.key});

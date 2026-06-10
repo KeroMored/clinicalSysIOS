@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/medicine_request_model.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class MyMedicineRequestsScreen extends StatelessWidget {
   const MyMedicineRequestsScreen({super.key});

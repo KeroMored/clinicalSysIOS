@@ -7,7 +7,7 @@ import 'offer_card.dart';
 import '../../../../core/services/pharmacy_offer_sorting_service.dart';
 import '../../../../core/services/app_control_service.dart';
 import '../../../../core/widgets/admin_views_count_toggle.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 /// شاشة عروض الصيدلية مع نظام ترتيب ديناميكي متقدم
 class PharmacyOffersListScreen extends StatefulWidget {

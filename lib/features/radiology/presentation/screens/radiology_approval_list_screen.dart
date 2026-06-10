@@ -4,7 +4,7 @@ import '../cubit/radiology_cubit.dart';
 import '../cubit/radiology_state.dart';
 import '../../data/models/radiology_model.dart';
 import '../widgets/widgets.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class RadiologyApprovalListScreen extends StatefulWidget {
   const RadiologyApprovalListScreen({super.key});

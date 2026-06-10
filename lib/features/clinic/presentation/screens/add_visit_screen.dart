@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import '../../data/models/medical_visit_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../cubit/patient_state.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class AddVisitScreen extends StatefulWidget {
   final String patientId;

@@ -9,7 +9,7 @@ import '../../data/models/visit_model.dart';
 import '../cubit/visit_cubit.dart';
 import 'add_edit_visit_screen.dart';
 import 'visit_details_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
 
 class PatientDetailsScreen extends StatefulWidget {
   final PatientModel patient;
