@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>718616577077-gh7g5l90ouvpimafmqltnnqe5vcqbms9.apps.googleusercontent.com</string>
+	<string>718616577077-1q7n6ub417t7naj1ufo1cb1ji3i88g5d.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.718616577077-gh7g5l90ouvpimafmqltnnqe5vcqbms9</string>
+	<string>com.googleusercontent.apps.718616577077-1q7n6ub417t7naj1ufo1cb1ji3i88g5d</string>
 	<key>ANDROID_CLIENT_ID</key>
 	<string>718616577077-6ftp7fopm4j2of63bu9g0f1vsr1n0uuk.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
@@ -15,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.mallawy.clinicalsystem</string>
+	<string>com.mored.mallawycare</string>
 	<key>PROJECT_ID</key>
 	<string>clinicalsystem-4da35</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:718616577077:ios:216d93f814276764189d7c</string>
+	<string>1:718616577077:ios:2da3350695fb985c189d7c</string>
 </dict>
 </plist>

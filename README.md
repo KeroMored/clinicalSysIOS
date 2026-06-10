@@ -20,8 +20,8 @@
 
 ### الهوية الجديدة
 - **اسم التطبيق:** ملوي كير - MallawyC are
-- **Bundle ID (iOS):** `com.mallawy.mallawycare`
-- **Package (Android):** `com.mallawy.mallawycare`
+- **Bundle ID (iOS):** `com.mored.mallawycare`
+- **Package (Android):** `com.mored.mallawycare`
 - **Version:** 1.0.0+1
 
 ### 📚 أدلة Rebranding

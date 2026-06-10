@@ -8,8 +8,8 @@
 |--------|----------|----------|
 | **اسم التطبيق** | Mallawy Health Care | ملوي كير - MallawyC are |
 | **Flutter Package** | clinicalsystem | mallawycare |
-| **iOS Bundle ID** | com.mallawy.clinicalsystem | com.mallawy.mallawycare |
-| **Android Package** | com.mored.MallawyHealthCare | com.mallawy.mallawycare |
+| **iOS Bundle ID** | com.mallawy.clinicalsystem | com.mored.mallawycare |
+| **Android Package** | com.mored.MallawyHealthCare | com.mored.mallawycare |
 | **Version** | 1.0.0+49 | 1.0.0+1 |
 
 ### Firebase
@@ -37,7 +37,7 @@
 - [ ] استبدال `android/app/google-services.json`
 - [ ] استبدال `ios/Runner/GoogleService-Info.plist`
 - [ ] تحديث `ios/Runner/Info.plist` (Google Client IDs)
-- [ ] تحديث Bundle ID في Xcode (`com.mallawy.mallawycare`)
+- [ ] تحديث Bundle ID في Xcode (`com.mored.mallawycare`)
 - [ ] إنشاء App ID في Apple Developer
 - [ ] إنشاء Service ID للـ Apple Sign-In
 - [ ] تحديث Signing Keys
@@ -52,8 +52,8 @@
 ```
 📍 https://console.firebase.google.com/
 → Create Project: "mallawycare"
-→ Add iOS App: com.mallawy.mallawycare
-→ Add Android App: com.mallawy.mallawycare
+→ Add iOS App: com.mored.mallawycare
+→ Add Android App: com.mored.mallawycare
 → Enable Authentication (Email, Google, Apple)
 → Create Firestore Database
 → Enable Cloud Storage
@@ -77,7 +77,7 @@
 ### 4. تحديث Xcode (5 دقائق)
 ```bash
 open ios/Runner.xcworkspace
-# غيّر Bundle Identifier → com.mallawy.mallawycare
+# غيّر Bundle Identifier → com.mored.mallawycare
 ```
 
 ### 5. تنظيف وإعادة البناء (10 دقائق)
@@ -99,7 +99,7 @@ flutter run -d android
 ### 7. Apple Developer Setup (20 دقيقة)
 ```
 📍 https://developer.apple.com/account/
-→ Create App ID: com.mallawy.mallawycare
+→ Create App ID: com.mored.mallawycare
 → Enable Sign In with Apple
 → Enable Push Notifications
 → Create Service ID for Sign In with Apple
@@ -177,11 +177,11 @@ cd ..
 بعد الانتهاء من كل الخطوات، احفظ:
 
 - ✅ Firebase Project ID: `_________________`
-- ✅ iOS Bundle ID: `com.mallawy.mallawycare`
-- ✅ Android Package: `com.mallawy.mallawycare`
+- ✅ iOS Bundle ID: `com.mored.mallawycare`
+- ✅ Android Package: `com.mored.mallawycare`
 - ✅ FCM Server Key: `_________________`
 - ✅ Apple Team ID: `_________________`
-- ✅ Apple Service ID: `com.mallawy.mallawycare.signin`
+- ✅ Apple Service ID: `com.mored.mallawycare.signin`
 - ✅ Android Release Key: `~/mallawycare-release-key.jks`
 - ✅ Key Password: `_________________`
 

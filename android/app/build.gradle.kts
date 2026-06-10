@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.mallawy.mallawycare"
+    namespace = "com.mored.mallawycare"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "29.0.13846066"
 
@@ -33,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.mallawy.mallawycare"
+        applicationId = "com.mored.mallawycare"
         minSdk = 24  // Required for awesome_notifications
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

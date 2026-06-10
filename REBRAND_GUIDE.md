@@ -19,8 +19,8 @@
 ## 🎯 المعلومات الجديدة (التطبيق الجديد)
 
 ### ما سنغيره:
-- **Bundle ID الجديد (iOS)**: `com.mallawy.mallawycare`
-- **Package Name الجديد (Android)**: `com.mallawy.mallawycare`
+- **Bundle ID الجديد (iOS)**: `com.mored.mallawycare`
+- **Package Name الجديد (Android)**: `com.mored.mallawycare`
 - **App Name الجديد**: `MallawyC are - ملوي كير`
 - **Package Name (Flutter)**: `mallawycare`
 - **Firebase Project**: مشروع جديد تماماً
@@ -40,7 +40,7 @@
 
 #### 2. إضافة تطبيق iOS:
 1. في لوحة Firebase، اضغط على أيقونة iOS
-2. **iOS bundle ID**: أدخل `com.mallawy.mallawycare`
+2. **iOS bundle ID**: أدخل `com.mored.mallawycare`
 3. **App nickname**: أدخل `MallawyC are iOS`
 4. **App Store ID**: اتركه فارغ الآن (ستضيفه بعد الرفع)
 5. اضغط **"Register app"**
@@ -48,7 +48,7 @@
 
 #### 3. إضافة تطبيق Android:
 1. في لوحة Firebase، اضغط على أيقونة Android
-2. **Android package name**: أدخل `com.mallawy.mallawycare`
+2. **Android package name**: أدخل `com.mored.mallawycare`
 3. **App nickname**: أدخل `MallawyC are Android`
 4. **Debug signing certificate SHA-1**: (اختياري - للـ Google Sign-In)
    - للحصول عليه: افتح Terminal واكتب:
@@ -95,10 +95,10 @@ version: 1.0.0+1
 #### ✅ الملف 2: `android/app/build.gradle.kts`
 ```kotlin
 android {
-    namespace = "com.mallawy.mallawycare"  # غيّر من: com.mored.MallawyHealthCare
+    namespace = "com.mored.mallawycare"  # غيّر من: com.mored.MallawyHealthCare
     
     defaultConfig {
-        applicationId = "com.mallawy.mallawycare"  # غيّر من: com.mored.MallawyHealthCare
+        applicationId = "com.mored.mallawycare"  # غيّر من: com.mored.MallawyHealthCare
         // ... باقي الإعدادات
     }
 }
@@ -108,7 +108,7 @@ android {
 ابحث عن أي إشارة لـ `package` أو `android:label` وغيّرها:
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mallawy.mallawycare">
+    package="com.mored.mallawycare">
     
     <application
         android:label="ملوي كير"
@@ -152,13 +152,13 @@ android {
 افتح Xcode أو عدّل يدوياً:
 - ابحث عن: `PRODUCT_BUNDLE_IDENTIFIER`
 - غيّر من: `com.mallawy.clinicalsystem`
-- إلى: `com.mallawy.mallawycare`
+- إلى: `com.mored.mallawycare`
 
 **أو استخدم Xcode**:
 1. افتح المشروع: `ios/Runner.xcworkspace`
 2. اضغط على Runner في القائمة اليسرى
 3. في **General** > **Identity**
-4. غيّر **Bundle Identifier** إلى: `com.mallawy.mallawycare`
+4. غيّر **Bundle Identifier** إلى: `com.mored.mallawycare`
 
 ---
 
@@ -231,7 +231,7 @@ MaterialApp(
 1. اذهب إلى: https://developer.apple.com/account/
 2. **Identifiers** > اضغط **+** لإنشاء App ID جديد
 3. **Description**: MallawyC are
-4. **Bundle ID**: `com.mallawy.mallawycare`
+4. **Bundle ID**: `com.mored.mallawycare`
 5. فعّل **Sign In with Apple**
 6. احفظ
 
@@ -286,7 +286,7 @@ flutter run -d ios
    - اضغط **My Apps** > **+** > **New App**
    - **Platform**: iOS
    - **Name**: ملوي كير - MallawyC are
-   - **Bundle ID**: اختر `com.mallawy.mallawycare`
+   - **Bundle ID**: اختر `com.mored.mallawycare`
    - **SKU**: `mallawycare-001`
    - **User Access**: Full Access
 
@@ -355,8 +355,8 @@ flutter run -d ios
 ### الفرق بين التطبيق القديم والجديد:
 | العنصر | القديم | الجديد |
 |--------|--------|--------|
-| Bundle ID | com.mallawy.clinicalsystem | com.mallawy.mallawycare |
-| Package (Android) | com.mored.MallawyHealthCare | com.mallawy.mallawycare |
+| Bundle ID | com.mallawy.clinicalsystem | com.mored.mallawycare |
+| Package (Android) | com.mored.MallawyHealthCare | com.mored.mallawycare |
 | App Name | Mallawy Health Care | ملوي كير - MallawyC are |
 | Firebase Project | clinicalsystem-4da35 | mallawycare-XXXXX |
 | Package Name | clinicalsystem | mallawycare |

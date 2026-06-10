@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mallawy.mallawycare">
+    package="com.mored.mallawycare">
     <!-- Permissions for Camera -->
     <uses-permission android:name="android.permission.CAMERA"/>
     

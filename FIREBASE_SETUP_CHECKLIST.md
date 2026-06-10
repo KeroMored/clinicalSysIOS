@@ -25,7 +25,7 @@
 
 ### الخطوة 1: إضافة iOS App
 - [ ] اضغط على أيقونة iOS في لوحة Firebase
-- [ ] **iOS bundle ID**: `com.mallawy.mallawycare`
+- [ ] **iOS bundle ID**: `com.mored.mallawycare`
 - [ ] **App nickname**: `MallawyC are iOS`
 - [ ] **App Store ID**: (اتركه فارغ الآن)
 - [ ] اضغط "Register app"
@@ -78,7 +78,7 @@
 
 ### الخطوة 1: إضافة Android App
 - [ ] اضغط على أيقونة Android في لوحة Firebase
-- [ ] **Android package name**: `com.mallawy.mallawycare`
+- [ ] **Android package name**: `com.mored.mallawycare`
 - [ ] **App nickname**: `MallawyC are Android`
 - [ ] **Debug signing certificate SHA-1**: (اختياري)
 
@@ -235,7 +235,7 @@ service firebase.storage {
 - [ ] اختر **App IDs**
 - [ ] اختر **App**
 - [ ] **Description**: `MallawyC are`
-- [ ] **Bundle ID**: `com.mallawy.mallawycare` (Explicit)
+- [ ] **Bundle ID**: `com.mored.mallawycare` (Explicit)
 - [ ] فعّل الـ Capabilities:
   - [ ] Sign In with Apple
   - [ ] Push Notifications
@@ -246,18 +246,18 @@ service firebase.storage {
 - [ ] اذهب إلى: Identifiers > اضغط **+**
 - [ ] اختر **Services IDs**
 - [ ] **Description**: `MallawyC are Sign In`
-- [ ] **Identifier**: `com.mallawy.mallawycare.signin`
+- [ ] **Identifier**: `com.mored.mallawycare.signin`
 - [ ] اضغط Continue > Register
 - [ ] اختر Service ID الذي أنشأته
 - [ ] فعّل **Sign In with Apple**
 - [ ] اضغط Configure
-- [ ] **Primary App ID**: اختر `com.mallawy.mallawycare`
+- [ ] **Primary App ID**: اختر `com.mored.mallawycare`
 - [ ] **Domains and Subdomains**: أضف `mallawycare.page.link` (أو دومينك)
 - [ ] **Return URLs**: أضف رابط Firebase Auth callback
   - مثال: `https://clinicalsystem-XXXXX.firebaseapp.com/__/auth/handler`
 - [ ] احفظ
 
-📋 **Service ID**: `com.mallawy.mallawycare.signin`
+📋 **Service ID**: `com.mored.mallawycare.signin`
 
 ---
 
@@ -267,7 +267,7 @@ service firebase.storage {
 - [ ] افتح: `ios/Runner.xcworkspace` في Xcode
 - [ ] اختر **Runner** من القائمة اليسرى
 - [ ] اذهب لـ **General** > **Identity**
-- [ ] **Bundle Identifier**: `com.mallawy.mallawycare`
+- [ ] **Bundle Identifier**: `com.mored.mallawycare`
 - [ ] **Display Name**: `ملوي كير`
 
 ### تحديث Signing & Capabilities
@@ -347,13 +347,13 @@ flutter build appbundle --release
 | العنصر | القيمة |
 |--------|--------|
 | **Firebase Project ID** | ________________ |
-| **iOS Bundle ID** | com.mallawy.mallawycare |
-| **Android Package** | com.mallawy.mallawycare |
+| **iOS Bundle ID** | com.mored.mallawycare |
+| **Android Package** | com.mored.mallawycare |
 | **App Name** | ملوي كير - MallawyC are |
 | **Web Client ID** | ________________ |
 | **FCM Server Key** | ________________ |
 | **Apple Team ID** | ________________ |
-| **Apple Service ID** | com.mallawy.mallawycare.signin |
+| **Apple Service ID** | com.mored.mallawycare.signin |
 
 ---
 

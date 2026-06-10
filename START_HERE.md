@@ -75,8 +75,8 @@
 ```bash
 1. اذهب إلى: https://console.firebase.google.com/
 2. Create project: "mallawycare"
-3. أضف iOS App: com.mallawy.mallawycare
-4. أضف Android App: com.mallawy.mallawycare
+3. أضف iOS App: com.mored.mallawycare
+4. أضف Android App: com.mored.mallawycare
 5. حمّل الملفات
 6. اتبع FIREBASE_SETUP_CHECKLIST.md
 ```
@@ -129,7 +129,7 @@ flutter run
    - `android/app/google-services.json`
    - `ios/Runner/GoogleService-Info.plist`
 3. تحديث `ios/Runner/Info.plist` بـ Google Client IDs الجديدة
-4. تحديث Bundle ID في Xcode إلى: `com.mallawy.mallawycare`
+4. تحديث Bundle ID في Xcode إلى: `com.mored.mallawycare`
 5. تنظيف وإعادة البناء
 6. اختبار التطبيق
 
@@ -242,8 +242,8 @@ flutter pub get
 | العنصر | القيمة |
 |--------|--------|
 | **Flutter Package** | mallawycare |
-| **iOS Bundle ID** | com.mallawy.mallawycare |
-| **Android Package** | com.mallawy.mallawycare |
+| **iOS Bundle ID** | com.mored.mallawycare |
+| **Android Package** | com.mored.mallawycare |
 | **App Name** | ملوي كير - MallawyC are |
 | **Version** | 1.0.0+1 |
 

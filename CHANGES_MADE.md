@@ -32,8 +32,8 @@ version: 1.0.0+1
 
 ### 2. ✅ `android/app/build.gradle.kts`
 **التعديلات:**
-- تغيير `namespace` من `com.mored.MallawyHealthCare` إلى `com.mallawy.mallawycare`
-- تغيير `applicationId` من `com.mored.MallawyHealthCare` إلى `com.mallawy.mallawycare`
+- تغيير `namespace` من `com.mored.MallawyHealthCare` إلى `com.mored.mallawycare`
+- تغيير `applicationId` من `com.mored.MallawyHealthCare` إلى `com.mored.mallawycare`
 
 **قبل:**
 ```kotlin
@@ -46,9 +46,9 @@ android {
 **بعد:**
 ```kotlin
 android {
-    namespace = "com.mallawy.mallawycare"
+    namespace = "com.mored.mallawycare"
     defaultConfig {
-        applicationId = "com.mallawy.mallawycare"
+        applicationId = "com.mored.mallawycare"
 ```
 
 ---
@@ -119,7 +119,7 @@ chmod +x rebrand_cleanup.sh
 
 **الخطوات:**
 1. أنشئ Firebase Project جديد
-2. أضف Android App بـ package name: `com.mallawy.mallawycare`
+2. أضف Android App بـ package name: `com.mored.mallawycare`
 3. حمّل `google-services.json` الجديد
 4. استبدل الملف الموجود في: `android/app/google-services.json`
 
@@ -128,7 +128,7 @@ chmod +x rebrand_cleanup.sh
 - Project: `clinicalsystem-4da35`
 
 **المطلوب:** ملف جديد يحتوي على:
-- Package: `com.mallawy.mallawycare`
+- Package: `com.mored.mallawycare`
 - Project: `mallawycare-XXXXX` (المشروع الجديد)
 
 ---
@@ -138,7 +138,7 @@ chmod +x rebrand_cleanup.sh
 
 **الخطوات:**
 1. في نفس Firebase Project الجديد
-2. أضف iOS App بـ Bundle ID: `com.mallawy.mallawycare`
+2. أضف iOS App بـ Bundle ID: `com.mored.mallawycare`
 3. حمّل `GoogleService-Info.plist` الجديد
 4. استبدل الملف الموجود في: `ios/Runner/GoogleService-Info.plist`
 5. **مهم:** استخرج `CLIENT_ID` و `REVERSED_CLIENT_ID` من الملف الجديد
@@ -149,7 +149,7 @@ chmod +x rebrand_cleanup.sh
 - Project: `clinicalsystem-4da35`
 
 **المطلوب:** ملف جديد يحتوي على:
-- Bundle ID: `com.mallawy.mallawycare`
+- Bundle ID: `com.mored.mallawycare`
 - Project: `mallawycare-XXXXX`
 
 ---
@@ -161,7 +161,7 @@ chmod +x rebrand_cleanup.sh
 1. افتح: `ios/Runner.xcworkspace` في Xcode
 2. اختر **Runner** من القائمة اليسرى
 3. اذهب لـ **General** > **Identity**
-4. غيّر **Bundle Identifier** من `com.mallawy.clinicalsystem` إلى `com.mallawy.mallawycare`
+4. غيّر **Bundle Identifier** من `com.mallawy.clinicalsystem` إلى `com.mored.mallawycare`
 5. احفظ
 
 **الخيار 2 - التعديل اليدوي:**
@@ -171,7 +171,7 @@ PRODUCT_BUNDLE_IDENTIFIER = com.mallawy.clinicalsystem;
 ```
 وغيّره إلى:
 ```
-PRODUCT_BUNDLE_IDENTIFIER = com.mallawy.mallawycare;
+PRODUCT_BUNDLE_IDENTIFIER = com.mored.mallawycare;
 ```
 
 ---
@@ -207,7 +207,7 @@ PRODUCT_BUNDLE_IDENTIFIER = com.mallawy.mallawycare;
 **التحقق:** تأكد أن `package` محدّث
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.mallawy.mallawycare">
+    package="com.mored.mallawycare">
 ```
 
 ### `lib/main.dart`
@@ -235,7 +235,7 @@ MaterialApp(
 
 ### 3️⃣ تحديث Bundle ID في Xcode
 - [ ] افتح `ios/Runner.xcworkspace`
-- [ ] غيّر Bundle Identifier إلى `com.mallawy.mallawycare`
+- [ ] غيّر Bundle Identifier إلى `com.mored.mallawycare`
 - [ ] تأكد من Signing & Capabilities
 
 ### 4️⃣ تنظيف وإعادة البناء
@@ -253,7 +253,7 @@ flutter run -d android
 ```
 
 ### 6️⃣ إعداد Apple Developer
-- [ ] أنشئ App ID جديد: `com.mallawy.mallawycare`
+- [ ] أنشئ App ID جديد: `com.mored.mallawycare`
 - [ ] فعّل Sign In with Apple
 - [ ] فعّل Push Notifications
 - [ ] أنشئ Service ID للـ Apple Sign-In
@@ -278,8 +278,8 @@ flutter build appbundle --release
 | العنصر | القيمة القديمة | القيمة الجديدة |
 |--------|----------------|----------------|
 | **Flutter Package** | clinicalsystem | mallawycare |
-| **iOS Bundle ID** | com.mallawy.clinicalsystem | com.mallawy.mallawycare |
-| **Android Package** | com.mored.MallawyHealthCare | com.mallawy.mallawycare |
+| **iOS Bundle ID** | com.mallawy.clinicalsystem | com.mored.mallawycare |
+| **Android Package** | com.mored.MallawyHealthCare | com.mored.mallawycare |
 | **App Display Name** | Mallawy Health Care | ملوي كير |
 | **Firebase Project** | clinicalsystem-4da35 | mallawycare-XXXXX (جديد) |
 | **Version** | 1.0.0+49 | 1.0.0+1 |
