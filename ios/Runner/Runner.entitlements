@@ -12,7 +12,7 @@
 	</array>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:mallawy.com</string>
+		<string>applinks:clinicalsystem-4da35.firebaseapp.com</string>
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
