@@ -31,6 +31,7 @@ class ClinicModel {
   // Additional Info
   final bool hasNursery; // يوجد حضانة (لعيادات الأطفال فقط)
   final bool onlineBookingEnabled; // متاح الحجز أونلاين
+  final DateTime? bookingLockDate; // تاريخ قفل الحجز الأونلاين
   final String? doctorImageUrl;
   final bool isActive;
   final String status; // pending, approved, rejected
@@ -41,6 +42,10 @@ class ClinicModel {
   final double averageRating; // متوسط التقييم (0.0 - 5.0)
   final int totalRatings; // عدد التقييمات
   final int totalLikes; // عدد اللايكات
+
+  // Analytics
+  final int viewsCount; // عدد مشاهدات صفحة العيادة
+  final DateTime? lastFeaturedDate; // تاريخ آخر ظهور في الإعلانات
 
   ClinicModel({
     required this.id,
@@ -64,6 +69,7 @@ class ClinicModel {
     required this.holidays,
     this.hasNursery = false,
     this.onlineBookingEnabled = false,
+    this.bookingLockDate,
     this.doctorImageUrl,
     this.isActive = true,
     this.status = 'pending', // Default: waiting for approval
@@ -72,6 +78,8 @@ class ClinicModel {
     this.averageRating = 0.0,
     this.totalRatings = 0,
     this.totalLikes = 0,
+    this.viewsCount = 0,
+    this.lastFeaturedDate,
   });
 
   factory ClinicModel.fromFirestore(DocumentSnapshot doc) {
@@ -134,6 +142,7 @@ class ClinicModel {
       holidays: List<String>.from(data['holidays'] ?? []),
       hasNursery: data['hasNursery'] ?? false,
       onlineBookingEnabled: data['onlineBookingEnabled'] ?? false,
+      bookingLockDate: (data['bookingLockDate'] as Timestamp?)?.toDate(),
       doctorImageUrl: data['doctorImageUrl'],
       isActive: data['isActive'] ?? true,
       status: data['status'] ?? 'pending',
@@ -142,6 +151,10 @@ class ClinicModel {
       averageRating: (data['averageRating'] ?? 0.0).toDouble(),
       totalRatings: data['totalRatings'] ?? 0,
       totalLikes: data['totalLikes'] ?? 0,
+      viewsCount: (data['viewsCount'] as num? ?? 0).toInt(),
+      lastFeaturedDate: data['lastFeaturedDate'] is Timestamp
+          ? (data['lastFeaturedDate'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -190,6 +203,8 @@ class ClinicModel {
       'holidays': holidays,
       'hasNursery': hasNursery,
       'onlineBookingEnabled': onlineBookingEnabled,
+      'bookingLockDate':
+          bookingLockDate != null ? Timestamp.fromDate(bookingLockDate!) : null,
       'doctorImageUrl': doctorImageUrl,
       'isActive': isActive,
       'status': status,
@@ -198,26 +213,65 @@ class ClinicModel {
       'averageRating': averageRating,
       'totalRatings': totalRatings,
       'totalLikes': totalLikes,
+      'viewsCount': viewsCount,
+      'lastFeaturedDate': lastFeaturedDate != null
+          ? Timestamp.fromDate(lastFeaturedDate!)
+          : null,
     };
   }
 }
 
+class TimeSlot {
+  final String from;
+  final String to;
+
+  TimeSlot({required this.from, required this.to});
+
+  factory TimeSlot.fromMap(Map<String, dynamic> map) {
+    return TimeSlot(from: map['from'] ?? '09:00', to: map['to'] ?? '17:00');
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'from': from, 'to': to};
+  }
+}
+
 class WorkingHours {
-  final String from; // "09:00"
-  final String to; // "17:00"
+  final List<TimeSlot> slots;
   final bool isClosed;
 
-  WorkingHours({required this.from, required this.to, this.isClosed = false});
+  WorkingHours({
+    List<TimeSlot>? slots,
+    this.isClosed = false,
+  }) : slots = slots ?? [TimeSlot(from: '09:00', to: '17:00')];
 
   factory WorkingHours.fromMap(Map<String, dynamic> map) {
+    List<TimeSlot> parsedSlots = [];
+    if (map['slots'] != null && map['slots'] is List) {
+      for (var slotMap in map['slots']) {
+        parsedSlots.add(TimeSlot.fromMap(slotMap as Map<String, dynamic>));
+      }
+    } else if (map['from'] != null && map['to'] != null) {
+      parsedSlots.add(TimeSlot(
+        from: map['from'],
+        to: map['to'],
+      ));
+    } else {
+      parsedSlots.add(TimeSlot(from: '09:00', to: '17:00'));
+    }
+
     return WorkingHours(
-      from: map['from'] ?? '09:00',
-      to: map['to'] ?? '17:00',
+      slots: parsedSlots,
       isClosed: map['isClosed'] ?? false,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {'from': from, 'to': to, 'isClosed': isClosed};
+    return {
+      'slots': slots.map((s) => s.toMap()).toList(),
+      'isClosed': isClosed,
+      'from': slots.isNotEmpty ? slots.first.from : '09:00',
+      'to': slots.isNotEmpty ? slots.first.to : '17:00',
+    };
   }
 }

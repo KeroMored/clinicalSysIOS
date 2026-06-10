@@ -50,15 +50,19 @@ class PharmacyCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
+        border: Border.merge(
+          Border(right: BorderSide(color: Colors.teal, width: 1.5)),
+          Border(bottom: BorderSide(color: Colors.teal, width: 2.5)),
+        ),
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        // boxShadow: [
+        //   BoxShadow(
+        //     color: Colors.black.withValues(alpha: 0.06),
+        //     blurRadius: 50,
+        //     offset: const Offset(1, 1),
+        //   ),
+        // ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -140,7 +144,10 @@ class PharmacyCard extends StatelessWidget {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                          colors: [
+                            Color(0xFF06B6D4),
+                            Color.fromARGB(255, 9, 46, 55),
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),

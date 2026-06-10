@@ -160,28 +160,34 @@ class DailyStepTrackingService {
     bool forceTimestampTouch = false,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final current = await _localRepository.getOrCreateToday(userId);
     final todayKey = DailyActivityModel.buildDateKey(DateTime.now());
-
     final baseDayKey = _sensorBaseDayKey.replaceFirst('%s', userId);
     final baseValueKey = _sensorBaseValueKey.replaceFirst('%s', userId);
 
     final storedBaseDay = prefs.getString(baseDayKey);
     int? baseValue = prefs.getInt(baseValueKey);
 
-    // Keep already collected day total if baseline is missing or date changed.
-    if (storedBaseDay != todayKey || baseValue == null) {
+    // Detect day change and reset baseline immediately
+    if (storedBaseDay != todayKey) {
+      final current = await _localRepository.getOrCreateToday(userId);
       baseValue = currentTotal - current.steps;
       await prefs.setString(baseDayKey, todayKey);
+      await prefs.setInt(baseValueKey, baseValue);
+    } else if (baseValue == null) {
+      final current = await _localRepository.getOrCreateToday(userId);
+      baseValue = currentTotal - current.steps;
       await prefs.setInt(baseValueKey, baseValue);
     }
 
     // Sensor can reset after reboot; rebuild baseline to avoid negative jumps.
     if (currentTotal < baseValue) {
+      final current = await _localRepository.getOrCreateToday(userId);
       baseValue = currentTotal - current.steps;
       await prefs.setInt(baseValueKey, baseValue);
+      await prefs.setString(baseDayKey, todayKey);
     }
 
+    final current = await _localRepository.getOrCreateToday(userId);
     final sensorSteps = (currentTotal - baseValue).clamp(0, 999999);
     final mergedSteps = sensorSteps > current.steps
         ? sensorSteps
@@ -410,18 +416,22 @@ class DailyStepTrackingService {
     final delay = nextSummaryTime.difference(now);
 
     _midnightTimer = Timer(delay, () async {
-      final userId = _activeUserId;
-      if (userId != null) {
-        final previousDay = await _localRepository
-            .rolloverAndQueuePreviousDayIfNeeded(userId);
-        if (previousDay != null) {
-          await _maybeSendMidnightSummary(userId, previousDay);
+      try {
+        final userId = _activeUserId;
+        if (userId != null) {
+          final previousDay = await _localRepository
+              .rolloverAndQueuePreviousDayIfNeeded(userId);
+          if (previousDay != null) {
+            await _maybeSendMidnightSummary(userId, previousDay);
+          }
+          await _resetBaselineForToday(userId);
+          await _refreshToday();
         }
-        await _resetBaselineForToday(userId);
-        await _refreshToday();
+      } catch (e) {
+        debugPrint('midnight reset error: $e');
+      } finally {
+        _scheduleMidnightReset();
       }
-
-      _scheduleMidnightReset();
     });
   }
 

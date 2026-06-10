@@ -23,17 +23,31 @@ class UserModel {
 
   // Convert from Firestore document
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final resolvedRole = _asString(json['role'], fallback: 'user');
+
     return UserModel(
-      uid: json['uid'] ?? '',
-      email: json['email'] ?? '',
-      displayName: json['displayName'] ?? '',
-      photoUrl: json['photoUrl'] ?? '',
-      role: json['role'] ?? 'user',
-      pharmacyId: json['pharmacyId'],
-      phoneNumber: json['phoneNumber'],
-      whatsappNumber: json['whatsappNumber'],
-      address: json['address'],
+      uid: _asString(json['uid']),
+      email: _asString(json['email']),
+      displayName: _asString(json['displayName']),
+      photoUrl: _asString(json['photoUrl']),
+      role: resolvedRole.isEmpty ? 'user' : resolvedRole,
+      pharmacyId: _asNullableString(json['pharmacyId']),
+      phoneNumber: _asNullableString(json['phoneNumber']),
+      whatsappNumber: _asNullableString(json['whatsappNumber']),
+      address: _asNullableString(json['address']),
     );
+  }
+
+  static String _asString(dynamic value, {String fallback = ''}) {
+    if (value == null) return fallback;
+    final text = value.toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+
+  static String? _asNullableString(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
   }
 
   // Convert to Firestore document

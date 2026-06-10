@@ -24,7 +24,7 @@ class PatientCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () async {
-          final result = await Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => BlocProvider.value(
@@ -37,9 +37,11 @@ class PatientCard extends StatelessWidget {
             ),
           );
 
-          // إعادة تحميل قائمة المرضى عند العودة
-          if (result == true && context.mounted) {
-            context.read<PatientCubit>().loadClinicPatients(clinicId);
+          if (context.mounted) {
+            // نعيد إظهار القائمة من الكاش بدل إعادة التحميل من الشبكة.
+            context.read<PatientCubit>().restoreClinicPatientsFromCache(
+              clinicId,
+            );
           }
         },
         borderRadius: BorderRadius.circular(16),

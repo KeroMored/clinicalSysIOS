@@ -7,10 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/rendering.dart';
 import 'package:gal/gal.dart';
+import 'package:intl/intl.dart';
 
 import '../../../auth/presentation/cubit/auth_cubit.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../data/models/booking_model.dart';
 import '../../data/models/clinic_model.dart';
+import '../../data/repositories/booking_tracking_repository.dart';
+import '../../data/services/booking_block_service.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
@@ -120,12 +124,57 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   Future<void> _submitBooking() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final patientPhone = _phoneController.text.trim();
+    final isBlocked = await BookingBlockService().isPatientBlocked(
+      patientPhone,
+    );
+
+    if (isBlocked) {
+      final blockInfo = await BookingBlockService().getBlockInfo(patientPhone);
+      if (!mounted) return;
+
+      final blockedUntil = blockInfo?['blockedUntil'] as Timestamp?;
+      final reason = blockInfo?['blockReason'] as String? ?? 'تكرار عدم الحضور';
+      final noShowCount = blockInfo?['noShowCount'] ?? 0;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('⛔ ممنوع من الحجز'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'تم منعك من الحجز بسبب: $reason',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text('عدد مرات عدم الحضور: $noShowCount'),
+              if (blockedUntil != null) ...[
+                const SizedBox(height: 8),
+                Text('سيُرفع المنع في: ${_formatDate(blockedUntil.toDate())}'),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('حسناً'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final bookingNumber = await _getNextBookingNumber(
         _selectedAppointmentDate,
       );
+      final user = FirebaseAuth.instance.currentUser;
 
       final booking = BookingModel(
         id: '',
@@ -141,13 +190,30 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             ? null
             : _notesController.text.trim(),
         isOnlineBooking: true,
+        userId: user?.uid,
       );
 
       await FirebaseFirestore.instance
           .collection('bookings')
           .add(booking.toFirestore());
 
-      final user = FirebaseAuth.instance.currentUser;
+      await BookingTrackingRepository().saveTracking(
+        BookingTrackingInfo(
+          clinicId: widget.clinic.id,
+          doctorName: widget.clinic.doctorName,
+          departmentName: widget.clinic.department.arabicName,
+          bookingNumber: bookingNumber,
+          appointmentDate: _selectedAppointmentDate,
+          userId: user?.uid,
+        ),
+      );
+
+      NotificationService.showBookingStatusNotification(
+        title: 'تم الحجز بنجاح',
+        body: 'حجزك لدى د. ${widget.clinic.doctorName} في انتظار التأكيد',
+        notificationId: 70001,
+      );
+
       if (user != null) {
         try {
           final userDoc = await FirebaseFirestore.instance
@@ -451,10 +517,46 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         first.day == second.day;
   }
 
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
   List<DateTime> _availableDates() {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day);
-    return List.generate(14, (index) => start.add(Duration(days: index)));
+    final lockDate = widget.clinic.bookingLockDate;
+    final isLockedToday =
+        lockDate != null &&
+        lockDate.year == start.year &&
+        lockDate.month == start.month &&
+        lockDate.day == start.day;
+
+    final dates = <DateTime>[];
+    var current = start;
+    final endDate = start.add(const Duration(days: 14));
+
+    while (current.isBefore(endDate) && dates.length < 14) {
+      final dayName = DateFormat('EEEE').format(current).toLowerCase();
+      final hours = widget.clinic.workingHours[dayName];
+
+      final isWorkingDay = hours != null && !hours.isClosed;
+      final isHoliday = widget.clinic.holidays.any((h) {
+        final holidayDate = DateTime.parse(h);
+        return holidayDate.year == current.year &&
+            holidayDate.month == current.month &&
+            holidayDate.day == current.day;
+      });
+
+      if (isWorkingDay && !isHoliday) {
+        if (current.day != start.day || !isLockedToday) {
+          dates.add(current);
+        }
+      }
+
+      current = current.add(const Duration(days: 1));
+    }
+
+    return dates;
   }
 
   String _weekdayLabel(DateTime date) {
@@ -531,7 +633,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         leading: IconButton(
           onPressed: () => Navigator.maybePop(context),
           icon: const Icon(
-            Icons.arrow_forward_ios_rounded,
+            Icons.arrow_back_ios_rounded,
             size: 19,
             color: Color(0xFF0F766E),
           ),

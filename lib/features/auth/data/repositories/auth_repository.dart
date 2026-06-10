@@ -14,6 +14,7 @@ class AuthRepository {
   // Cache for user model to avoid repeated Firestore reads
   UserModel? _cachedUser;
   String? _cachedUserId;
+  bool _isCachedFallbackUser = false;
 
   // قائمة الأدمن (إيميلات محددة مسبقاً)
   final List<String> _adminEmails = [
@@ -112,6 +113,9 @@ class AuthRepository {
       if (userDoc.exists) {
         // User exists - return immediately from cache
         final user = UserModel.fromJson(userDoc.data()!);
+        _cachedUser = user;
+        _cachedUserId = firebaseUser.uid;
+        _isCachedFallbackUser = false;
 
         // ✅ CLEANUP: إلغاء الاشتراك من topics إذا تم تغيير الدور
         // إذا كان المستخدم كان pharmacy/clinic لكن تم تغييره إلى user، يجب إلغاء الاشتراك
@@ -139,6 +143,10 @@ class AuthRepository {
         role: role,
         pharmacyId: null, // Will be set in background
       );
+
+      _cachedUser = newUser;
+      _cachedUserId = firebaseUser.uid;
+      _isCachedFallbackUser = false;
 
       // Save user (fire and forget - don't wait)
       _firestore
@@ -302,7 +310,8 @@ class AuthRepository {
       }
 
       // Return cached user if same user and cache exists
-      if (_cachedUserId == user.uid && _cachedUser != null) {
+      // Never lock on a fallback profile; always try Firestore to restore role/ids.
+      if (_cachedUserId == user.uid && _cachedUser != null && !_isCachedFallbackUser) {
         return _cachedUser;
       }
 
@@ -317,36 +326,38 @@ class AuthRepository {
         // Cache the user model
         _cachedUser = userModel;
         _cachedUserId = user.uid;
+        _isCachedFallbackUser = false;
         return userModel;
       }
       // Fallback to Firebase Auth data if Firestore user document is missing.
-      final fallbackUser = UserModel(
-        uid: user.uid,
-        email: user.email ?? '',
-        displayName: user.displayName ?? '',
-        photoUrl: user.photoURL ?? '',
-        role: 'user',
-      );
+      final fallbackUser = _buildFallbackUserModel(user);
       _cachedUser = fallbackUser;
       _cachedUserId = user.uid;
+      _isCachedFallbackUser = true;
       return fallbackUser;
     } on TimeoutException {
       final user = currentUser;
       if (user == null) return null;
 
       // If Firestore is slow/offline, continue with cached Firebase Auth profile.
-      final fallbackUser = UserModel(
-        uid: user.uid,
-        email: user.email ?? '',
-        displayName: user.displayName ?? '',
-        photoUrl: user.photoURL ?? '',
-        role: 'user',
-      );
+      final fallbackUser = _buildFallbackUserModel(user);
       _cachedUser = fallbackUser;
       _cachedUserId = user.uid;
+      _isCachedFallbackUser = true;
       return fallbackUser;
     } catch (e) {
-      throw Exception('Failed to get current user: $e');
+      final user = currentUser;
+      if (user == null) {
+        return null;
+      }
+
+      // Keep session alive even if Firestore read/parsing fails temporarily.
+      final fallbackUser = _buildFallbackUserModel(user);
+      _cachedUser = fallbackUser;
+      _cachedUserId = user.uid;
+      _isCachedFallbackUser = true;
+      print('⚠️ Failed to load user profile from Firestore, using fallback: $e');
+      return fallbackUser;
     }
   }
 
@@ -355,16 +366,36 @@ class AuthRepository {
     final user = currentUser;
     if (user == null) return null;
 
-    final fallbackUser = UserModel(
+    final fallbackUser = _buildFallbackUserModel(user);
+    _cachedUser = fallbackUser;
+    _cachedUserId = user.uid;
+    _isCachedFallbackUser = true;
+    return fallbackUser;
+  }
+
+  UserModel _buildFallbackUserModel(User user) {
+    return UserModel(
       uid: user.uid,
       email: user.email ?? '',
       displayName: user.displayName ?? '',
       photoUrl: user.photoURL ?? '',
       role: 'user',
     );
-    _cachedUser = fallbackUser;
-    _cachedUserId = user.uid;
-    return fallbackUser;
+  }
+
+  /// Wait briefly for Firebase Auth to restore persisted session after app launch.
+  Future<User?> waitForSessionRestore({Duration timeout = const Duration(seconds: 3)}) async {
+    if (currentUser != null) {
+      return currentUser;
+    }
+
+    try {
+      await authStateChanges.first.timeout(timeout);
+    } catch (_) {
+      // Ignore timeout/errors and return current best-known user.
+    }
+
+    return currentUser;
   }
 
   // Sign out - FAST VERSION
@@ -375,6 +406,7 @@ class AuthRepository {
       // Clear cache
       _cachedUser = null;
       _cachedUserId = null;
+      _isCachedFallbackUser = false;
 
       // Sign out immediately (don't wait for notification cleanup)
       await Future.wait([_googleSignIn.signOut(), _firebaseAuth.signOut()]);

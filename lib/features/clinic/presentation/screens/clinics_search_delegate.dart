@@ -158,7 +158,10 @@ class ClinicsSearchDelegate extends SearchDelegate<void> {
         .where('isActive', isEqualTo: true);
 
     if (department != null) {
-      queryRef = queryRef.where('department', isEqualTo: department!.name);
+      queryRef = queryRef.where(
+        'department',
+        isEqualTo: department!.englishName,
+      );
     }
 
     final snapshot = await queryRef

@@ -111,6 +111,16 @@ class NotificationService {
       enableVibration: true,
     );
 
+    // Booking status updates channel (for patients)
+    const bookingStatusChannel = AndroidNotificationChannel(
+      'booking_status_updates',
+      'حجوزاتي',
+      description: 'تحديثات حالة الحجز',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+
     await _localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -140,6 +150,12 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(labBookingsChannel);
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(bookingStatusChannel);
 
     print('✅ Notification channels created');
   }
@@ -479,6 +495,50 @@ class NotificationService {
         print('Navigate to medicine requests');
       }
     });
+  }
+
+  /// Show local booking status notification for patients
+  static Future<void> showBookingStatusNotification({
+    required String title,
+    required String body,
+    int notificationId = 70000,
+  }) async {
+    try {
+      final localNotifications = FlutterLocalNotificationsPlugin();
+
+      const androidDetails = AndroidNotificationDetails(
+        'booking_status_updates',
+        'حجوزاتي',
+        channelDescription: 'تحديثات حالة الحجز',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await localNotifications.show(
+        notificationId,
+        title,
+        body,
+        notificationDetails,
+      );
+
+      print('✅ Booking status notification shown: $title');
+    } catch (e) {
+      print('❌ Error showing booking status notification: $e');
+    }
   }
 
   /// Send notification to specific user by userId

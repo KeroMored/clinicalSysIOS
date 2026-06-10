@@ -5,6 +5,7 @@ enum BookingStatus {
   confirmed, // مؤكد
   cancelled, // ملغي
   completed, // تم
+  noShow, // لم يحضر
 }
 
 enum VisitType {
@@ -110,6 +111,8 @@ class BookingModel {
         return BookingStatus.cancelled;
       case 'completed':
         return BookingStatus.completed;
+      case 'noShow':
+        return BookingStatus.noShow;
       default:
         return BookingStatus.pending;
     }
@@ -125,6 +128,8 @@ class BookingModel {
         return 'cancelled';
       case BookingStatus.completed:
         return 'completed';
+      case BookingStatus.noShow:
+        return 'noShow';
     }
   }
 
@@ -157,6 +162,8 @@ class BookingModel {
         return 'تم الإلغاء';
       case BookingStatus.completed:
         return 'تم الكشف';
+      case BookingStatus.noShow:
+        return 'لم يحضر';
     }
   }
 

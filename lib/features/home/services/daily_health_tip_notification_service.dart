@@ -14,8 +14,8 @@ class DailyHealthTipNotificationService {
     await AwesomeNotifications().initialize(null, [
       NotificationChannel(
         channelKey: channelKey,
-        channelName: 'النصائح اليومية',
-        channelDescription: 'إشعار يومي بنصيحة صحية',
+        channelName: 'معلومة اليوم',
+        channelDescription: 'إشعار يومي بمعلومة صحية مهمة',
         defaultColor: const Color(0xFF00BCD4),
         ledColor: Colors.white,
         importance: NotificationImportance.High,
@@ -60,7 +60,7 @@ class DailyHealthTipNotificationService {
         content: NotificationContent(
           id: _baseNotificationId + offset,
           channelKey: channelKey,
-          title: 'معلومة على الماشي',
+          title: 'معلومة اليوم',
           body: ' $tip',
           notificationLayout: NotificationLayout.BigText,
           category: NotificationCategory.Reminder,
@@ -92,7 +92,7 @@ class DailyHealthTipNotificationService {
       content: NotificationContent(
         id: 67999,
         channelKey: channelKey,
-        title: 'معلومة على الماشي',
+        title: 'معلومة اليوم',
         body: ' $tip',
         notificationLayout: NotificationLayout.BigText,
         category: NotificationCategory.Reminder,

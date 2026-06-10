@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
 
 import '../../../../core/services/location_service.dart';
 import '../../../../core/utils/working_hours_helper.dart';
@@ -24,6 +25,7 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   DocumentSnapshot? _lastDocument;
+  DocumentSnapshot? _geoLastDocument;
   bool _isLoading = false;
   bool _isInitializing = true;
   bool _hasMore = true;
@@ -38,6 +40,11 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
   String _sortBy = 'name'; // distance, rating, name
 
   static const int _pageSize = 10;
+  static const int _geoBatchSize = 50;
+  int _geoPage = 0;
+  bool _geoExhausted = false;
+  bool _geoHasMoreServer = true;
+  final List<_ClinicDistanceEntry> _geoEntries = [];
 
   bool get _canUseNurseryFilter =>
       widget.department == ClinicDepartment.pediatrics;
@@ -140,6 +147,11 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
   void _resetPagination() {
     _clinics.clear();
     _lastDocument = null;
+    _geoLastDocument = null;
+    _geoPage = 0;
+    _geoExhausted = false;
+    _geoHasMoreServer = true;
+    _geoEntries.clear();
     _hasMore = true;
   }
 
@@ -174,7 +186,7 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('clinics')
-          .where('department', isEqualTo: widget.department.name)
+          .where('department', isEqualTo: widget.department.englishName)
           .where('status', isEqualTo: 'approved')
           .where('isActive', isEqualTo: true)
           .get();
@@ -182,7 +194,13 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
       final lower = trimmed.toLowerCase();
       final results = snapshot.docs
           .map((doc) => ClinicModel.fromFirestore(doc))
-          .where((clinic) => clinic.doctorName.toLowerCase().contains(lower))
+          .where((clinic) {
+            if (!clinic.doctorName.toLowerCase().contains(lower)) {
+              return false;
+            }
+
+            return _matchesClinicQuickFilters(clinic);
+          })
           .toList();
 
       _sortClinics(results);
@@ -241,6 +259,18 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
     }
   }
 
+  bool _matchesClinicQuickFilters(ClinicModel clinic) {
+    if (_showNurseryOnly && !clinic.hasNursery) {
+      return false;
+    }
+
+    if (_showOpenOnly && !_isClinicOpenNow(clinic)) {
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _changeSortOption(String sortOption) async {
     if (sortOption == 'distance' && _userLocation == null) {
       await _requestLocation();
@@ -250,6 +280,14 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
     if (!mounted) return;
     setState(() {
       _sortBy = sortOption;
+      _clinics.clear();
+      _lastDocument = null;
+      _geoLastDocument = null;
+      _hasMore = true;
+      _geoPage = 0;
+      _geoExhausted = false;
+      _geoHasMoreServer = true;
+      _geoEntries.clear();
     });
 
     if (_searchQuery.isNotEmpty) {
@@ -269,50 +307,11 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
     });
 
     try {
-      Query query = FirebaseFirestore.instance
-          .collection('clinics')
-          .where('department', isEqualTo: widget.department.name)
-          .where('status', isEqualTo: 'approved')
-          .where('isActive', isEqualTo: true);
-
-      if (_sortBy == 'rating') {
-        query = query.orderBy('averageRating', descending: true);
+      if (_sortBy == 'distance' && _userLocation != null) {
+        await _loadClinicsByDistance();
       } else {
-        query = query.orderBy('doctorName');
+        await _loadClinicsNormal();
       }
-
-      query = query.limit(_pageSize);
-
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final snapshot = await query.get();
-      if (!mounted) return;
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _hasMore = false;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      _lastDocument = snapshot.docs.last;
-
-      final fetched = snapshot.docs
-          .map((doc) => ClinicModel.fromFirestore(doc))
-          .toList();
-
-      if (_sortBy == 'distance') {
-        _sortClinics(fetched);
-      }
-
-      setState(() {
-        _clinics.addAll(fetched);
-        _hasMore = snapshot.docs.length == _pageSize;
-        _isLoading = false;
-      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -320,6 +319,152 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
         _loadError = 'تعذر تحميل العيادات حالياً';
       });
     }
+  }
+
+  Future<void> _loadClinicsByDistance() async {
+    try {
+      final requiredCount = (_geoPage + 1) * _pageSize;
+      await _ensureGeoCandidates(requiredCount);
+
+      final sorted = List<_ClinicDistanceEntry>.from(_geoEntries)
+        ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+
+      final visible = sorted.take(requiredCount).map((e) => e.clinic).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _geoPage++;
+        _geoExhausted = !_geoHasMoreServer && visible.length >= sorted.length;
+        _clinics
+          ..clear()
+          ..addAll(visible);
+        _hasMore = !_geoExhausted;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _loadError = 'تعذر تحميل العيادات حالياً';
+      });
+    }
+  }
+
+  Future<void> _ensureGeoCandidates(int requiredCount) async {
+    if (_userLocation == null) return;
+    if (!_geoHasMoreServer) return;
+
+    while (_geoHasMoreServer && _geoEntries.length < requiredCount) {
+      Query baseQuery = FirebaseFirestore.instance
+          .collection('clinics')
+          .where('department', isEqualTo: widget.department.englishName)
+          .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true);
+
+      if (_showNurseryOnly) {
+        baseQuery = baseQuery.where('hasNursery', isEqualTo: true);
+      }
+
+      baseQuery = baseQuery.orderBy('doctorName');
+
+      Query query = baseQuery.limit(_geoBatchSize);
+      if (_geoLastDocument != null) {
+        query = query.startAfterDocument(_geoLastDocument!);
+      }
+
+      final snapshot = await query.get();
+      if (snapshot.docs.isEmpty) {
+        _geoHasMoreServer = false;
+        break;
+      }
+
+      _geoLastDocument = snapshot.docs.last;
+      _geoHasMoreServer = snapshot.docs.length == _geoBatchSize;
+
+      for (final doc in snapshot.docs) {
+        try {
+          final c = ClinicModel.fromFirestore(doc);
+          if (!_matchesClinicQuickFilters(c)) {
+            continue;
+          }
+
+          final lat = c.latitude;
+          final lng = c.longitude;
+          final dist = (lat == null || lng == null)
+              ? double.infinity
+              : LocationService.calculateDistance(
+                  _userLocation!.latitude,
+                  _userLocation!.longitude,
+                  lat,
+                  lng,
+                );
+
+          _geoEntries.add(_ClinicDistanceEntry(clinic: c, distanceKm: dist));
+        } catch (_) {
+          // skip invalid docs
+        }
+      }
+
+      if (!_geoHasMoreServer) {
+        break;
+      }
+    }
+  }
+
+  Future<void> _loadClinicsNormal() async {
+    Query baseQuery = FirebaseFirestore.instance
+        .collection('clinics')
+        .where('department', isEqualTo: widget.department.englishName)
+        .where('status', isEqualTo: 'approved')
+        .where('isActive', isEqualTo: true);
+
+    if (_showNurseryOnly) {
+      baseQuery = baseQuery.where('hasNursery', isEqualTo: true);
+    }
+
+    if (_sortBy == 'rating') {
+      baseQuery = baseQuery.orderBy('averageRating', descending: true);
+    } else {
+      baseQuery = baseQuery.orderBy('doctorName');
+    }
+
+    DocumentSnapshot? cursor = _lastDocument;
+    bool hasMoreLocal = _hasMore;
+    final collected = <ClinicModel>[];
+
+    while (hasMoreLocal && collected.length < _pageSize) {
+      Query query = baseQuery.limit(_pageSize);
+
+      if (cursor != null) {
+        query = query.startAfterDocument(cursor);
+      }
+
+      final snapshot = await query.get();
+      if (snapshot.docs.isEmpty) {
+        hasMoreLocal = false;
+        break;
+      }
+
+      cursor = snapshot.docs.last;
+      hasMoreLocal = snapshot.docs.length == _pageSize;
+
+      final batch = snapshot.docs
+          .map((doc) => ClinicModel.fromFirestore(doc))
+          .where(_matchesClinicQuickFilters)
+          .toList();
+
+      collected.addAll(batch);
+    }
+
+    final fetched = collected.take(_pageSize).toList();
+
+    if (!mounted) return;
+    setState(() {
+      _lastDocument = cursor;
+      _clinics.addAll(fetched);
+      _hasMore = hasMoreLocal;
+      _isLoading = false;
+    });
   }
 
   bool _isClinicOpenNow(ClinicModel clinic) {
@@ -332,16 +477,7 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
   }
 
   List<ClinicModel> _getDisplayedClinics() {
-    final q = _searchQuery.trim().toLowerCase();
-
-    return _clinics.where((clinic) {
-      final matchesSearch =
-          q.isEmpty || clinic.doctorName.toLowerCase().contains(q);
-
-      final matchesOpen = !_showOpenOnly || _isClinicOpenNow(clinic);
-      final matchesNursery = !_showNurseryOnly || clinic.hasNursery;
-      return matchesSearch && matchesOpen && matchesNursery;
-    }).toList();
+    return _clinics;
   }
 
   Future<void> _refreshClinic(String clinicId) async {
@@ -364,7 +500,7 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
     }
   }
 
-  void _onQuickFilterSelected(String filterId) {
+  Future<void> _onQuickFilterSelected(String filterId) async {
     if (!mounted) return;
 
     if (filterId == 'open') {
@@ -373,6 +509,12 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
         _showOpenOnly = true;
         _showNurseryOnly = false;
       });
+
+      if (_searchQuery.isNotEmpty) {
+        await _searchClinicsInDatabase(_searchQuery);
+      } else {
+        await _resetAndReload();
+      }
       return;
     }
 
@@ -385,6 +527,12 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
         _showOpenOnly = false;
         _showNurseryOnly = true;
       });
+
+      if (_searchQuery.isNotEmpty) {
+        await _searchClinicsInDatabase(_searchQuery);
+      } else {
+        await _resetAndReload();
+      }
       return;
     }
 
@@ -395,11 +543,11 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
     });
 
     if (filterId == 'all') {
-      _changeSortOption('name');
+      await _changeSortOption('name');
     } else if (filterId == 'distance') {
-      _changeSortOption('distance');
+      await _changeSortOption('distance');
     } else if (filterId == 'rating') {
-      _changeSortOption('rating');
+      await _changeSortOption('rating');
     }
   }
 
@@ -596,25 +744,10 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
           ),
           Expanded(
             child: showInitialLoading
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SpinKitPulsingGrid(
-                          color: const Color(0xFF0891B2),
-                          size: 36,
-                        ),
-                        const SizedBox(height: 14),
-                        const Text(
-                          'جاري تحميل العيادات...',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
+                ? ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 12),
+                    itemCount: 5,
+                    itemBuilder: (context, index) => const SkeletonClinicCard(),
                   )
                 : displayed.isEmpty
                 ? Center(
@@ -902,4 +1035,11 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
       ),
     );
   }
+}
+
+class _ClinicDistanceEntry {
+  final ClinicModel clinic;
+  final double distanceKm;
+
+  const _ClinicDistanceEntry({required this.clinic, required this.distanceKm});
 }

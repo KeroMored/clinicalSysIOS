@@ -13,6 +13,7 @@ import 'firebase_options.dart';
 import 'core/services/notification_service.dart';
 import 'core/security/security_manager.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/app_route_observer.dart';
 import 'features/auth/presentation/screens/auth_wrapper.dart';
 import 'features/pharmacy/data/repositories/pharmacy_repository.dart';
 import 'features/pharmacy/presentation/cubit/pharmacy_cubit.dart';
@@ -178,6 +179,7 @@ class MyApp extends StatelessWidget {
         title: "Mallawy Care",
         debugShowCheckedModeBanner: false,
         theme: AppTheme.getTheme(),
+        navigatorObservers: [appRouteObserver],
         locale: const Locale('ar', 'EG'),
         supportedLocales: const [Locale('ar', 'EG')],
         localizationsDelegates: const [

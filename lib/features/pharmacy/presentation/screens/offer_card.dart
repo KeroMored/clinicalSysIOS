@@ -347,46 +347,7 @@ class OfferCard extends StatelessWidget {
                             const SizedBox(height: 4),
                           ],
 
-                          // Notes
-                          if (notes.isNotEmpty) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF7ED),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFFFBBF24),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.info_outline,
-                                    color: Color(0xFFF59E0B),
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      notes,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFFB45309),
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                          ],
+                          // Notes - تم إخفاؤها من الكارد (ظاهرة فقط في صفحة التفاصيل)
                         ],
                       ),
                     ), // GestureDetector

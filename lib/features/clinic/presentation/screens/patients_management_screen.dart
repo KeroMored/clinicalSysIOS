@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../data/models/patient_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../cubit/patient_state.dart';
 import '../widgets/patient_card.dart';
@@ -29,7 +30,7 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<PatientCubit>().loadClinicPatients(widget.clinicId);
+    context.read<PatientCubit>().ensureClinicPatientsLoaded(widget.clinicId);
     _scrollController.addListener(_onScroll);
   }
 
@@ -179,7 +180,10 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          context.read<PatientCubit>().loadClinicPatients(widget.clinicId);
+          context.read<PatientCubit>().ensureClinicPatientsLoaded(
+            widget.clinicId,
+            forceRefresh: true,
+          );
         } else if (state is PatientError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.message), backgroundColor: Colors.red),
@@ -187,60 +191,85 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
         }
       },
       builder: (context, state) {
+        final cubit = context.read<PatientCubit>();
+
         if (state is PatientLoading) {
+          if (cubit.hasCachedClinicPatients(widget.clinicId)) {
+            return _buildPatientsList(
+              cubit.cachedClinicPatients,
+              isLoadingMore: false,
+            );
+          }
+
           return const Center(child: AppLoadingIndicator(color: _primaryColor));
         }
 
         if (state is PatientsLoaded) {
-          final filteredPatients = state.patients.where((patient) {
-            if (_searchQuery.isEmpty) return true;
-            final query = _searchQuery.toLowerCase();
-            return patient.name.toLowerCase().contains(query) ||
-                patient.phoneNumber.contains(query);
-          }).toList();
+          return _buildPatientsList(
+            state.patients,
+            isLoadingMore: state.isLoadingMore,
+          );
+        }
 
-          if (filteredPatients.isEmpty && !state.isLoadingMore) {
-            return _buildEmptyState();
-          }
-
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFDDE7EF))),
-            ),
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount:
-                  filteredPatients.length + (state.isLoadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == filteredPatients.length) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: AppLoadingIndicator(
-                          strokeWidth: 2.5,
-                          color: _primaryColor,
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                return PatientCard(
-                  patient: filteredPatients[index],
-                  clinicId: widget.clinicId,
-                );
-              },
-            ),
+        if (cubit.hasCachedClinicPatients(widget.clinicId)) {
+          return _buildPatientsList(
+            cubit.cachedClinicPatients,
+            isLoadingMore: false,
           );
         }
 
         return _buildEmptyState();
       },
+    );
+  }
+
+  Widget _buildPatientsList(
+    List<PatientModel> patients, {
+    required bool isLoadingMore,
+  }) {
+    final filteredPatients = patients.where((patient) {
+      if (_searchQuery.isEmpty) return true;
+      final query = _searchQuery.toLowerCase();
+      return patient.name.toLowerCase().contains(query) ||
+          patient.phoneNumber.contains(query);
+    }).toList();
+
+    if (filteredPatients.isEmpty && !isLoadingMore) {
+      return _buildEmptyState();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFDDE7EF))),
+      ),
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: filteredPatients.length + (isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == filteredPatients.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: AppLoadingIndicator(
+                    strokeWidth: 2.5,
+                    color: _primaryColor,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return PatientCard(
+            patient: filteredPatients[index],
+            clinicId: widget.clinicId,
+          );
+        },
+      ),
     );
   }
 

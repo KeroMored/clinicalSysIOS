@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/booking_model.dart';
+import '../../data/services/booking_block_service.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../cubit/patient_cubit.dart';
 import 'patient_details_screen.dart';
@@ -31,17 +32,88 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen>
   static const Color _secondaryColor = Color(0xFF179AAC);
   static const Color _backgroundColor = Color(0xFFF3F8FB);
   static const Color _textPrimary = Color(0xFF0F172A);
+  DateTime? _localBookingLockDate;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _localBookingLockDate = widget.clinic.bookingLockDate;
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  bool _isBookingLocked() {
+    final lockDate = _localBookingLockDate;
+    if (lockDate == null) return false;
+    final now = DateTime.now();
+    return lockDate.year == now.year &&
+        lockDate.month == now.month &&
+        lockDate.day == now.day;
+  }
+
+  Future<void> _toggleBookingLock() async {
+    final isLocked = _isBookingLocked();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Text(isLocked ? 'فتح الحجز' : 'قفل الحجز'),
+        content: Text(
+          isLocked
+              ? 'هل تريد السماح بالحجز الاونلاين اليوم؟'
+              : "هل تريد غلق الحجز الاونلاين اليوم ؟ ",
+          style: const TextStyle(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isLocked ? Colors.green : Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(isLocked ? 'نعم' : 'قفل'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final newLockDate = isLocked ? null : Timestamp.fromDate(DateTime.now());
+      await FirebaseFirestore.instance
+          .collection('clinics')
+          .doc(widget.clinic.id)
+          .update({'bookingLockDate': newLockDate});
+
+      setState(() {
+        _localBookingLockDate = newLockDate?.toDate();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isLocked ? 'تم فتح الحجز' : 'تم قفل الحجز'),
+            backgroundColor: isLocked ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Future<void> _endDay() async {
@@ -191,31 +263,38 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen>
                 ),
               ),
             ),
-            title: const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'إدارة الحجوزات',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'تابع الحالات ونفذ الإجراءات بسرعة',
-                  style: TextStyle(
-                    color: Color(0xFFDDF7FC),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+            title: null,
             actions: [
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10.0,
+                  horizontal: 8,
+                ),
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _toggleBookingLock,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Icon(
+                        _isBookingLocked()
+                            ? Icons.lock_rounded
+                            : Icons.lock_open_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 8,
+                ),
                 child: Material(
                   color: Colors.white.withValues(alpha: 0.22),
                   shape: const CircleBorder(),
@@ -233,6 +312,7 @@ class _BookingsManagementScreenState extends State<BookingsManagementScreen>
                   ),
                 ),
               ),
+              const SizedBox(width: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 10,
@@ -710,12 +790,15 @@ class _BookingCard extends StatelessWidget {
     final isPending = booking.status == BookingStatus.pending;
     final isCompleted = booking.status == BookingStatus.completed;
     final isCancelled = booking.status == BookingStatus.cancelled;
+    final isNoShow = booking.status == BookingStatus.noShow;
     final isArchived = booking.archivedDate != null;
 
     final Color statusColor = isCancelled
         ? const Color(0xFFDC2626)
         : isCompleted
         ? const Color(0xFFE5E7EB)
+        : isNoShow
+        ? const Color(0xFFDC2626)
         : isPending
         ? const Color(0xFFF59E0B)
         : const Color(0xFF059669);
@@ -724,6 +807,8 @@ class _BookingCard extends StatelessWidget {
         ? Icons.cancel_rounded
         : isCompleted
         ? Icons.task_alt_rounded
+        : isNoShow
+        ? Icons.person_off_rounded
         : isPending
         ? Icons.pending_rounded
         : Icons.check_circle_rounded;
@@ -757,20 +842,37 @@ class _BookingCard extends StatelessWidget {
           Material(
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(18),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: isNoShow
+                    ? const Color(0xFFFFF5F5)
+                    : isCompleted
+                    ? const Color(0xFFE5E7EB)
+                    : Colors.white,
+                border: Border.all(
+                  color: isNoShow
+                      ? const Color(0xFFDC2626).withValues(alpha: 0.3)
+                      : isCompleted
+                      ? const Color(0xFFCBD5E1)
+                      : const Color(0xFFDDE7EF),
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 4,
-                        height: 44,
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: statusColor,
-                          borderRadius: BorderRadius.circular(8),
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        child: Icon(statusIcon, color: statusColor, size: 20),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -1517,6 +1619,19 @@ class _BookingCard extends StatelessWidget {
                   _markAsCompleted(originalContext);
                 },
               ),
+            // "لم يحضر" يظهر للحجوزات المؤكدة وفي الانتظار
+            if (isConfirmed || !isCancelled)
+              ListTile(
+                leading: const Icon(
+                  Icons.person_off_rounded,
+                  color: Colors.redAccent,
+                ),
+                title: const Text('لم يحضر'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _markAsNoShow(originalContext);
+                },
+              ),
             // "لم يتم الكشف" يظهر فقط للحجوزات المكتملة
             if (isCompleted)
               ListTile(
@@ -1716,6 +1831,93 @@ class _BookingCard extends StatelessWidget {
         );
       }
     }
+  }
+
+  void _markAsNoShow(BuildContext context) async {
+    if (booking.id == null || booking.id!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('خطأ: معرف الحجز غير موجود'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تسجيل عدم الحضور'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('هل تريد تسجيل "${booking.patientName}" كـ لم يحضر؟'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: const Text(
+                '⚠️ في حالة تكرار عدم الحضور 3 مرات سيتم منع المريض من الحجز لمدة 30 يوم',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                await FirebaseFirestore.instance
+                    .collection('bookings')
+                    .doc(booking.id!)
+                    .update({'status': 'noShow'});
+
+                await BookingBlockService().recordNoShow(
+                  patientPhone: booking.patientPhone,
+                  patientName: booking.patientName,
+                  clinicId: booking.clinicId,
+                  bookingId: booking.id!,
+                );
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم تسجيل عدم الحضور'),
+                      backgroundColor: Colors.redAccent,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('خطأ: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('تأكيد'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _makePhoneCall(BuildContext context) async {
