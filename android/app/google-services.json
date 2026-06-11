@@ -39,10 +39,10 @@
               "client_type": 3
             },
             {
-              "client_id": "718616577077-c1lcqntld8ojeevq6v5tffp85p7vf5la.apps.googleusercontent.com",
+              "client_id": "718616577077-1q7n6ub417t7naj1ufo1cb1ji3i88g5d.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.clinicalsystem"
+                "bundle_id": "com.mored.mallawycare"
               }
             }
           ]
@@ -57,6 +57,22 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "718616577077-6ftp7fopm4j2of63bu9g0f1vsr1n0uuk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mored.MallawyHealthCare",
+            "certificate_hash": "d388ca65a9bdd23b6ef7b172d5fdf7beee63c687"
+          }
+        },
+        {
+          "client_id": "718616577077-b0csnr593a3t64me5s9mkj8hq76vk214.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mored.MallawyHealthCare",
+            "certificate_hash": "b479860ca886b8885c62672d678deac4ac83d92a"
+          }
+        },
         {
           "client_id": "718616577077-8lcfvrdufa3feaqrl54pg6relo049csb.apps.googleusercontent.com",
           "client_type": 3
@@ -75,10 +91,62 @@
               "client_type": 3
             },
             {
-              "client_id": "718616577077-c1lcqntld8ojeevq6v5tffp85p7vf5la.apps.googleusercontent.com",
+              "client_id": "718616577077-1q7n6ub417t7naj1ufo1cb1ji3i88g5d.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.clinicalsystem"
+                "bundle_id": "com.mored.mallawycare"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:718616577077:android:3b0f0f0b707449ba189d7c",
+        "android_client_info": {
+          "package_name": "com.mored.mallawycare"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "718616577077-8t5db1jjpeqjmd3dd9rfh6ra6ln6q88o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mored.mallawycare",
+            "certificate_hash": "d388ca65a9bdd23b6ef7b172d5fdf7beee63c687"
+          }
+        },
+        {
+          "client_id": "718616577077-jv42jp6jk3g85gt86p10pgmvjbjfe3vn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mored.mallawycare",
+            "certificate_hash": "b479860ca886b8885c62672d678deac4ac83d92a"
+          }
+        },
+        {
+          "client_id": "718616577077-8lcfvrdufa3feaqrl54pg6relo049csb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCe3PBCeDsTGLqgxi0On9WixxyytIDTFG0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "718616577077-8lcfvrdufa3feaqrl54pg6relo049csb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "718616577077-1q7n6ub417t7naj1ufo1cb1ji3i88g5d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mored.mallawycare"
               }
             }
           ]
