@@ -142,19 +142,31 @@ class AuthRepository {
     return newUser;
   }
 
-  // Sign in with Google - ULTRA FAST VERSION
+  // Sign in with Google - ULTRA FAST VERSION with Enhanced Error Handling
   Future<UserModel?> signInWithGoogle() async {
     try {
+      print('🔐 [Google Sign-In] Starting sign-in flow...');
+      
       // Trigger Google Sign In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
+        print('🔐 [Google Sign-In] User cancelled sign-in');
         return null;
       }
+
+      print('🔐 [Google Sign-In] Got Google account: ${googleUser.email}');
 
       // Obtain auth details
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        print('❌ [Google Sign-In] Missing authentication tokens');
+        throw Exception('فشل الحصول على بيانات التفويض من Google');
+      }
+
+      print('🔐 [Google Sign-In] Got authentication tokens');
 
       // Create credential
       final credential = GoogleAuthProvider.credential(
@@ -162,31 +174,98 @@ class AuthRepository {
         idToken: googleAuth.idToken,
       );
 
+      print('🔐 [Google Sign-In] Signing in to Firebase...');
+
       // Sign in to Firebase
       final UserCredential userCredential = await _firebaseAuth
-          .signInWithCredential(credential);
+          .signInWithCredential(credential)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw TimeoutException(
+              'انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى',
+            ),
+          );
 
       final User? firebaseUser = userCredential.user;
 
       if (firebaseUser == null) {
-        throw Exception('Failed to sign in');
+        print('❌ [Google Sign-In] Firebase user is null after sign-in');
+        throw Exception('فشل تسجيل الدخول مع Firebase');
       }
+
+      print('🔐 [Google Sign-In] Firebase auth successful for ${firebaseUser.uid}');
+      print('🔐 [Google Sign-In] Creating/Updating user document...');
+
       return _upsertSignedInUser(
         firebaseUser,
         displayNameOverride: googleUser.displayName,
       );
+    } on TimeoutException catch (e) {
+      print('❌ [Google Sign-In] Timeout: $e');
+      throw Exception('انتهت مهلة الاتصال، يرجى التحقق من اتصال الإنترنت');
+    } on FirebaseAuthException catch (e) {
+      print('❌ [Google Sign-In] Firebase auth exception: ${e.code} - ${e.message}');
+      
+      String errorMessage;
+      switch (e.code) {
+        case 'account-exists-with-different-credential':
+          errorMessage = 'هذا البريد الإلكتروني مسجل بطريقة دخول أخرى';
+          break;
+        case 'invalid-credential':
+          errorMessage = 'بيانات الاعتماد غير صالحة، يرجى المحاولة مرة أخرى';
+          break;
+        case 'operation-not-allowed':
+          errorMessage = 'تسجيل الدخول بواسطة Google غير مفعّل حالياً';
+          break;
+        case 'user-disabled':
+          errorMessage = 'تم تعطيل هذا الحساب';
+          break;
+        case 'user-not-found':
+          errorMessage = 'لم يتم العثور على هذا المستخدم';
+          break;
+        case 'wrong-password':
+          errorMessage = 'كلمة المرور غير صحيحة';
+          break;
+        case 'network-request-failed':
+          errorMessage = 'خطأ في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى';
+          break;
+        default:
+          errorMessage = 'فشل تسجيل الدخول: ${e.message ?? e.code}';
+      }
+      
+      throw Exception(errorMessage);
     } catch (e) {
-      throw Exception('Failed to sign in with Google: $e');
+      print('❌ [Google Sign-In] Unexpected error: $e');
+      
+      if (e.toString().contains('SIGN_IN_CANCELLED')) {
+        return null;
+      }
+      
+      if (e.toString().contains('network')) {
+        throw Exception('خطأ في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى');
+      }
+      
+      if (e is Exception) {
+        rethrow;
+      }
+      
+      throw Exception('حدث خطأ غير متوقع أثناء تسجيل الدخول: ${e.toString()}');
     }
   }
 
-  // Sign in with Apple
+  // Sign in with Apple - Enhanced with Better Error Handling
   Future<UserModel?> signInWithApple() async {
     try {
       print('🍎 [Apple Sign-In] Checking availability...');
-      final isAvailable = await SignInWithApple.isAvailable();
+      
+      final isAvailable = await SignInWithApple.isAvailable().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => false,
+      );
+      
       if (!isAvailable) {
-        throw Exception('Apple Sign-In غير متاح على هذا الجهاز حالياً');
+        print('🍎 [Apple Sign-In] Not available on this device');
+        throw Exception('تسجيل الدخول بواسطة Apple غير متاح على هذا الجهاز');
       }
 
       print('🍎 [Apple Sign-In] Generating nonce...');
@@ -200,26 +279,42 @@ class AuthRepository {
           AppleIDAuthorizationScopes.fullName,
         ],
         nonce: hashedNonce,
+      ).timeout(
+        const Duration(seconds: 60),
+        onTimeout: () => throw TimeoutException(
+          'انتهت مهلة الاتصال مع Apple',
+        ),
       );
 
       print('🍎 [Apple Sign-In] Got credential, extracting identity token...');
       final identityToken = appleCredential.identityToken;
+      
       if (identityToken == null || identityToken.isEmpty) {
-        throw Exception('Missing identity token from Apple');
+        print('❌ [Apple Sign-In] Identity token is null or empty');
+        throw Exception('فشل الحصول على بيانات التفويض من Apple');
       }
 
       print('🍎 [Apple Sign-In] Creating OAuth credential...');
-      final oauthCredential = OAuthProvider(
-        'apple.com',
-      ).credential(idToken: identityToken, rawNonce: rawNonce);
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: identityToken,
+        rawNonce: rawNonce,
+      );
 
       print('🍎 [Apple Sign-In] Signing in to Firebase...');
       final UserCredential userCredential = await _firebaseAuth
-          .signInWithCredential(oauthCredential);
+          .signInWithCredential(oauthCredential)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw TimeoutException(
+              'انتهت مهلة الاتصال مع Firebase',
+            ),
+          );
 
       final User? firebaseUser = userCredential.user;
+      
       if (firebaseUser == null) {
-        throw Exception('Failed to sign in with Apple');
+        print('❌ [Apple Sign-In] Firebase user is null after sign-in');
+        throw Exception('فشل تسجيل الدخول مع Firebase');
       }
 
       print('🍎 [Apple Sign-In] Firebase auth successful for ${firebaseUser.uid}');
@@ -229,6 +324,7 @@ class AuthRepository {
       );
 
       print('🍎 [Apple Sign-In] Creating/Updating user document...');
+      
       return _upsertSignedInUser(
         firebaseUser,
         displayNameOverride: displayNameOverride.isEmpty
@@ -236,18 +332,74 @@ class AuthRepository {
             : displayNameOverride,
         emailOverride: appleCredential.email,
       );
+    } on TimeoutException catch (e) {
+      print('❌ [Apple Sign-In] Timeout: $e');
+      throw Exception('انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى');
     } on SignInWithAppleAuthorizationException catch (e) {
       print('🍎 [Apple Sign-In] Authorization exception: ${e.code}');
+      
       if (e.code == AuthorizationErrorCode.canceled) {
+        print('🍎 [Apple Sign-In] User cancelled');
         return null;
       }
-      throw Exception('تعذر إكمال تسجيل الدخول بواسطة Apple: ${e.toString()}');
+      
+      if (e.code == AuthorizationErrorCode.failed) {
+        throw Exception('فشل تسجيل الدخول بواسطة Apple، يرجى المحاولة مرة أخرى');
+      }
+      
+      if (e.code == AuthorizationErrorCode.invalidResponse) {
+        throw Exception('استجابة غير صالحة من Apple، يرجى المحاولة مرة أخرى');
+      }
+      
+      if (e.code == AuthorizationErrorCode.notHandled) {
+        throw Exception('تعذر معالجة الطلب، يرجى المحاولة مرة أخرى');
+      }
+      
+      if (e.code == AuthorizationErrorCode.unknown) {
+        throw Exception('حدث خطأ غير معروف في تسجيل الدخول بواسطة Apple');
+      }
+      
+      throw Exception('تعذر تسجيل الدخول بواسطة Apple: ${e.code}');
     } on FirebaseAuthException catch (e) {
-      print('🍎 [Apple Sign-In] Firebase auth exception: ${e.code} - ${e.message}');
-      throw Exception('فشل تسجيل الدخول بواسطة Apple: ${e.message ?? e.code}');
+      print('❌ [Apple Sign-In] Firebase auth exception: ${e.code} - ${e.message}');
+      
+      String errorMessage;
+      switch (e.code) {
+        case 'account-exists-with-different-credential':
+          errorMessage = 'هذا البريد الإلكتروني مسجل بطريقة دخول أخرى';
+          break;
+        case 'invalid-credential':
+          errorMessage = 'بيانات الاعتماد غير صالحة، يرجى المحاولة مرة أخرى';
+          break;
+        case 'operation-not-allowed':
+          errorMessage = 'تسجيل الدخول بواسطة Apple غير مفعّل حالياً';
+          break;
+        case 'user-disabled':
+          errorMessage = 'تم تعطيل هذا الحساب';
+          break;
+        case 'user-not-found':
+          errorMessage = 'لم يتم العثور على هذا المستخدم';
+          break;
+        case 'network-request-failed':
+          errorMessage = 'خطأ في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى';
+          break;
+        default:
+          errorMessage = 'فشل تسجيل الدخول: ${e.message ?? e.code}';
+      }
+      
+      throw Exception(errorMessage);
     } catch (e) {
-      print('🍎 [Apple Sign-In] Unexpected error: $e');
-      throw Exception('أخطأ في تسجيل الدخول بواسطة Apple: $e');
+      print('❌ [Apple Sign-In] Unexpected error: $e');
+      
+      if (e.toString().contains('network')) {
+        throw Exception('خطأ في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى');
+      }
+      
+      if (e is Exception) {
+        rethrow;
+      }
+      
+      throw Exception('حدث خطأ غير متوقع أثناء تسجيل الدخول: ${e.toString()}');
     }
   }
 
