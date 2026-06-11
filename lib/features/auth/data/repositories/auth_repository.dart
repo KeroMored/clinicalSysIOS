@@ -191,9 +191,21 @@ class AuthRepository {
   Future<UserModel?> signInWithGoogle() async {
     try {
       print('🔐 [Google Sign-In] Starting sign-in flow...');
+      print('🔐 [Google Sign-In] Client ID check...');
+      
+      // CRITICAL: Validate Google Sign-In setup before attempting
+      try {
+        await _googleSignIn.signInSilently();
+      } catch (e) {
+        print('⚠️ [Google Sign-In] Silent sign-in check failed: $e');
+        // Continue anyway - this is just a check
+      }
       
       // Trigger Google Sign In flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn().catchError((error) {
+        print('❌ [Google Sign-In] signIn() error: $error');
+        throw Exception('فشل تسجيل الدخول بواسطة Google: ${error.toString()}');
+      });
 
       if (googleUser == null) {
         print('🔐 [Google Sign-In] User cancelled sign-in');
@@ -204,7 +216,10 @@ class AuthRepository {
 
       // Obtain auth details
       final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+          await googleUser.authentication.catchError((error) {
+        print('❌ [Google Sign-In] getAuthentication() error: $error');
+        throw Exception('فشل الحصول على بيانات التفويض من Google');
+      });
 
       if (googleAuth.accessToken == null || googleAuth.idToken == null) {
         print('❌ [Google Sign-In] Missing authentication tokens');
@@ -279,22 +294,30 @@ class AuthRepository {
       }
       
       throw Exception(errorMessage);
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ [Google Sign-In] Unexpected error: $e');
+      print('❌ [Google Sign-In] Stack trace: $stackTrace');
       
-      if (e.toString().contains('SIGN_IN_CANCELLED')) {
+      final errorString = e.toString().toLowerCase();
+      
+      if (errorString.contains('sign_in_cancelled') || errorString.contains('canceled')) {
+        print('🔐 [Google Sign-In] User cancelled');
         return null;
       }
       
-      if (e.toString().contains('network')) {
+      if (errorString.contains('network') || errorString.contains('connection')) {
         throw Exception('خطأ في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى');
+      }
+      
+      if (errorString.contains('client') || errorString.contains('configuration')) {
+        throw Exception('خطأ في إعدادات Google Sign-In، يرجى التواصل مع الدعم');
       }
       
       if (e is Exception) {
         rethrow;
       }
       
-      throw Exception('حدث خطأ غير متوقع أثناء تسجيل الدخول: ${e.toString()}');
+      throw Exception('حدث خطأ غير متوقع أثناء تسجيل الدخول');
     }
   }
 
