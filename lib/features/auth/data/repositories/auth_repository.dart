@@ -92,54 +92,99 @@ class AuthRepository {
     String? photoUrlOverride,
     String? emailOverride,
   }) async {
-    final userDoc = await _firestore
-        .collection('users')
-        .doc(firebaseUser.uid)
-        .get();
+    try {
+      print('📝 [User Creation] Fetching user document for ${firebaseUser.uid}');
+      
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('انتهت مهلة الاتصال بقاعدة البيانات'),
+          );
 
-    final email = (emailOverride ?? firebaseUser.email ?? '').trim();
-    final normalizedEmail = email.isEmpty
-        ? 'apple_${firebaseUser.uid}@noemail.local'
-        : email;
+      final email = (emailOverride ?? firebaseUser.email ?? '').trim();
+      final normalizedEmail = email.isEmpty
+          ? 'apple_${firebaseUser.uid}@noemail.local'
+          : email;
 
-    String userName = (displayNameOverride ?? firebaseUser.displayName ?? '')
-        .trim();
-    if (userName.isEmpty) {
-      userName = _displayNameFromEmail(normalizedEmail);
-    }
-
-    if (userDoc.exists) {
-      final user = UserModel.fromJson(userDoc.data()!);
-
-      await _cleanupOldSubscriptions(user, firebaseUser.uid);
-      _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
-
-      if (user.role == 'pharmacy') {
-        _notificationService.subscribeToPharmacyTopic(firebaseUser.uid);
+      String userName = (displayNameOverride ?? firebaseUser.displayName ?? '')
+          .trim();
+      if (userName.isEmpty) {
+        userName = _displayNameFromEmail(normalizedEmail);
       }
 
-      return user;
+      if (userDoc.exists) {
+        print('📝 [User Creation] User exists, loading data...');
+        final user = UserModel.fromJson(userDoc.data()!);
+
+        await _cleanupOldSubscriptions(user, firebaseUser.uid);
+        _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
+
+        if (user.role == 'pharmacy') {
+          _notificationService.subscribeToPharmacyTopic(firebaseUser.uid);
+        }
+
+        print('✅ [User Creation] Existing user loaded successfully');
+        return user;
+      }
+
+      print('📝 [User Creation] Creating new user...');
+      
+      final role = await _determineUserRole(normalizedEmail);
+
+      final newUser = UserModel(
+        uid: firebaseUser.uid,
+        email: normalizedEmail,
+        displayName: userName,
+        photoUrl: photoUrlOverride ?? firebaseUser.photoURL ?? '',
+        role: role,
+        pharmacyId: null,
+      );
+
+      print('📝 [User Creation] Writing user to Firestore...');
+      
+      // CRITICAL FIX: Add await to ensure Firestore write completes
+      await _firestore
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .set(newUser.toJson())
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('انتهت مهلة حفظ بيانات المستخدم'),
+          );
+
+      print('✅ [User Creation] User created in Firestore successfully');
+
+      // Subscribe to notifications (fire and forget)
+      _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
+
+      if (role == 'pharmacy') {
+        _setupPharmacyUser(firebaseUser.uid, normalizedEmail);
+      }
+
+      print('✅ [User Creation] Complete! Returning user model');
+      return newUser;
+    } on TimeoutException catch (e) {
+      print('❌ [User Creation] Timeout: $e');
+      throw Exception('انتهت مهلة الاتصال بقاعدة البيانات، يرجى المحاولة مرة أخرى');
+    } on FirebaseException catch (e) {
+      print('❌ [User Creation] Firebase error: ${e.code} - ${e.message}');
+      
+      if (e.code == 'permission-denied') {
+        throw Exception('لا تملك صلاحية الوصول، يرجى التواصل مع الدعم');
+      }
+      
+      if (e.code == 'unavailable') {
+        throw Exception('قاعدة البيانات غير متاحة حالياً، يرجى المحاولة لاحقاً');
+      }
+      
+      throw Exception('خطأ في حفظ بيانات المستخدم: ${e.message ?? e.code}');
+    } catch (e) {
+      print('❌ [User Creation] Unexpected error: $e');
+      throw Exception('حدث خطأ أثناء إنشاء حساب المستخدم: ${e.toString()}');
     }
-
-    final role = await _determineUserRole(normalizedEmail);
-
-    final newUser = UserModel(
-      uid: firebaseUser.uid,
-      email: normalizedEmail,
-      displayName: userName,
-      photoUrl: photoUrlOverride ?? firebaseUser.photoURL ?? '',
-      role: role,
-      pharmacyId: null,
-    );
-
-    _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toJson());
-    _notificationService.subscribeToAllUsersTopic(firebaseUser.uid);
-
-    if (role == 'pharmacy') {
-      _setupPharmacyUser(firebaseUser.uid, normalizedEmail);
-    }
-
-    return newUser;
   }
 
   // Sign in with Google - ULTRA FAST VERSION with Enhanced Error Handling

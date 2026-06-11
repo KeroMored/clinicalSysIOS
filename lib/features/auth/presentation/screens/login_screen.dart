@@ -98,11 +98,19 @@ class _LoginScreenState extends State<LoginScreen>
                           borderRadius: BorderRadius.circular(14),
                         ),
                         margin: const EdgeInsets.all(14),
+                        duration: const Duration(seconds: 5),
                       ),
                     );
                   }
                   if (state is Authenticated) {
-                    Navigator.pop(context);
+                    // CRITICAL FIX: Check if we can pop before popping
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      // If we can't pop, we're at root - just stay on this screen
+                      // The app will redirect to home via the auth state check in main.dart
+                      print('✅ [Login] Authenticated, waiting for app to redirect...');
+                    }
                   }
                 },
                 builder: (context, state) {
