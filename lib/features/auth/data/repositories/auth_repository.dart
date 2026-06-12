@@ -11,9 +11,11 @@ import '../models/user_model.dart';
 
 class AuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  static const String _iosGoogleClientId =
-      '718616577077-gh7g5l90ouvpimafmqltnnqe5vcqbms9.apps.googleusercontent.com';
-  final GoogleSignIn _googleSignIn = GoogleSignIn(clientId: _iosGoogleClientId);
+  // REMOVED iOS-specific client ID - let Google Sign-In handle it automatically
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // Remove clientId to use default from GoogleService-Info.plist
+    scopes: ['email', 'profile'],
+  );
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final NotificationService _notificationService = NotificationService();
 
