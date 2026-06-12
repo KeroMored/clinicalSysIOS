@@ -193,19 +193,13 @@ class AuthRepository {
   Future<UserModel?> signInWithGoogle() async {
     try {
       print('🔐 [Google Sign-In] Starting sign-in flow...');
-      print('🔐 [Google Sign-In] Client ID check...');
-      
-      // CRITICAL: Validate Google Sign-In setup before attempting
-      try {
-        await _googleSignIn.signInSilently();
-      } catch (e) {
-        print('⚠️ [Google Sign-In] Silent sign-in check failed: $e');
-        // Continue anyway - this is just a check
-      }
+      print('🔐 [Google Sign-In] Bundle ID: com.mored.mallawycare');
+      print('🔐 [Google Sign-In] Expected Client ID from GoogleService-Info.plist');
       
       // Trigger Google Sign In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn().catchError((error) {
-        print('❌ [Google Sign-In] signIn() error: $error');
+        print('❌ [Google Sign-In] signIn() error TYPE: ${error.runtimeType}');
+        print('❌ [Google Sign-In] signIn() error DETAILS: $error');
         throw Exception('فشل تسجيل الدخول بواسطة Google: ${error.toString()}');
       });
 
