@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
+// import 'package:firebase_app_check/firebase_app_check.dart'; // Disabled temporarily
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -80,21 +80,22 @@ Future<void> _startApp() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Enable Firebase App Check to avoid placeholder tokens in Firestore calls.
-  try {
-    if (Platform.isAndroid || Platform.isIOS) {
-      await FirebaseAppCheck.instance.activate(
-        androidProvider: kDebugMode
-            ? AndroidProvider.debug
-            : AndroidProvider.playIntegrity,
-        appleProvider: kDebugMode
-            ? AppleProvider.debug
-            : AppleProvider.appAttestWithDeviceCheckFallback,
-      );
-    }
-  } catch (e) {
-    print('⚠️ App Check activation skipped: $e');
-  }
+  // Firebase App Check temporarily disabled
+  // TODO: Re-enable after fixing configuration
+  // try {
+  //   if (Platform.isAndroid || Platform.isIOS) {
+  //     await FirebaseAppCheck.instance.activate(
+  //       androidProvider: kDebugMode
+  //           ? AndroidProvider.debug
+  //           : AndroidProvider.playIntegrity,
+  //       appleProvider: kDebugMode
+  //           ? AppleProvider.debug
+  //           : AppleProvider.appAttestWithDeviceCheckFallback,
+  //     );
+  //   }
+  // } catch (e) {
+  //   print('⚠️ App Check activation skipped: $e');
+  // }
 
   // 🚀 Enable Firestore offline persistence and warm up connection
   // This makes the first login much faster
