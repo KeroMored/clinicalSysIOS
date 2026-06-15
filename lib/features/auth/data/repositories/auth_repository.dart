@@ -350,6 +350,9 @@ class AuthRepository {
       );
 
       print('🍎 [Apple Sign-In] Got credential, extracting identity token...');
+      print('🍎 [Apple Sign-In] User ID: ${appleCredential.userIdentifier}');
+      print('🍎 [Apple Sign-In] Email: ${appleCredential.email ?? "hidden"}');
+      
       final identityToken = appleCredential.identityToken;
       
       if (identityToken == null || identityToken.isEmpty) {
@@ -357,13 +360,17 @@ class AuthRepository {
         throw Exception('فشل الحصول على بيانات التفويض من Apple');
       }
 
+      print('🍎 [Apple Sign-In] Identity token length: ${identityToken.length}');
       print('🍎 [Apple Sign-In] Creating OAuth credential...');
+      
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: identityToken,
         rawNonce: rawNonce,
       );
 
       print('🍎 [Apple Sign-In] Signing in to Firebase...');
+      print('🍎 [Apple Sign-In] Using nonce: ${rawNonce.substring(0, 8)}...');
+      
       final UserCredential userCredential = await _firebaseAuth
           .signInWithCredential(oauthCredential)
           .timeout(
@@ -425,6 +432,7 @@ class AuthRepository {
       throw Exception('تعذر تسجيل الدخول بواسطة Apple: ${e.code}');
     } on FirebaseAuthException catch (e) {
       print('❌ [Apple Sign-In] Firebase auth exception: ${e.code} - ${e.message}');
+      print('❌ [Apple Sign-In] Error details: ${e.toString()}');
       
       String errorMessage;
       switch (e.code) {
@@ -432,7 +440,11 @@ class AuthRepository {
           errorMessage = 'هذا البريد الإلكتروني مسجل بطريقة دخول أخرى';
           break;
         case 'invalid-credential':
-          errorMessage = 'بيانات الاعتماد غير صالحة، يرجى المحاولة مرة أخرى';
+          errorMessage = 'بيانات الاعتماد غير صالحة. يرجى التحقق من:\n'
+              '1. Firebase Console - Apple Sign-In settings\n'
+              '2. Service ID: com.mored.mallawycare.signin\n'
+              '3. Team ID: 84M47YB8XR\n'
+              '4. Private Key (.p8) صحيح ومتطابق مع Key ID';
           break;
         case 'operation-not-allowed':
           errorMessage = 'تسجيل الدخول بواسطة Apple غير مفعّل حالياً';
@@ -451,8 +463,9 @@ class AuthRepository {
       }
       
       throw Exception(errorMessage);
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ [Apple Sign-In] Unexpected error: $e');
+      print('❌ [Apple Sign-In] Stack trace: $stackTrace');
       
       if (e.toString().contains('network')) {
         throw Exception('خطأ في الاتصال بالإنترنت، يرجى المحاولة مرة أخرى');
