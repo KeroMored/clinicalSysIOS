@@ -354,7 +354,6 @@ class AuthRepository {
       print('🍎 [Apple Sign-In] Got credential, extracting identity token...');
       print('🍎 [Apple Sign-In] User ID: ${appleCredential.userIdentifier}');
       print('🍎 [Apple Sign-In] Email: ${appleCredential.email ?? "hidden"}');
-      print('🍎 [Apple Sign-In] Authorization code present: ${appleCredential.authorizationCode != null}');
       
       final identityToken = appleCredential.identityToken;
       
@@ -364,32 +363,40 @@ class AuthRepository {
       }
 
       print('🍎 [Apple Sign-In] Identity token length: ${identityToken.length}');
-      print('🍎 [Apple Sign-In] Identity token (first 50 chars): ${identityToken.substring(0, identityToken.length > 50 ? 50 : identityToken.length)}...');
-      print('🍎 [Apple Sign-In] Raw nonce: $rawNonce');
       print('🍎 [Apple Sign-In] Creating OAuth credential...');
       
-      // Try with authorization code if available
-      final authCode = appleCredential.authorizationCode;
-      
+      // Try alternative credential creation method
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: identityToken,
         rawNonce: rawNonce,
-        accessToken: authCode != null ? String.fromCharCodes(authCode) : null,
       );
 
-      print('🍎 [Apple Sign-In] OAuth credential created successfully');
-      print('🍎 [Apple Sign-In] Signing in to Firebase...');
-      print('🍎 [Apple Sign-In] Provider ID: ${oauthCredential.providerId}');
+      print('🍎 [Apple Sign-In] Credential created');
+      print('🍎 [Apple Sign-In] Provider: ${oauthCredential.providerId}');
       print('🍎 [Apple Sign-In] Sign-in method: ${oauthCredential.signInMethod}');
+      print('🍎 [Apple Sign-In] Signing in to Firebase with credential...');
       
-      final UserCredential userCredential = await _firebaseAuth
-          .signInWithCredential(oauthCredential)
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => throw TimeoutException(
-              'انتهت مهلة الاتصال مع Firebase',
-            ),
-          );
+      // Try anonymous sign-in first, then link with Apple credential
+      // This workaround helps with some Firebase OAuth issues
+      UserCredential userCredential;
+      
+      try {
+        // Direct sign-in
+        userCredential = await _firebaseAuth
+            .signInWithCredential(oauthCredential)
+            .timeout(
+              const Duration(seconds: 30),
+              onTimeout: () => throw TimeoutException(
+                'انتهت مهلة الاتصال مع Firebase',
+              ),
+            );
+      } catch (e) {
+        print('🍎 [Apple Sign-In] Direct sign-in failed, trying alternative method...');
+        
+        // Alternative: Sign in anonymously first, then link
+        final anonResult = await _firebaseAuth.signInAnonymously();
+        userCredential = await anonResult.user!.linkWithCredential(oauthCredential);
+      }
 
       final User? firebaseUser = userCredential.user;
       
@@ -444,10 +451,6 @@ class AuthRepository {
     } on FirebaseAuthException catch (e) {
       print('❌ [Apple Sign-In] Firebase auth exception: ${e.code} - ${e.message}');
       print('❌ [Apple Sign-In] Error details: ${e.toString()}');
-      print('❌ [Apple Sign-In] Error email: ${e.email}');
-      print('❌ [Apple Sign-In] Error credential: ${e.credential}');
-      print('❌ [Apple Sign-In] Error phoneNumber: ${e.phoneNumber}');
-      print('❌ [Apple Sign-In] Error tenantId: ${e.tenantId}');
       
       String errorMessage;
       switch (e.code) {
@@ -455,15 +458,11 @@ class AuthRepository {
           errorMessage = 'هذا البريد الإلكتروني مسجل بطريقة دخول أخرى';
           break;
         case 'invalid-credential':
-          errorMessage = 'بيانات الاعتماد غير صالحة.\n\n'
-              '🔍 تفاصيل الخطأ الفني:\n'
-              'Code: ${e.code}\n'
-              'Message: ${e.message}\n\n'
-              'هذا الخطأ يحدث عادة بسبب:\n'
-              '1. عدم تطابق Service ID في Firebase Console\n'
-              '2. Key ID أو Private Key غير صحيح\n'
-              '3. عدم انتظار 10-15 دقيقة بعد تغيير الإعدادات\n\n'
-              'يرجى التحقق من Firebase Console مرة أخرى.';
+          errorMessage = 'بيانات الاعتماد غير صالحة. يرجى التحقق من:\n'
+              '1. Firebase Console - Apple Sign-In settings\n'
+              '2. Service ID: com.mored.mallawycare.signin2\n'
+              '3. Team ID: 84M47YB8XR\n'
+              '4. Private Key (.p8) صحيح ومتطابق مع Key ID';
           break;
         case 'operation-not-allowed':
           errorMessage = 'تسجيل الدخول بواسطة Apple غير مفعّل حالياً';
