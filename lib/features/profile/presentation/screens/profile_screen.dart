@@ -76,6 +76,29 @@ class ProfileScreen extends StatelessWidget {
 
                           _buildProfileCard(
                             context,
+                            icon: Icons.delete_forever_rounded,
+                            title: 'حذف الحساب',
+                            subtitle: 'حذف الحساب نهائياً من التطبيق',
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                            ),
+                            onTap: () async {
+                              final confirm = await _showDeleteAccountConfirmation(
+                                context,
+                              );
+                              if (confirm == true && context.mounted) {
+                                await context.read<AuthCubit>().deleteAccount();
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                }
+                              }
+                            },
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          _buildProfileCard(
+                            context,
                             icon: Icons.logout_rounded,
                             title: 'تسجيل الخروج',
                             subtitle: 'الخروج من الحساب الحالي',
@@ -398,6 +421,73 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               child: const Text('تأكيد', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<bool?> _showDeleteAccountConfirmation(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_rounded, color: Color(0xFFEF4444)),
+              SizedBox(width: 8),
+              Text('حذف الحساب'),
+            ],
+          ),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'هل أنت متأكد من حذف حسابك نهائياً؟',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'سيتم حذف:',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              SizedBox(height: 8),
+              Text('• جميع بياناتك الشخصية'),
+              Text('• سجل المواعيد والحجوزات'),
+              Text('• الإشعارات والتفضيلات'),
+              SizedBox(height: 12),
+              Text(
+                '⚠️ هذا الإجراء لا يمكن التراجع عنه!',
+                style: TextStyle(
+                  color: Color(0xFFEF4444),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'حذف نهائياً',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),

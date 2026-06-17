@@ -759,6 +759,62 @@ class AuthRepository {
     return currentUser != null;
   }
 
+  /// Delete user account completely
+  Future<void> deleteAccount() async {
+    try {
+      final user = currentUser;
+      if (user == null) {
+        throw Exception('لا يوجد مستخدم مسجل دخول');
+      }
+
+      final uid = user.uid;
+
+      print('🗑️ [Account Deletion] Starting account deletion for user: $uid');
+
+      // 1. Delete user document from Firestore
+      print('🗑️ [Account Deletion] Deleting Firestore user document...');
+      await _firestore.collection('users').doc(uid).delete().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('انتهت مهلة حذف البيانات'),
+          );
+
+      print('✅ [Account Deletion] User document deleted');
+
+      // 2. Unsubscribe from notifications
+      print('🗑️ [Account Deletion] Unsubscribing from notifications...');
+      await _cleanupUserNotifications(uid);
+
+      // 3. Delete Firebase Authentication account
+      print('🗑️ [Account Deletion] Deleting Firebase Auth account...');
+      await user.delete();
+
+      // 4. Sign out from Google if signed in with Google
+      print('🗑️ [Account Deletion] Signing out from Google...');
+      await _googleSignIn.signOut();
+
+      // Clear cache
+      _cachedUser = null;
+      _cachedUserId = null;
+
+      print('✅ [Account Deletion] Account deleted successfully');
+    } on FirebaseAuthException catch (e) {
+      print('❌ [Account Deletion] Firebase error: ${e.code} - ${e.message}');
+      
+      if (e.code == 'requires-recent-login') {
+        throw Exception(
+          'لأسباب أمنية، يجب تسجيل الدخول مرة أخرى قبل حذف الحساب',
+        );
+      }
+      
+      throw Exception('فشل حذف الحساب: ${e.message ?? e.code}');
+    } on TimeoutException {
+      throw Exception('انتهت مهلة الاتصال، يرجى المحاولة مرة أخرى');
+    } catch (e) {
+      print('❌ [Account Deletion] Error: $e');
+      throw Exception('حدث خطأ أثناء حذف الحساب: ${e.toString()}');
+    }
+  }
+
   /// Ensure currently signed-in user is subscribed to general app notifications.
   Future<void> ensureAllUsersTopicSubscription() async {
     final user = currentUser;

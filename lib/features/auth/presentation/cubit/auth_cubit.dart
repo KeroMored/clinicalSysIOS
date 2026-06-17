@@ -139,6 +139,39 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
+  // Delete account permanently
+  Future<void> deleteAccount() async {
+    try {
+      print('🗑️ [AuthCubit] Starting account deletion...');
+      emit(AuthLoading());
+
+      await _authRepository.deleteAccount().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('انتهت مهلة حذف الحساب');
+        },
+      );
+
+      print('✅ [AuthCubit] Account deleted successfully');
+      emit(Unauthenticated());
+    } on TimeoutException catch (e) {
+      print('❌ [AuthCubit] Delete account timeout: $e');
+      emit(AuthError('انتهت مهلة حذف الحساب، يرجى المحاولة مرة أخرى'));
+    } catch (e) {
+      print('❌ [AuthCubit] Delete account error: $e');
+      
+      String errorMessage = e.toString();
+      if (errorMessage.startsWith('Exception: ')) {
+        errorMessage = errorMessage.substring(11);
+      }
+      
+      emit(AuthError(errorMessage));
+      
+      // Re-check auth state after error
+      await checkAuthState();
+    }
+  }
+
   // Refresh user data (useful after pharmacy approval)
   Future<void> refreshUser() async {
     try {
