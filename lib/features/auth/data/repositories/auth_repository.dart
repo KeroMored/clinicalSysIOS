@@ -363,40 +363,28 @@ class AuthRepository {
       }
 
       print('🍎 [Apple Sign-In] Identity token length: ${identityToken.length}');
-      print('🍎 [Apple Sign-In] Creating OAuth credential...');
+      print('🍎 [Apple Sign-In] Authorization code present: ${appleCredential.authorizationCode != null}');
+      print('🍎 [Apple Sign-In] Creating OAuth credential with authorization code...');
       
-      // Try alternative credential creation method
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: identityToken,
         rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode != null 
+            ? String.fromCharCodes(appleCredential.authorizationCode!) 
+            : null,
       );
 
-      print('🍎 [Apple Sign-In] Credential created');
-      print('🍎 [Apple Sign-In] Provider: ${oauthCredential.providerId}');
-      print('🍎 [Apple Sign-In] Sign-in method: ${oauthCredential.signInMethod}');
-      print('🍎 [Apple Sign-In] Signing in to Firebase with credential...');
+      print('🍎 [Apple Sign-In] Credential created successfully');
+      print('🍎 [Apple Sign-In] Signing in to Firebase...');
       
-      // Try anonymous sign-in first, then link with Apple credential
-      // This workaround helps with some Firebase OAuth issues
-      UserCredential userCredential;
-      
-      try {
-        // Direct sign-in
-        userCredential = await _firebaseAuth
-            .signInWithCredential(oauthCredential)
-            .timeout(
-              const Duration(seconds: 30),
-              onTimeout: () => throw TimeoutException(
-                'انتهت مهلة الاتصال مع Firebase',
-              ),
-            );
-      } catch (e) {
-        print('🍎 [Apple Sign-In] Direct sign-in failed, trying alternative method...');
-        
-        // Alternative: Sign in anonymously first, then link
-        final anonResult = await _firebaseAuth.signInAnonymously();
-        userCredential = await anonResult.user!.linkWithCredential(oauthCredential);
-      }
+      final UserCredential userCredential = await _firebaseAuth
+          .signInWithCredential(oauthCredential)
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () => throw TimeoutException(
+              'انتهت مهلة الاتصال مع Firebase',
+            ),
+          );
 
       final User? firebaseUser = userCredential.user;
       
