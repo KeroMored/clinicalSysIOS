@@ -236,7 +236,7 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mallawy Care',
+                'ملوي كيور | Mallawi Cure',
                 style: TextStyle(
                   fontSize: 21,
                   color: Colors.white,

@@ -3,13 +3,7 @@
     <item>
         <bitmap android:gravity="fill" android:src="@drawable/background"/>
     </item>
-    <!-- Logo with fixed size and centered with padding -->
-    <item
-        android:width="240dp"
-        android:height="240dp"
-        android:gravity="center">
-        <bitmap 
-            android:gravity="fill" 
-            android:src="@drawable/splash"/>
+    <item>
+        <bitmap android:gravity="fill" android:src="@drawable/splash"/>
     </item>
 </layer-list>

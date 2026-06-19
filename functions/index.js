@@ -1020,13 +1020,13 @@ exports.sendAdminNotificationToUsers = onDocumentCreated(
 
       const message = {
         notification: {
-          title: 'Mallawy Care',
+          title: 'ملوي كيور | Mallawi Cure',
           body: notificationData.message || 'لديك إشعار جديد من التطبيق',
         },
         data: {
           type: 'admin_announcement',
           notificationId: notificationId,
-          title: notificationData.title || 'Mallawy Care',
+          title: notificationData.title || 'ملوي كيور | Mallawi Cure',
           message: notificationData.message || '',
           openUrl: notificationData.openUrl || '',
           actionType: notificationData.openStoreOnTap ? 'open_store' : 'none',

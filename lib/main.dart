@@ -176,7 +176,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => MedicineCubit(MedicineRepository())),
       ],
       child: MaterialApp(
-        title: "Mallawy Care",
+        title: "ملوي كيور | Mallawi Cure",
         debugShowCheckedModeBanner: false,
         theme: AppTheme.getTheme(),
         navigatorObservers: [appRouteObserver],

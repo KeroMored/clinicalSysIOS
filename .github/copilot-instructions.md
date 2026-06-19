@@ -1,4 +1,4 @@
-# Copilot Instructions - Clinical System (Mallawy Health Care)
+# Copilot Instructions - Clinical System (ملوي كيور | Mallawi Cure)
 
 ## Project Overview
 Flutter-based healthcare system for managing clinics, pharmacies, laboratories, radiology centers, nursing services, gyms, rehabilitation centers, and delivery services. Built with Firebase backend (Firestore, Auth, Storage, Messaging). Arabic-first UI with RTL support.

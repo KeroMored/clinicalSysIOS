@@ -72,7 +72,7 @@
 
 2. **صلاحيات الإشعارات**
    - تأكد من السماح للتطبيق بإرسال الإشعارات
-   - Settings → Apps → Mallawy Health Care → Notifications
+   - Settings → Apps → ملوي كيور | Mallawi Cure → Notifications
 
 3. **الإشعارات تعمل في كل الحالات**
    - ✅ التطبيق مفتوح

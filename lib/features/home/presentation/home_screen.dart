@@ -1032,7 +1032,7 @@ class _HomeScreenState extends State<HomeScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Mallawy Care',
+                  'ملوي كيور | Mallawi Cure',
                   style: TextStyle(
                     color: Color(0xFF0F4C5C),
                     fontSize: 17,
@@ -2223,7 +2223,7 @@ class _HomeScreenState extends State<HomeScreen>
               Builder(
                 builder: (context) {
                   final userName = authState.user.displayName.trim().isEmpty
-                      ? 'مستخدم Mallawy Care'
+                      ? 'مستخدم ملوي كيور'
                       : authState.user.displayName.trim();
                   final initialSource =
                       authState.user.displayName.trim().isNotEmpty

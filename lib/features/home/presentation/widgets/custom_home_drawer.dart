@@ -54,7 +54,7 @@ class CustomHomeDrawer extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Mallawy Care || ملوي كير',
+                        'ملوي كيور | Mallawi Cure',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
