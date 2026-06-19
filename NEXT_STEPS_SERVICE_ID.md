@@ -1,13 +1,19 @@
-# ✅ Service ID تم إنشاؤه - الخطوات التالية
+# ✅ Service ID تم إنشاؤه - الخطوات التالية (iOS فقط)
 
 ## ما تم إنجازه:
 - ✅ إنشاء Service ID: `com.mored.mallawicure.signin` في Apple Developer Console
 - ✅ تحديث الكود ليستخدم Service ID الجديد
+- ✅ تحديث Bundle ID لـ **iOS فقط** إلى `com.mored.mallawicure`
+- ✅ الحفاظ على Android Package Name القديم: `com.mored.MallawyHealthCare`
 - ✅ رفع التحديثات على GitHub
+
+## 📱 ملاحظة مهمة:
+- **iOS**: Bundle ID الجديد `com.mored.mallawicure` (للـ App Store)
+- **Android**: Package Name القديم `com.mored.MallawyHealthCare` (مرفوع على Play Store - بدون تغيير)
 
 ---
 
-## 🎯 الخطوات المتبقية (بالترتيب):
+## 🎯 الخطوات المتبقية (بالترتيب - iOS فقط):
 
 ### 1️⃣ إكمال إعداد Service ID في Apple Developer:
 
@@ -37,9 +43,9 @@
 
 ---
 
-### 3️⃣ الحصول على ملفات Firebase الجديدة:
+### 3️⃣ الحصول على ملف Firebase iOS الجديد فقط:
 
-#### للـ iOS:
+#### للـ iOS (مطلوب):
 1. في Firebase Console → **Project Settings** (⚙️)
 2. تبويب **General**
 3. اضغط **Add app** → اختر **iOS**
@@ -49,13 +55,9 @@
 7. حمّل `GoogleService-Info.plist`
 8. **استبدل** الملف في: `ios/Runner/GoogleService-Info.plist`
 
-#### للـ Android:
-1. في نفس الصفحة
-2. **Add app** → **Android**
-3. Package name: `com.mored.mallawicure`
-4. App nickname: `Mallawi Cure Android`
-5. حمّل `google-services.json`
-6. **استبدل** الملف في: `android/app/google-services.json`
+#### للـ Android (لا تعدل):
+- ⛔ **لا تغير** ملف `android/app/google-services.json`
+- ✅ Android يشتغل بنفس الإعدادات القديمة على Play Store
 
 ---
 
@@ -98,7 +100,7 @@ flutter run
 - [ ] إكمال إعداد Service ID في Apple Developer
 - [ ] تحديث Service ID في Firebase Console
 - [ ] تحديث ملف `GoogleService-Info.plist` للـ iOS
-- [ ] تحديث ملف `google-services.json` للـ Android
+- [ ] ⛔ **لا تعدل** ملف `google-services.json` للـ Android
 - [ ] إنشاء App ID في Apple Developer
 - [ ] تحديث Bundle ID في Google Cloud Console
 - [ ] تشغيل `flutter clean` و `pod install`
@@ -110,12 +112,17 @@ flutter run
 ## ⚠️ ملاحظات مهمة:
 
 1. **Service ID الجديد**: `com.mored.mallawicure.signin` (بدون رقم في النهاية)
-2. **Bundle ID الجديد**: `com.mored.mallawicure` (تم تحديث كل الملفات)
-3. **Return URL**: يجب أن يكون `https://clinicalsystem-4da35.firebaseapp.com/__/auth/handler`
-4. **الكود جاهز**: كل شيء محدث في الكود، فقط اكمل الإعدادات في Firebase و Apple Developer
+2. **iOS Bundle ID الجديد**: `com.mored.mallawicure`
+3. **Android Package Name**: `com.mored.MallawyHealthCare` (بدون تغيير - كما هو على Play Store)
+4. **Return URL**: يجب أن يكون `https://clinicalsystem-4da35.firebaseapp.com/__/auth/handler`
+5. **الكود جاهز**: كل شيء محدث في الكود لـ iOS، فقط اكمل الإعدادات في Firebase و Apple Developer
+6. **Android لا يحتاج أي تحديث** - التطبيق على Play Store يشتغل بنفس الإعدادات القديمة
 
 ---
 
-**آخر تحديث**: 2026-06-19 16:00
+**آخر تحديث**: 2026-06-19 16:30
 **حالة الكود**: ✅ جاهز ومرفوع على GitHub
-**حالة الإعدادات**: ⏳ محتاج إكمال الخطوات أعلاه
+**حالة الإعدادات**: ⏳ محتاج إكمال الخطوات أعلاه (iOS فقط)
+**iOS Bundle ID**: com.mored.mallawicure (جديد)
+**Android Package**: com.mored.MallawyHealthCare (قديم - بدون تغيير)
+
