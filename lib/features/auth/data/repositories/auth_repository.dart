@@ -446,7 +446,7 @@ class AuthRepository {
         case 'invalid-credential':
           errorMessage = 'بيانات الاعتماد غير صالحة. يرجى التحقق من:\n'
               '1. Firebase Console - Apple Sign-In settings\n'
-              '2. Service ID: com.mored.mallawycare.signin2\n'
+              '2. Service ID: com.mored.mallawicure.signin\n'
               '3. Team ID: 84M47YB8XR\n'
               '4. Private Key (.p8) صحيح ومتطابق مع Key ID';
           break;

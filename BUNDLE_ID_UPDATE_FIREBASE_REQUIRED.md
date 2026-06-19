@@ -50,7 +50,7 @@
 1. في نفس الصفحة، اضغط **+**
 2. اختر **Services IDs**
 3. **Description**: Mallawi Cure Sign In
-4. **Identifier**: `com.mored.mallawicure.signin2` (أو `.signin`)
+4. **Identifier**: `com.mored.mallawicure.signin`
 5. اضغط **Continue** ثم **Register**
 6. بعد الإنشاء، اضغط على الـ Service ID اللي أنشأته
 7. ✅ فعّل **Sign in with Apple**
@@ -67,7 +67,7 @@
 2. اذهب إلى تبويب **Sign-in method**
 3. اضغط على **Apple**
 4. تأكد من التحديثات التالية:
-   - **Service ID**: `com.mored.mallawicure.signin2` (أو `.signin`)
+   - **Service ID**: `com.mored.mallawicure.signin` ✅ تم إنشاؤه
    - **Team ID**: `84M47YB8XR` (كما هو)
    - **Key ID**: (احتفظ بنفس القيمة)
    - **Private Key**: (احتفظ بنفس الـ .p8 file)
@@ -92,7 +92,7 @@
 | Firebase Android | ملف `google-services.json` جديد | ⏳ مطلوب منك |
 | Apple Developer | App ID جديد | ⏳ مطلوب منك |
 | Apple Developer | Service ID جديد | ⏳ مطلوب منك |
-| Firebase Auth | تحديث Service ID | ⏳ مطلوب منك |
+| Firebase Auth | تحديث Service ID | ✅ تم إنشاؤه - محتاج تحديث في Firebase |
 | Google Cloud | تحديث OAuth Bundle ID | ⏳ مطلوب منك |
 
 ## ⚠️ مهم جداً:
@@ -123,3 +123,14 @@
 **تم التحديث في**: 2026-06-19
 **الإصدار الحالي**: 1.0.0+13
 **Bundle ID الجديد**: com.mored.mallawicure
+**Service ID**: com.mored.mallawicure.signin ✅ (تم إنشاؤه بواسطة المستخدم)
+
+## ✅ تحديث: Service ID تم إنشاؤه
+
+تم إنشاء Service ID بنجاح: `com.mored.mallawicure.signin`
+
+**الخطوة التالية المطلوبة:**
+1. افتح [Apple Developer Console](https://developer.apple.com/account/resources/identifiers/list/serviceId)
+2. اضغط على Service ID: `com.mored.mallawicure.signin`
+3. تأكد من تفعيل وإعداد **Sign in with Apple** كما موضح في القسم 2️⃣ أعلاه
+4. ثم حدّث Firebase Console كما موضح في القسم 3️⃣
