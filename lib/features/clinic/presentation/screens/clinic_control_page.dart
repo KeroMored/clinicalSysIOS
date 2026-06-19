@@ -11,7 +11,7 @@ import 'bookings_history_screen.dart';
 import 'patients_management_screen.dart';
 import 'send_clinic_notification_screen.dart';
 import '../cubit/patient_cubit.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class ClinicControlPage extends StatefulWidget {
   const ClinicControlPage({super.key});

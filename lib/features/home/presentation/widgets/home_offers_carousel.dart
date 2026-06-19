@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../../gym/presentation/pages/gym_offer_detail_screen.dart';
 import '../../../pharmacy/presentation/screens/pharmacy_offer_detail_screen.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 enum _OfferSourceType { pharmacy, gym }
 

@@ -6,7 +6,7 @@ import 'dart:io';
 import '../../../nursing/data/models/nurse_model.dart';
 import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class AddNurseScreen extends StatefulWidget {
   const AddNurseScreen({super.key});

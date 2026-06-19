@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class GradientButton extends StatelessWidget {
   final String text;

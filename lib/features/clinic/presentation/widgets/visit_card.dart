@@ -5,7 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/medical_visit_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../screens/add_visit_screen.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class VisitCard extends StatefulWidget {
   final MedicalVisitModel visit;

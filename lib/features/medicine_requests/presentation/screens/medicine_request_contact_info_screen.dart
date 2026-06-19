@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../features/medicine_reminders/services/medicine_notification_service.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class MedicineRequestContactInfoScreen extends StatefulWidget {
   final List<Map<String, dynamic>> medicinesData;

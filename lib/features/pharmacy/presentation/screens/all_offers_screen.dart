@@ -7,7 +7,7 @@ import '../../data/models/pharmacy_offer_model.dart';
 import '../../../../core/services/pharmacy_offer_sorting_service.dart';
 import '../../../../core/services/app_control_service.dart';
 import '../../../../core/widgets/admin_views_count_toggle.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 /// شاشة كل العروض من جميع الصيدليات مع نظام ترتيب ديناميكي
 class AllOffersScreen extends StatefulWidget {

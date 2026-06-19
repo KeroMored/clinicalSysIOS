@@ -11,7 +11,7 @@ import '../cubit/admin_state.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class AddPharmacyScreen extends StatefulWidget {
   const AddPharmacyScreen({super.key});

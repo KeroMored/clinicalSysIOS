@@ -10,7 +10,7 @@ import '../cubit/medicine_state.dart';
 import '../widgets/medicine_card.dart';
 import 'add_medicine_screen.dart';
 import 'edit_medicine_screen.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class MedicinesScreen extends StatelessWidget {
   const MedicinesScreen({super.key});

@@ -5,7 +5,7 @@ import '../models/rating_model.dart';
 import '../services/rating_service.dart';
 import '../utils/auth_helpers.dart';
 import '../theme/app_theme.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class RatingWidget extends StatefulWidget {
   final String serviceId;

@@ -1,4 +1,4 @@
-import 'package:mallawycare/core/theme/app_theme.dart';
+import 'package:mallawicure/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../data/repositories/pharmacy_repository.dart';
 import '../screens/pharmacy_details_screen.dart';
 import '../screens/pharmacy_offer_detail_screen.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class OfferCard extends StatelessWidget {
   final String offerId;

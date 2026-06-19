@@ -10,7 +10,7 @@ import '../cubit/medicine_state.dart';
 import '../widgets/medicine_names_widget.dart';
 import '../widgets/schedule_selector.dart';
 import '../widgets/time_picker_widget.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class EditMedicineScreen extends StatefulWidget {
   final MedicineModel medicine;

@@ -6,7 +6,7 @@ import '../../../../core/widgets/modern_card.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/laboratory_model.dart';
 import 'laboratory_control_page.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 /// إدارة مالك معمل التحاليل
 /// يتم توجيه المالك إلى صفحة التحكم الخاصة بالمعمل

@@ -13,7 +13,7 @@ import 'lab_bookings_management_screen.dart';
 import 'lab_bookings_history_screen.dart';
 import 'edit_laboratory_screen.dart';
 import 'send_lab_notification_screen.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 /// صفحة التحكم الرئيسية لمعمل التحاليل
 class LaboratoryControlPage extends StatefulWidget {

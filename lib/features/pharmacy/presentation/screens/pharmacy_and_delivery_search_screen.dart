@@ -9,7 +9,7 @@ import '../../data/models/pharmacy_model.dart';
 import '../../data/repositories/pharmacy_repository.dart';
 import '../cubit/pharmacy_cubit.dart';
 import 'pharmacy_details_screen.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class PharmacyAndDeliverySearchScreen extends StatefulWidget {
   final String initialQuery;

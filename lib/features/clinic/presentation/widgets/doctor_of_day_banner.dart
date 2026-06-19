@@ -1,11 +1,11 @@
-import 'package:mallawycare/features/clinic/data/models/clinic_department.dart';
+import 'package:mallawicure/features/clinic/data/models/clinic_department.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../screens/clinic_details_screen.dart';
 import '../../data/models/clinic_model.dart';
 import 'doctor_of_day_notification.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class DoctorOfTheDayBanner extends StatefulWidget {
   const DoctorOfTheDayBanner({super.key});

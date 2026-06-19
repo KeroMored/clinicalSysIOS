@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/report_model.dart';
 import '../services/report_service.dart';
 import '../theme/app_theme.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class ReportsAdminScreen extends StatefulWidget {
   const ReportsAdminScreen({super.key});

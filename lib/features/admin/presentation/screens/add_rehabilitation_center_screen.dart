@@ -9,7 +9,7 @@ import '../cubit/admin_state.dart';
 import '../../../rehabilitation/data/models/rehabilitation_center_model.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class AddRehabilitationCenterScreen extends StatefulWidget {
   const AddRehabilitationCenterScreen({super.key});

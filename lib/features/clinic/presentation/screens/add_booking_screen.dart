@@ -1,9 +1,9 @@
-import 'package:mallawycare/features/clinic/data/models/clinic_model.dart';
-import 'package:mallawycare/features/clinic/data/models/booking_model.dart';
+import 'package:mallawicure/features/clinic/data/models/clinic_model.dart';
+import 'package:mallawicure/features/clinic/data/models/booking_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class AddBookingScreen extends StatefulWidget {
   final ClinicModel clinic;

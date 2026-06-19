@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/subscribed_place_model.dart';
 import '../widgets/place_subscription_card.dart';
-import 'package:mallawycare/core/widgets/app_loading_indicator.dart';
+import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
 
 class PlacesListWidget extends StatelessWidget {
   final List<SubscribedPlaceModel> places;
