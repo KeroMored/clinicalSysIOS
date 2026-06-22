@@ -89,7 +89,8 @@ class ProfileScreen extends StatelessWidget {
                               if (confirm == true && context.mounted) {
                                 await context.read<AuthCubit>().deleteAccount();
                                 if (context.mounted) {
-                                  Navigator.pop(context);
+                                  // Close profile screen and return to home
+                                  Navigator.of(context).popUntil((route) => route.isFirst);
                                 }
                               }
                             },

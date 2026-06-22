@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../../home/presentation/home_screen.dart';
 import '../cubit/auth_cubit.dart';
-import 'login_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -19,8 +18,8 @@ class AuthWrapper extends StatelessWidget {
           // User is logged in - go to home
           return const HomeScreen();
         } else {
-          // User not logged in - show login screen
-          return const LoginScreen();
+          // User not logged in - show home (user can tap login button)
+          return const HomeScreen();
         }
       },
     );
