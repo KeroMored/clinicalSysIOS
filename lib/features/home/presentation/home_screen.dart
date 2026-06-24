@@ -1678,6 +1678,83 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 10),
               _HomeAccountActionCard(
+                title: 'حذف الحساب',
+                subtitle: 'حذف الحساب نهائياً من التطبيق',
+                icon: Icons.delete_forever_rounded,
+                iconColor: const Color(0xFFEF4444),
+                onTap: () async {
+                  final shouldDelete = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      title: const Row(
+                        children: [
+                          Icon(Icons.warning_rounded, color: Color(0xFFEF4444)),
+                          SizedBox(width: 8),
+                          Text('حذف الحساب'),
+                        ],
+                      ),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'هل أنت متأكد من حذف حسابك نهائياً؟',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'سيتم حذف:',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          SizedBox(height: 8),
+                          Text('• جميع بياناتك الشخصية'),
+                          Text('• سجل المواعيد والحجوزات'),
+                          Text('• الإشعارات والتفضيلات'),
+                          SizedBox(height: 12),
+                          Text(
+                            '⚠️ هذا الإجراء لا يمكن التراجع عنه!',
+                            style: TextStyle(
+                              color: Color(0xFFEF4444),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('إلغاء'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF4444),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            'حذف نهائياً',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (shouldDelete == true && mounted) {
+                    await context.read<AuthCubit>().deleteAccount();
+                    if (mounted) {
+                      setState(() => _bottomNavIndex = 0);
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+              _HomeAccountActionCard(
                 title: 'تسجيل الخروج',
                 subtitle: 'الخروج من الحساب الحالي',
                 icon: Icons.logout_rounded,
