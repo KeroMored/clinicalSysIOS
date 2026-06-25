@@ -955,6 +955,23 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
                               color: Color(0xFF334155),
                             ),
                           ),
+                          if (clinic.profileViewsCount > 0) ...[
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.visibility_outlined,
+                              size: 12,
+                              color: Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${clinic.profileViewsCount}',
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF334155),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 5),

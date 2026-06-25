@@ -56,6 +56,7 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
           .doc(_clinic.id)
           .update({
         'viewsCount': FieldValue.increment(1),
+        'profileViewsCount': FieldValue.increment(1),
       });
     } catch (e) {
       // Permission denied for non-authenticated users - silently skip
@@ -397,6 +398,45 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                             left: 16,
                             child: _buildClinicStatusBadge(),
                           ),
+                          // Profile Views Counter
+                          if (_clinic.profileViewsCount > 0)
+                            Positioned(
+                              bottom: 18,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.visibility_outlined,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _clinic.profileViewsCount.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       )
                     else
@@ -448,9 +488,47 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                             left: 16,
                             child: _buildClinicStatusBadge(),
                           ),
+                          // Profile Views Counter
+                          if (_clinic.profileViewsCount > 0)
+                            Positioned(
+                              bottom: 16,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.visibility_outlined,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _clinic.profileViewsCount.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
-
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(

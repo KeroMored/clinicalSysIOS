@@ -45,6 +45,7 @@ class ClinicModel {
 
   // Analytics
   final int viewsCount; // عدد مشاهدات صفحة العيادة
+  final int profileViewsCount; // عدد مشاهدات البروفايل (للإحصائيات)
   final DateTime? lastFeaturedDate; // تاريخ آخر ظهور في الإعلانات
 
   ClinicModel({
@@ -79,6 +80,7 @@ class ClinicModel {
     this.totalRatings = 0,
     this.totalLikes = 0,
     this.viewsCount = 0,
+    this.profileViewsCount = 0,
     this.lastFeaturedDate,
   });
 
@@ -152,6 +154,7 @@ class ClinicModel {
       totalRatings: data['totalRatings'] ?? 0,
       totalLikes: data['totalLikes'] ?? 0,
       viewsCount: (data['viewsCount'] as num? ?? 0).toInt(),
+      profileViewsCount: (data['profileViewsCount'] as num? ?? 0).toInt(),
       lastFeaturedDate: data['lastFeaturedDate'] is Timestamp
           ? (data['lastFeaturedDate'] as Timestamp).toDate()
           : null,
@@ -214,6 +217,7 @@ class ClinicModel {
       'totalRatings': totalRatings,
       'totalLikes': totalLikes,
       'viewsCount': viewsCount,
+      'profileViewsCount': profileViewsCount,
       'lastFeaturedDate': lastFeaturedDate != null
           ? Timestamp.fromDate(lastFeaturedDate!)
           : null,

@@ -1,4 +1,3 @@
-import 'package:clinicalsystem/features/pharmacy/presentation/widgets/pharmacy_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,6 +10,7 @@ import '../cubit/pharmacy_cubit.dart';
 import 'pharmacy_details_screen.dart';
 import '../../data/repositories/pharmacy_repository.dart';
 import '../../data/models/pharmacy_model.dart';
+import '../widgets/pharmacy_card.dart';
 
 class ThePharmaciesScreen extends StatefulWidget {
   final String? initialSearchQuery;

@@ -28,11 +28,6 @@ import '../../radiology/presentation/screens/radiology_home_page.dart';
 import '../../radiology/presentation/cubit/radiology_cubit.dart';
 import '../../radiology/data/models/radiology_model.dart';
 import '../../radiology/data/repositories/radiology_repository.dart';
-import '../../rehabilitation/data/models/rehabilitation_center_model.dart';
-import '../../rehabilitation/presentation/screens/rehabilitation_centers_list_screen.dart';
-import '../../rehabilitation/presentation/screens/rehabilitation_center_detail_screen.dart';
-import '../../rehabilitation/presentation/screens/rehabilitation_center_control_page.dart';
-import '../../rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import '../../profile/presentation/screens/edit_profile_screen.dart';
 import '../../rehabilitation/data/repositories/rehabilitation_repository.dart';
 import '../../gym/data/models/gym_model.dart';
@@ -1032,7 +1027,7 @@ class _HomeScreenState extends State<HomeScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'ملوي كيور | Mallawi Cure',
+                  'Mallawi Cure',
                   style: TextStyle(
                     color: Color(0xFF0F4C5C),
                     fontSize: 17,
@@ -1391,14 +1386,6 @@ class _HomeScreenState extends State<HomeScreen>
         collection: 'gyms',
         type: _SearchEntityType.gym,
         displayType: 'جيم',
-        fields: const ['name', 'description', 'address'],
-        normalizedQuery: normalized,
-        constraints: (ref) => ref.limit(80),
-      ),
-      _searchCollection(
-        collection: 'rehabilitation_centers',
-        type: _SearchEntityType.rehabilitation,
-        displayType: 'مركز تأهيل',
         fields: const ['name', 'description', 'address'],
         normalizedQuery: normalized,
         constraints: (ref) => ref.limit(80),
@@ -1811,49 +1798,6 @@ class _HomeScreenState extends State<HomeScreen>
           _showDetailsOpenError();
         }
         return;
-      case _SearchEntityType.rehabilitation:
-        if (result.id.isEmpty) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BlocProvider(
-                create: (_) => RehabilitationCubit(RehabilitationRepository()),
-                child: const RehabilitationCentersListScreen(),
-              ),
-            ),
-          );
-          return;
-        }
-        try {
-          final doc = await FirebaseFirestore.instance
-              .collection('rehabilitation_centers')
-              .doc(result.id)
-              .get();
-          final data = doc.data();
-
-          if (!doc.exists || data == null) {
-            _showDetailsOpenError();
-            return;
-          }
-
-          final center = RehabilitationCenterModel.fromMap({
-            ...data,
-            'id': doc.id,
-          });
-          if (!mounted) {
-            return;
-          }
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RehabilitationCenterDetailScreen(center: center),
-            ),
-          );
-        } catch (_) {
-          _showDetailsOpenError();
-        }
-        return;
     }
   }
 
@@ -1919,18 +1863,6 @@ class _HomeScreenState extends State<HomeScreen>
       );
       return true;
     }
-    if (normalized.contains('تأهيل')) {
-      _openSearchResult(
-        const _HomeSearchResult(
-          id: '',
-          type: _SearchEntityType.rehabilitation,
-          displayType: 'مركز تأهيل',
-          title: 'مراكز التأهيل',
-          subtitle: '',
-        ),
-      );
-      return true;
-    }
     return false;
   }
 
@@ -1963,7 +1895,6 @@ class _HomeScreenState extends State<HomeScreen>
     const Color labAccent = Color(0xFF0B7285);
     const Color radiologyAccent = Color(0xFF0B7285);
     const Color gymAccent = Color(0xFF0B7285);
-    const Color rehabAccent = Color(0xFF0B7285);
 
     return Column(
       children: [
@@ -2060,27 +1991,6 @@ class _HomeScreenState extends State<HomeScreen>
                       builder: (_) => BlocProvider(
                         create: (_) => GymCubit(GymRepository()),
                         child: const GymsListScreen(),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _HomeSecondaryServiceCard(
-                title: 'التأهيل',
-                icon: Icons.healing_rounded,
-                accentColor: rehabAccent,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (_) =>
-                            RehabilitationCubit(RehabilitationRepository())
-                              ..getAvailableCenters(),
-                        child: const RehabilitationCentersListScreen(),
                       ),
                     ),
                   );
@@ -2519,12 +2429,6 @@ class _HomeScreenState extends State<HomeScreen>
                           .limit(1)
                           .get(),
                       FirebaseFirestore.instance
-                          .collection('rehabilitation_centers')
-                          .where('authEmails', arrayContains: state.user.email)
-                          .where('isApproved', isEqualTo: true)
-                          .limit(1)
-                          .get(),
-                      FirebaseFirestore.instance
                           .collection('settingsforpatiants')
                           .limit(1)
                           .get(),
@@ -2536,8 +2440,7 @@ class _HomeScreenState extends State<HomeScreen>
                         final labSnapshot = snapshot.data![2];
                         final radiologySnapshot = snapshot.data![3];
                         final gymSnapshot = snapshot.data![4];
-                        final rehabSnapshot = snapshot.data![5];
-                        final settingsSnapshot = snapshot.data![6];
+                        final settingsSnapshot = snapshot.data![5];
 
                         bool hideClinicManagement = false;
                         if (settingsSnapshot.docs.isNotEmpty) {
@@ -2548,7 +2451,7 @@ class _HomeScreenState extends State<HomeScreen>
                               settingsData['ishidden'] == true;
                         }
 
-                        // Priority order: Pharmacy > Clinic > Laboratory > Radiology > Gym > Rehabilitation
+                        // Priority order: Pharmacy > Clinic > Laboratory > Radiology > Gym
                         if (pharmacySnapshot.docs.isNotEmpty) {
                           return _buildOwnerFloatingActionButton(
                             label: 'إدارة الصيدلية',
@@ -2702,22 +2605,6 @@ class _HomeScreenState extends State<HomeScreen>
                                   builder: (context) => GymControlPage(
                                     gymEmail: state.user.email,
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                        } else if (rehabSnapshot.docs.isNotEmpty) {
-                          return _buildOwnerFloatingActionButton(
-                            label: 'إدارة مركز التأهيل',
-                            icon: Icons.dashboard,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      RehabilitationCenterControlPage(
-                                        centerEmail: state.user.email,
-                                      ),
                                 ),
                               );
                             },
@@ -3980,7 +3867,6 @@ enum _SearchEntityType {
   laboratory,
   radiology,
   gym,
-  rehabilitation,
 }
 
 class _HomeSearchResult {

@@ -135,6 +135,8 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
         return 'مثل: جراحة عامة، مناظير، سمنة';
       case ClinicDepartment.physiotherapy:
         return 'مثل: علاج طبيعي، تأهيل حركي، آلام مفاصل';
+      case ClinicDepartment.rehabilitation:
+        return 'مثل: تأهيل حركي، علاج طبيعي، تأهيل نفسي';
       case ClinicDepartment.other:
         return 'حدد خدمات العيادة';
     }
