@@ -4,13 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
-import '../../../../core/services/location_service.dart';
-import '../../../../core/utils/pharmacy_hours_helper.dart';
-import '../cubit/pharmacy_cubit.dart';
-import 'pharmacy_details_screen.dart';
-import '../../data/repositories/pharmacy_repository.dart';
-import '../../data/models/pharmacy_model.dart';
-import '../widgets/pharmacy_card.dart';
+import 'package:clinicalsystem/core/services/location_service.dart';
+import 'package:clinicalsystem/core/utils/pharmacy_hours_helper.dart';
+import 'package:clinicalsystem/features/pharmacy/presentation/cubit/pharmacy_cubit.dart';
+import 'package:clinicalsystem/features/pharmacy/presentation/screens/pharmacy_details_screen.dart';
+import 'package:clinicalsystem/features/pharmacy/data/repositories/pharmacy_repository.dart';
+import 'package:clinicalsystem/features/pharmacy/data/models/pharmacy_model.dart';
+import 'package:clinicalsystem/features/pharmacy/presentation/widgets/pharmacy_card.dart';
 
 class ThePharmaciesScreen extends StatefulWidget {
   final String? initialSearchQuery;
