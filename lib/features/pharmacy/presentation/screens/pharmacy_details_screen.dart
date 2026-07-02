@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -896,7 +896,7 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
-                      Icons.chat_bubble,
+                      FontAwesomeIcons.whatsapp,
                       color: const Color(0xFF16A34A),
                       size: 18,
                     ),
@@ -927,7 +927,7 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                   ),
                   IconButton(
                     onPressed: () => _openWhatsApp(pharmacy.whatsapp),
-                    icon: Icon(Icons.chat_bubble, color: Color(0xFF16A34A)),
+                    icon: Icon(FontAwesomeIcons.whatsapp, color: Color(0xFF16A34A)),
                   ),
                 ],
               ),

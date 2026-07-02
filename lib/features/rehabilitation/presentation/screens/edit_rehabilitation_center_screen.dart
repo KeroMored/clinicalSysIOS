@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -399,7 +399,7 @@ class _EditRehabilitationCenterScreenState
                       controller: _whatsappController,
                       decoration: InputDecoration(
                         labelText: 'واتساب (اختياري)',
-                        prefixIcon: Icon(Icons.chat_bubble),
+                        prefixIcon: Icon(FontAwesomeIcons.whatsapp),
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.phone,

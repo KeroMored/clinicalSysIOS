@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
@@ -247,7 +247,7 @@ class _GymControlPageState extends State<GymControlPage> {
 
                       // WhatsApp
                       _buildInfoRow(
-                        Icons.chat_bubble,
+                        FontAwesomeIcons.whatsapp,
                         'واتساب',
                         _gym!.whatsapp,
                       ),

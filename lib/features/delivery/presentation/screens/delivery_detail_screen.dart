@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/widgets/like_button.dart';
@@ -328,7 +328,7 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: _openWhatsApp,
-                        icon: Icon(Icons.chat_bubble, size: 18),
+                        icon: Icon(FontAwesomeIcons.whatsapp, size: 18),
                         label: const Text(
                           'واتساب',
                           style: TextStyle(fontWeight: FontWeight.w700),

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -1600,7 +1600,7 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
                             color: Colors.teal,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Icon(Icons.chat_bubble, color: Colors.white),
+                          child: Icon(FontAwesomeIcons.whatsapp, color: Colors.white),
                         ),
                         filled: true,
                         fillColor: Colors.white,
