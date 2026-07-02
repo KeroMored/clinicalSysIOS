@@ -215,7 +215,7 @@ class _EditPlaceDetailsScreenState extends State<EditPlaceDetailsScreen> {
           ),
         ),
         body: _isLoading
-            ? const Center(child: AppLoadingIndicator())
+            ? Center(child: AppLoadingIndicator())
             : Form(
                 key: _formKey,
                 child: ListView(

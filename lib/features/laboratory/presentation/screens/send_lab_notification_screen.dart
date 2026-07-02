@@ -214,7 +214,7 @@ class _SendLabNotificationScreenState extends State<SendLabNotificationScreen> {
                           ),
                         ],
                       ),
-                      child: const AppLoadingIndicator(
+                      child: AppLoadingIndicator(
                         color: _primaryColor,
                         strokeWidth: 3,
                       ),

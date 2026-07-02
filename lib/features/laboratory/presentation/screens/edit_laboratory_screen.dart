@@ -481,7 +481,7 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
                           ),
                         ],
                       ),
-                      child: const AppLoadingIndicator(
+                      child: AppLoadingIndicator(
                         color: _primaryColor,
                         strokeWidth: 3,
                       ),

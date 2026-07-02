@@ -71,7 +71,7 @@ class PlaceSubscriptionDetailsScreen extends StatelessWidget {
                     colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                   ),
                 ),
-                body: const Center(child: AppLoadingIndicator()),
+                body: Center(child: AppLoadingIndicator()),
               );
             }
 
