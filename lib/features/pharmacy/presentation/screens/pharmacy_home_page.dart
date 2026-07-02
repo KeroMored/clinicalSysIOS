@@ -291,7 +291,7 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mallawy Care',
+                'ملوي كيور | Mallawi Cure',
                 style: TextStyle(
                   fontSize: 21,
                   color: Colors.white,
@@ -439,10 +439,14 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD7F2F7),
+                  color: const Color(0xFF0B7285),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: const Color(0xFF0F172A), size: 23),
+                child: Icon(
+                  icon,
+                  color: const Color.fromARGB(255, 255, 255, 255),
+                  size: 23,
+                ),
               ),
               const SizedBox(height: 11),
               Text(
@@ -488,7 +492,7 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
           ),
           SizedBox(height: 8),
           Text(
-            'عند طلب الدواء من التطبيق:\n -يتم إرسال طلبك لكل الصيدليات المتاحة .\n -الصيدلية التي يتوفر لديها طلبك ستتواصل معك .\n\n *مهم جدا: بعد التواصل، ادخل على السلة (أعلى الصفحة الرئيسية) واضغط "تم التواصل" على الطلب حتى لا تتواصل معك صيدليات أخرى.',
+            'عند طلب الدواء من التطبيق:\n -يتم إرسال طلبك لكل الصيدليات المتاحة .\n -الصيدلية التي يتوفر لديها طلبك ستتواصل معك .\n\n *مهم : بعد التواصل، ادخل على السلة (أعلى الصفحة الرئيسية) واضغط "تم التواصل" على الطلب حتى لا تتواصل معك صيدليات أخري \n\n **مهم جداً : فى حالة الطلبات الوهمية يتم قفل حسابك على التطبيق باكمله ولم تستطع الدخول مرة أخرى .',
             style: TextStyle(
               fontSize: 14,
               height: 1.7,

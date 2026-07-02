@@ -72,7 +72,7 @@ flutter build apk --release
 
 ### 2. Upload to Google Play Console
 1. Go to [Google Play Console](https://play.google.com/console)
-2. Select your app (Mallawy Health Care)
+2. Select your app (ملوي كيور | Mallawi Cure)
 3. Navigate to **Production** track (or Internal Testing first)
 4. Click **Create new release**
 5. Upload the new App Bundle:

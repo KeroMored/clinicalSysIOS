@@ -11,6 +11,7 @@ import 'delivery_approval_screen.dart';
 import 'add_rehabilitation_center_screen.dart';
 import 'rehabilitation_approval_screen.dart';
 import 'send_admin_notification_screen.dart';
+import 'admin_medicine_requests_screen.dart';
 import '../../../radiology/presentation/screens/add_radiology_screen.dart';
 import '../../../radiology/presentation/screens/radiology_approval_list_screen.dart';
 import '../../../gym/presentation/pages/add_gym_screen.dart';
@@ -22,6 +23,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../../core/screens/reports_admin_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../auth/presentation/cubit/auth_cubit.dart';
 
 class AdminHomePage extends StatelessWidget {
   const AdminHomePage({super.key});
@@ -344,6 +346,103 @@ class AdminHomePage extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
+
+                // زرار طلبات الأدوية (يظهر فقط للأدمن kerolesmored@gmail.com)
+                Builder(
+                  builder: (context) {
+                    final authState = context.watch<AuthCubit>().state;
+                    final userEmail = authState is Authenticated
+                        ? authState.user.email
+                        : '';
+
+                    // يظهر فقط للأدمن المحدد
+                    if (userEmail != 'kerolesmored@gmail.com') {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        InkWell(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const AdminMedicineRequestsScreen(),
+                            ),
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF0B8293), Color(0xFF0A6F7C)],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF0B8293,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.medical_services_rounded,
+                                    size: 32,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'طلبات الأدوية',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'عرض ومتابعة طلبات الأدوية من المستخدمين',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.9,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 32),

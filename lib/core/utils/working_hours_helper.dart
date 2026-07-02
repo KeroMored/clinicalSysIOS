@@ -40,7 +40,6 @@ class WorkingHoursHelper {
 
       // Check if it's a holiday in the working hours
       if (dayHours is Map) {
-        // Check for different field names (isHoliday or isClosed)
         final isHoliday = dayHours['isHoliday'] ?? false;
         final isClosed = dayHours['isClosed'] ?? false;
         if (isHoliday || isClosed) return false;
@@ -49,31 +48,24 @@ class WorkingHoursHelper {
         final openTime = (dayHours['openTime'] ?? dayHours['from']) as String?;
         final closeTime = (dayHours['closeTime'] ?? dayHours['to']) as String?;
 
-        if (openTime == null || closeTime == null) return false;
-
-        // Parse times
-        final openMinutes = _parseTime24Hour(openTime);
-        final closeMinutes = _parseTime24Hour(closeTime);
-        final currentMinutes = now.hour * 60 + now.minute;
-
-        print(
-          '  Open: $openTime ($openMinutes min) | Close: $closeTime ($closeMinutes min)',
-        );
-        print('  Current: ${now.hour}:${now.minute} ($currentMinutes min)');
-
-        // Handle overnight hours (e.g., 22:00 to 02:00)
-        if (closeMinutes < openMinutes) {
-          final result =
-              currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
-          print('  → Overnight hours: $result');
-          return result;
+        if (openTime != null && closeTime != null) {
+          if (_isTimeWithinSlots(openTime, closeTime, now)) return true;
         }
 
-        // Normal hours
-        final result =
-            currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
-        print('  → Normal hours: $result');
-        return result;
+        // Check for multiple slots
+        if (dayHours['slots'] is List) {
+          for (var slot in dayHours['slots']) {
+            if (slot is Map) {
+              final slotOpen = slot['from'] as String?;
+              final slotClose = slot['to'] as String?;
+              if (slotOpen != null &&
+                  slotClose != null &&
+                  _isTimeWithinSlots(slotOpen, slotClose, now)) {
+                return true;
+              }
+            }
+          }
+        }
       }
 
       return false;
@@ -81,6 +73,21 @@ class WorkingHoursHelper {
       // If any error occurs, return false (closed)
       return false;
     }
+  }
+
+  static bool _isTimeWithinSlots(
+    String openTime,
+    String closeTime,
+    DateTime now,
+  ) {
+    final openMinutes = _parseTime24Hour(openTime);
+    final closeMinutes = _parseTime24Hour(closeTime);
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    if (closeMinutes < openMinutes) {
+      return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+    }
+    return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
   }
 
   /// Get closing time for the current day

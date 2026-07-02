@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 
 import '../../../gym/presentation/pages/gym_offer_detail_screen.dart';
 import '../../../pharmacy/presentation/screens/pharmacy_offer_detail_screen.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
 
 enum _OfferSourceType { pharmacy, gym }
 
@@ -815,14 +816,7 @@ class _HomeOffersLoading extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          height: 286,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE2E8F0),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Center(child: AppLoadingIndicator(strokeWidth: 2)),
-        ),
+        const SkeletonHorizontalOfferCard(),
       ],
     );
   }

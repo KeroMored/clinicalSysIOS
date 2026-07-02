@@ -49,6 +49,7 @@ class PharmacyModel {
   final double averageRating; // متوسط التقييم (0.0 - 5.0)
   final int totalRatings; // عدد التقييمات
   final int totalLikes; // عدد اللايكات
+  final int profileViewsCount; // عدد مشاهدات البروفايل
 
   PharmacyModel({
     required this.id,
@@ -79,6 +80,7 @@ class PharmacyModel {
     this.averageRating = 0.0,
     this.totalRatings = 0,
     this.totalLikes = 0,
+    this.profileViewsCount = 0,
     this.hasInsurance = false,
     this.insuranceCompanies = const [],
   });
@@ -117,6 +119,7 @@ class PharmacyModel {
       averageRating: (json['averageRating'] ?? 0.0).toDouble(),
       totalRatings: json['totalRatings'] ?? 0,
       totalLikes: json['totalLikes'] ?? 0,
+      profileViewsCount: json['profileViewsCount'] ?? 0,
       hasInsurance: json['hasInsurance'] ?? false,
       insuranceCompanies: json['insuranceCompanies'] != null
           ? List<String>.from(json['insuranceCompanies'])
@@ -159,6 +162,7 @@ class PharmacyModel {
       averageRating: (json['averageRating'] ?? 0.0).toDouble(),
       totalRatings: json['totalRatings'] ?? 0,
       totalLikes: json['totalLikes'] ?? 0,
+      profileViewsCount: json['profileViewsCount'] ?? 0,
       hasInsurance: json['hasInsurance'] ?? false,
       insuranceCompanies: json['insuranceCompanies'] != null
           ? List<String>.from(json['insuranceCompanies'])
@@ -196,6 +200,7 @@ class PharmacyModel {
       'averageRating': averageRating,
       'totalRatings': totalRatings,
       'totalLikes': totalLikes,
+      'profileViewsCount': profileViewsCount,
       'hasInsurance': hasInsurance,
       'insuranceCompanies': insuranceCompanies,
     };

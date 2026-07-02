@@ -191,6 +191,7 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
     });
 
     if (_searchQuery.isNotEmpty) {
+      await _performSearch(_searchQuery);
       return;
     }
 
@@ -216,17 +217,15 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
     return '${distance.toStringAsFixed(1)} كم';
   }
 
-  List<LaboratoryModel> _applyQuickFilters(List<LaboratoryModel> source) {
-    final filtered = source.where((lab) {
-      if (_showOpenOnly && !_isLabOpenNow(lab)) return false;
-      return true;
-    }).toList();
+  bool _matchesLabQuickFilters(LaboratoryModel lab) {
+    if (_showOpenOnly && !_isLabOpenNow(lab)) {
+      return false;
+    }
 
-    _sortLaboratories(filtered);
-    return filtered;
+    return true;
   }
 
-  void _onQuickFilterSelected(String filterId) {
+  Future<void> _onQuickFilterSelected(String filterId) async {
     if (!mounted) return;
 
     if (filterId == 'open') {
@@ -234,6 +233,12 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
         _activeQuickFilter = 'open';
         _showOpenOnly = true;
       });
+
+      if (_searchQuery.isNotEmpty) {
+        await _performSearch(_searchQuery);
+      } else {
+        await _resetAndReload();
+      }
       return;
     }
 
@@ -243,11 +248,11 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
     });
 
     if (filterId == 'all') {
-      _changeSortOption('name');
+      await _changeSortOption('name');
     } else if (filterId == 'distance') {
-      _changeSortOption('distance');
+      await _changeSortOption('distance');
     } else if (filterId == 'rating') {
-      _changeSortOption('rating');
+      await _changeSortOption('rating');
     }
   }
 
@@ -330,10 +335,13 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
       final results = await _labRepo.searchLaboratoriesByName(query);
       if (!mounted) return;
 
+      final filtered = results.where(_matchesLabQuickFilters).toList();
+      _sortLaboratories(filtered);
+
       setState(() {
         _searchResults
           ..clear()
-          ..addAll(results);
+          ..addAll(filtered);
         _isSearchLoading = false;
       });
     } catch (_) {
@@ -373,7 +381,7 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
     }
 
     try {
-      final baseQuery = FirebaseFirestore.instance
+        Query baseQuery = FirebaseFirestore.instance
           .collection('laboratories')
           .where('status', isEqualTo: 'approved');
 
@@ -381,8 +389,7 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
       bool hasMoreLocal = _hasMore;
       final collectedLabs = <LaboratoryModel>[];
 
-      // Keep paging until we find visible labs or exhaust results.
-      while (hasMoreLocal && collectedLabs.isEmpty) {
+      while (hasMoreLocal && collectedLabs.length < _pageSize) {
         Query query = baseQuery;
 
         switch (_sortBy) {
@@ -426,18 +433,21 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
         hasMoreLocal = snapshot.docs.length == _pageSize;
 
         final visibleLabs = _mapVisibleLabs(snapshot);
-        if (visibleLabs.isNotEmpty) {
-          if (_sortBy == 'distance' && _userLocation != null) {
-            _sortLaboratories(visibleLabs);
-          }
-          collectedLabs.addAll(visibleLabs);
+        final matchedLabs = visibleLabs.where(_matchesLabQuickFilters).toList();
+        if (matchedLabs.isNotEmpty) {
+          collectedLabs.addAll(matchedLabs);
         }
+      }
+
+      final pageLabs = collectedLabs.take(_pageSize).toList();
+      if (_sortBy == 'distance' && _userLocation != null) {
+        _sortLaboratories(pageLabs);
       }
 
       if (!mounted) return;
       setState(() {
         _lastDocument = cursor;
-        _laboratories.addAll(collectedLabs);
+        _laboratories.addAll(pageLabs);
         _hasMore = hasMoreLocal;
         _isLoading = false;
       });
@@ -717,9 +727,7 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
                             )
                           : Builder(
                               builder: (context) {
-                                final laboratories = _applyQuickFilters(
-                                  _searchResults,
-                                );
+                                final laboratories = _searchResults;
 
                                 if (laboratories.isEmpty) {
                                   return Center(
@@ -841,13 +849,9 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
                         controller: _scrollController,
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount:
-                            _applyQuickFilters(_laboratories).length +
-                            (_hasMore ? 1 : 0),
+                            _laboratories.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
-                          final displayedLabs = _applyQuickFilters(
-                            _laboratories,
-                          );
-                          if (index == displayedLabs.length) {
+                          if (index == _laboratories.length) {
                             return Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(20.0),
@@ -859,7 +863,7 @@ class _LaboratoryHomePageState extends State<LaboratoryHomePage> {
                             );
                           }
 
-                          final lab = displayedLabs[index];
+                          final lab = _laboratories[index];
                           final isOpen = WorkingHoursHelper.isServiceOpen(
                             workingHours: lab.workingHours.map(
                               (key, value) => MapEntry(key, value.toMap()),

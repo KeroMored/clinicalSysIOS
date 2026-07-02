@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../cubit/pharmacy_cubit.dart';
 import '../../../../core/widgets/rating_widget.dart';
 import '../../../../core/widgets/like_button.dart';
@@ -38,6 +39,20 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
     super.initState();
     _isBookingEnabledFuture = _fetchIsBookingEnabled();
     context.read<PharmacyCubit>().loadPharmacyDetails(widget.pharmacyId);
+    _incrementProfileViews();
+  }
+
+  Future<void> _incrementProfileViews() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('pharmacies')
+          .doc(widget.pharmacyId)
+          .update({
+        'profileViewsCount': FieldValue.increment(1),
+      });
+    } catch (e) {
+      // Permission denied for non-authenticated users - silently skip
+    }
   }
 
   Future<bool> _fetchIsBookingEnabled() async {
@@ -281,6 +296,44 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                         ],
                       ),
                     ),
+                    if (pharmacy.profileViewsCount > 0)
+                      Positioned(
+                        bottom: 12,
+                        left: 14,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.visibility_outlined,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                pharmacy.profileViewsCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

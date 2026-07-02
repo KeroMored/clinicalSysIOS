@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -54,8 +54,8 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
   String _locationStatus = '';
 
   // Working Hours
-  final Map<String, TimeOfDay?> _workingHoursFrom = {};
-  final Map<String, TimeOfDay?> _workingHoursTo = {};
+  final Map<String, List<TimeOfDay?>> _workingHoursFrom = {};
+  final Map<String, List<TimeOfDay?>> _workingHoursTo = {};
   final Map<String, bool> _isClosedDays = {};
 
   @override
@@ -72,8 +72,8 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
       'friday',
     ];
     for (var day in days) {
-      _workingHoursFrom[day] = const TimeOfDay(hour: 9, minute: 0);
-      _workingHoursTo[day] = const TimeOfDay(hour: 17, minute: 0);
+      _workingHoursFrom[day] = <TimeOfDay?>[const TimeOfDay(hour: 9, minute: 0)];
+      _workingHoursTo[day] = <TimeOfDay?>[const TimeOfDay(hour: 17, minute: 0)];
       _isClosedDays[day] = false; // All days open by default
     }
   }
@@ -134,6 +134,8 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
         return 'مثل: جراحة عامة، مناظير، سمنة';
       case ClinicDepartment.physiotherapy:
         return 'مثل: علاج طبيعي، تأهيل حركي، آلام مفاصل';
+      case ClinicDepartment.rehabilitation:
+        return 'مثل: تأهيل حركي، علاج طبيعي، تأهيل نفسي';
       case ClinicDepartment.other:
         return 'حدد خدمات العيادة';
     }
@@ -207,6 +209,55 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  void _copyWorkingHoursToAll(String sourceDay) {
+    final sourceFromList = _workingHoursFrom[sourceDay];
+    final sourceToList = _workingHoursTo[sourceDay];
+    final sourceIsClosed = _isClosedDays[sourceDay] ?? false;
+
+    if (sourceFromList == null || sourceToList == null) return;
+
+    final days = [
+      'saturday',
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+    ];
+
+    setState(() {
+      for (final day in days) {
+        if (day != sourceDay) {
+          _workingHoursFrom[day] = List.from(sourceFromList);
+          _workingHoursTo[day] = List.from(sourceToList);
+          _isClosedDays[day] = sourceIsClosed;
+        }
+      }
+    });
+  }
+
+  void _addTimeSlot(String day) {
+    setState(() {
+      // Ensure lists exist
+      _workingHoursFrom[day] ??= <TimeOfDay?>[const TimeOfDay(hour: 9, minute: 0)];
+      _workingHoursTo[day] ??= <TimeOfDay?>[const TimeOfDay(hour: 17, minute: 0)];
+      
+      // Add new slots with default values instead of null
+      _workingHoursFrom[day]!.add(const TimeOfDay(hour: 12, minute: 0));
+      _workingHoursTo[day]!.add(const TimeOfDay(hour: 14, minute: 0));
+    });
+  }
+
+  void _removeTimeSlot(String day, int index) {
+    setState(() {
+      if (_workingHoursFrom[day]!.length > 1) {
+        _workingHoursFrom[day]?.removeAt(index);
+        _workingHoursTo[day]?.removeAt(index);
+      }
+    });
   }
 
   Future<void> _getCurrentLocation() async {
@@ -382,16 +433,26 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
 
       // Prepare working hours
       Map<String, WorkingHours> workingHours = {};
-      _workingHoursFrom.forEach((day, from) {
-        final to = _workingHoursTo[day];
+      _workingHoursFrom.forEach((day, fromList) {
+        final toList = _workingHoursTo[day];
         final isClosed = _isClosedDays[day] ?? false;
 
-        if (from != null && to != null) {
-          workingHours[day] = WorkingHours(
-            from: _formatTimeOfDay(from),
-            to: _formatTimeOfDay(to),
-            isClosed: isClosed,
-          );
+        final slots = <TimeSlot>[];
+        if (toList != null) {
+          for (int i = 0; i < fromList.length; i++) {
+            final from = fromList[i];
+            final to = (i < toList.length) ? toList[i] : null;
+            if (from != null && to != null) {
+              slots.add(TimeSlot(
+                from: _formatTimeOfDay(from),
+                to: _formatTimeOfDay(to),
+              ));
+            }
+          }
+        }
+
+        if (slots.isNotEmpty) {
+          workingHours[day] = WorkingHours(slots: slots, isClosed: isClosed);
         }
       });
 
@@ -497,11 +558,14 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
           foregroundColor: Colors.white,
           elevation: 0,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
+        body: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Doctor Info Card
@@ -1812,6 +1876,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -1918,7 +1983,84 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          children: daysArabic.entries.map((entry) {
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF06B6D4).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.access_time_filled,
+                    color: Color(0xFF06B6D4),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'مواعيد العمل',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF06B6D4),
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('نسخ المواعيد'),
+                        content: const Text(
+                          'يتم نسخ مواعيد اليوم الحالي (الأول) لباقي الأيام',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('إلغاء'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              _copyWorkingHoursToAll('saturday');
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('تم نسخ المواعيد لجميع الأيام'),
+                                  backgroundColor: Color(0xFF06B6D4),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF06B6D4),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('نسخ'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.content_copy, size: 18),
+                  label: const Text('نسخ للكل'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF06B6D4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            ...daysArabic.entries.map((entry) {
             final day = entry.key;
             final dayArabic = entry.value;
             final isClosed = _isClosedDays[day] ?? false;
@@ -2002,100 +2144,164 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                       ),
                     ],
                   ),
-                  if (!isClosed) ...[
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime:
-                                    _workingHoursFrom[day] ??
-                                    const TimeOfDay(hour: 9, minute: 0),
-                              );
-                              if (time != null) {
-                                setState(() {
-                                  _workingHoursFrom[day] = time;
-                                });
-                              }
-                            },
-                            icon: const Icon(Icons.access_time, size: 18),
-                            label: Text(
-                              'من: ${_formatTimeOfDay(_workingHoursFrom[day] ?? const TimeOfDay(hour: 9, minute: 0))}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                    if (!isClosed) ...[
+                      const SizedBox(height: 12),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                      ...List.generate(
+                        (_workingHoursFrom[day]?.length ?? 1),
+                        (slotIndex) {
+                          final fromList = _workingHoursFrom[day] ?? [];
+                          final toList = _workingHoursTo[day] ?? [];
+                          final currentFrom =
+                              (slotIndex < fromList.length &&
+                                      fromList[slotIndex] != null)
+                                  ? fromList[slotIndex]!
+                                  : const TimeOfDay(hour: 9, minute: 0);
+                          final currentTo =
+                              (slotIndex < toList.length &&
+                                      toList[slotIndex] != null)
+                                  ? toList[slotIndex]!
+                                  : const TimeOfDay(hour: 17, minute: 0);
+
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom:
+                                  slotIndex ==
+                                          (_workingHoursFrom[day]?.length ?? 1) -
+                                              1
+                                      ? 0
+                                      : 12,
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(
-                                0xFFF59E0B,
-                              ).withOpacity(0.1),
-                              foregroundColor: const Color(0xFFF59E0B),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(
-                                  color: const Color(
-                                    0xFFF59E0B,
-                                  ).withOpacity(0.3),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      FocusScope.of(context).unfocus();
+                                      final time = await showTimePicker(
+                                        context: context,
+                                        initialTime: currentFrom,
+                                      );
+                                      if (time != null) {
+                                        setState(() {
+                                          _workingHoursFrom[day]![slotIndex] =
+                                              time;
+                                        });
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.access_time,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'من: ${_formatTimeOfDay(currentFrom)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(
+                                        0xFFF59E0B,
+                                      ).withOpacity(0.1),
+                                      foregroundColor: const Color(0xFFF59E0B),
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: BorderSide(
+                                          color: const Color(
+                                            0xFFF59E0B,
+                                          ).withOpacity(0.3),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime:
-                                    _workingHoursTo[day] ??
-                                    const TimeOfDay(hour: 17, minute: 0),
-                              );
-                              if (time != null) {
-                                setState(() {
-                                  _workingHoursTo[day] = time;
-                                });
-                              }
-                            },
-                            icon: const Icon(Icons.access_time, size: 18),
-                            label: Text(
-                              'إلى: ${_formatTimeOfDay(_workingHoursTo[day] ?? const TimeOfDay(hour: 17, minute: 0))}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(
-                                0xFFF59E0B,
-                              ).withOpacity(0.1),
-                              foregroundColor: const Color(0xFFF59E0B),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(
-                                  color: const Color(
-                                    0xFFF59E0B,
-                                  ).withOpacity(0.3),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () async {
+                                      FocusScope.of(context).unfocus();
+                                      final time = await showTimePicker(
+                                        context: context,
+                                        initialTime: currentTo,
+                                      );
+                                      if (time != null) {
+                                        setState(() {
+                                          _workingHoursTo[day]![slotIndex] =
+                                              time;
+                                        });
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.access_time,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      'إلى: ${_formatTimeOfDay(currentTo)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(
+                                        0xFFF59E0B,
+                                      ).withOpacity(0.1),
+                                      foregroundColor: const Color(0xFFF59E0B),
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: BorderSide(
+                                          color: const Color(
+                                            0xFFF59E0B,
+                                          ).withOpacity(0.3),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                if ((_workingHoursFrom[day]?.length ?? 1) > 1)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () =>
+                                          _removeTimeSlot(day, slotIndex),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                      if ((_workingHoursFrom[day]?.length ?? 1) < 2) ...[
+                        const SizedBox(height: 12),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () => _addTimeSlot(day),
+                            icon: const Icon(Icons.add_circle_outline),
+                            label: const Text('إضافة فترة ثانية'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFF06B6D4),
                             ),
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ],
-                ],
               ),
             );
           }).toList(),
+          ],
         ),
       ),
     );

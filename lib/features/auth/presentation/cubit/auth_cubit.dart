@@ -35,25 +35,37 @@ class AuthCubit extends Cubit<AuthState> {
       // Show loading briefly while checking Firebase Auth
       emit(AuthLoading());
 
-      // Small delay to ensure Firebase Auth has restored session
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Wait briefly for FirebaseAuth to restore persisted credentials.
+      await _authRepository.waitForSessionRestore();
 
-      if (_authRepository.isSignedIn()) {
-        final user = await _authRepository.getCurrentUserModel().timeout(
-          const Duration(seconds: 12),
-          onTimeout: () => _authRepository.getFallbackCurrentUserModel(),
-        );
-        if (user != null) {
-          unawaited(_authRepository.ensureAllUsersTopicSubscription());
-          emit(Authenticated(user));
-        } else {
-          emit(Unauthenticated());
-        }
+      if (!_authRepository.isSignedIn()) {
+        emit(Unauthenticated());
+        return;
+      }
+
+      final fallbackUser = _authRepository.getFallbackCurrentUserModel();
+      final user = await _authRepository.getCurrentUserModel().timeout(
+        const Duration(seconds: 12),
+        onTimeout: () => fallbackUser,
+      );
+
+      if (user != null) {
+        unawaited(_authRepository.ensureAllUsersTopicSubscription());
+        emit(Authenticated(user));
+      } else if (fallbackUser != null) {
+        unawaited(_authRepository.ensureAllUsersTopicSubscription());
+        emit(Authenticated(fallbackUser));
       } else {
         emit(Unauthenticated());
       }
     } catch (e) {
-      emit(Unauthenticated()); // Don't show error on initial check
+      final fallbackUser = _authRepository.getFallbackCurrentUserModel();
+      if (fallbackUser != null) {
+        unawaited(_authRepository.ensureAllUsersTopicSubscription());
+        emit(Authenticated(fallbackUser));
+      } else {
+        emit(Unauthenticated()); // Don't show error on initial check
+      }
     }
   }
 

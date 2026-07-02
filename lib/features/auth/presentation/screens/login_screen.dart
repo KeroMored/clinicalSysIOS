@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen>
                             _buildLogoCard(),
                             const SizedBox(height: 20),
                             const Text(
-                              'أهلاً بك في Mallawy Care',
+                              'أهلاً بك في ملوي كيور',
                               style: TextStyle(
                                 color: _textPrimary,
                                 fontSize: 22,

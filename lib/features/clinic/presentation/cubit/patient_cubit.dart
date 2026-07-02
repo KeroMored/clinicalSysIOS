@@ -18,9 +18,50 @@ class PatientCubit extends Cubit<PatientState> {
   DocumentSnapshot? _lastPatientsDocument;
   bool _hasMorePatients = true;
   bool _isLoadingMore = false;
+  bool _hasLoadedClinicPatients = false;
   final List<PatientModel> _patients = [];
 
   PatientCubit(this._repository) : super(PatientInitial());
+
+  bool hasCachedClinicPatients(String clinicId) {
+    return _currentClinicId == clinicId && _hasLoadedClinicPatients;
+  }
+
+  List<PatientModel> get cachedClinicPatients =>
+      List<PatientModel>.from(_patients);
+
+  bool get cachedClinicHasMore => _hasMorePatients;
+
+  Future<void> ensureClinicPatientsLoaded(
+    String clinicId, {
+    bool forceRefresh = false,
+  }) async {
+    if (forceRefresh) {
+      await loadClinicPatients(clinicId);
+      return;
+    }
+
+    if (hasCachedClinicPatients(clinicId)) {
+      restoreClinicPatientsFromCache(clinicId);
+      return;
+    }
+
+    await loadClinicPatients(clinicId);
+  }
+
+  void restoreClinicPatientsFromCache(String clinicId) {
+    if (!hasCachedClinicPatients(clinicId)) {
+      return;
+    }
+
+    emit(
+      PatientsLoaded(
+        List<PatientModel>.from(_patients),
+        hasMore: _hasMorePatients,
+        isLoadingMore: false,
+      ),
+    );
+  }
 
   Future<void> loadClinicPatients(String clinicId) async {
     _currentClinicId = clinicId;
@@ -41,6 +82,7 @@ class PatientCubit extends Cubit<PatientState> {
         ..addAll(page.patients);
       _lastPatientsDocument = page.lastDocument;
       _hasMorePatients = page.hasMore;
+      _hasLoadedClinicPatients = true;
 
       emit(
         PatientsLoaded(

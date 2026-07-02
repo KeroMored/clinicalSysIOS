@@ -12,6 +12,7 @@ enum ClinicDepartment {
   psychiatry('نفسية وعصبية', 'psychiatry'),
   generalSurgery('جراحة عامة', 'general_surgery'),
   physiotherapy('علاج طبيعي', 'physiotherapy'),
+  rehabilitation('مراكز تأهيل', 'rehabilitation'),
   other('تخصصات أخرى', 'other');
 
   final String arabicName;

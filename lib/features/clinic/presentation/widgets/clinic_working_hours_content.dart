@@ -151,7 +151,10 @@ class ClinicWorkingHoursContent extends StatelessWidget {
                 ? 'عطلة رسمية'
                 : (isClosed
                       ? 'مغلق'
-                      : '${_formatTimeToArabic(hours.from)} - ${_formatTimeToArabic(hours.to)}');
+                      : hours.slots
+                          .map((slot) =>
+                              '${_formatTimeToArabic(slot.from)} - ${_formatTimeToArabic(slot.to)}')
+                          .join(' / '));
 
             return Container(
               margin: const EdgeInsets.only(bottom: 9),
@@ -216,15 +219,32 @@ class ClinicWorkingHoursContent extends StatelessWidget {
                     flex: 4,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        timeLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: isClosed
-                              ? const Color(0xFF6B7280)
-                              : _primaryColor,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (isClosed)
+                            Text(
+                              timeLabel,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF6B7280),
+                              ),
+                            )
+                          else
+                            ...hours.slots.map((slot) {
+                              final slotTime =
+                                  '${_formatTimeToArabic(slot.from)} - ${_formatTimeToArabic(slot.to)}';
+                              return Text(
+                                slotTime,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: _primaryColor,
+                                ),
+                              );
+                            }).toList(),
+                        ],
                       ),
                     ),
                   ),

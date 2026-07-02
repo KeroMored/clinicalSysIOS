@@ -7,7 +7,8 @@ import '../../data/models/pharmacy_offer_model.dart';
 import '../../../../core/services/pharmacy_offer_sorting_service.dart';
 import '../../../../core/services/app_control_service.dart';
 import '../../../../core/widgets/admin_views_count_toggle.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
 
 /// شاشة كل العروض من جميع الصيدليات مع نظام ترتيب ديناميكي
 class AllOffersScreen extends StatefulWidget {
@@ -321,6 +322,44 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
     );
   }
 
+  Widget _buildOffersLoadingSkeleton() {
+    final cardWidth = MediaQuery.of(context).size.width * 0.84;
+
+    return Column(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              SizedBox(
+                width: cardWidth,
+                child: const SkeletonHorizontalOfferCard(),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: cardWidth,
+                child: const SkeletonHorizontalOfferCard(),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            children: List.generate(
+              3,
+              (index) => const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: SkeletonOfferCard(),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final featuredOffers = _displayedOffers.take(5).toList();
@@ -386,15 +425,7 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
               ),
 
               if (_isLoading && _displayedOffers.isEmpty)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: AppLoadingIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFF00BCD4),
-                      ),
-                    ),
-                  ),
-                )
+                SliverToBoxAdapter(child: _buildOffersLoadingSkeleton())
               else if (_displayedOffers.isEmpty)
                 SliverFillRemaining(
                   child: Center(

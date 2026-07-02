@@ -1,15 +1,16 @@
-import 'package:mallawicure/features/pharmacy/presentation/widgets/pharmacy_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../../../core/services/location_service.dart';
-import '../../../../core/utils/pharmacy_hours_helper.dart';
-import '../cubit/pharmacy_cubit.dart';
-import 'pharmacy_details_screen.dart';
-import '../../data/repositories/pharmacy_repository.dart';
-import '../../data/models/pharmacy_model.dart';
+import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
+import 'package:clinicalsystem/core/services/location_service.dart';
+import 'package:clinicalsystem/core/utils/pharmacy_hours_helper.dart';
+import 'package:clinicalsystem/features/pharmacy/presentation/cubit/pharmacy_cubit.dart';
+import 'package:clinicalsystem/features/pharmacy/presentation/screens/pharmacy_details_screen.dart';
+import 'package:clinicalsystem/features/pharmacy/data/repositories/pharmacy_repository.dart';
+import 'package:clinicalsystem/features/pharmacy/data/models/pharmacy_model.dart';
+import 'package:clinicalsystem/features/pharmacy/presentation/widgets/pharmacy_card.dart';
 
 class ThePharmaciesScreen extends StatefulWidget {
   final String? initialSearchQuery;
@@ -27,10 +28,16 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
   final List<PharmacyModel> _pharmacies = [];
   final ScrollController _scrollController = ScrollController();
   DocumentSnapshot? _lastDocument;
+  DocumentSnapshot? _geoLastDocument;
   bool _isLoading = false;
   bool _isInitializing = true;
   bool _hasMore = true;
   static const int _pageSize = 10;
+  static const int _geoBatchSize = 50;
+  int _geoPage = 0;
+  bool _geoExhausted = false;
+  bool _geoHasMoreServer = true;
+  final List<_PharmacyDistanceEntry> _geoEntries = [];
   // Location fields
   Position? _userLocation;
   String _sortBy =
@@ -130,7 +137,7 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
   }
 
   Future<void> _loadPharmacies() async {
-    if (_isLoading || !mounted) return;
+    if (_isLoading || !mounted || !_hasMore) return;
 
     print('🔍 Loading pharmacies... Current count: ${_pharmacies.length}');
 
@@ -141,81 +148,13 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
     }
 
     try {
-      Query query = FirebaseFirestore.instance
-          .collection('pharmacies')
-          .where('status', isEqualTo: 'approved');
-
-      // Apply insurance filter if enabled
-      if (_filterInsuranceOnly) {
-        query = query.where('hasInsurance', isEqualTo: true);
-      }
-
-      // Add orderBy based on sort option to get data from DB in correct order
-      switch (_sortBy) {
-        case 'rating':
-          query = query.orderBy('averageRating', descending: true);
-          break;
-        case 'name':
-          query = query.orderBy('name');
-          break;
-        case 'distance':
-        default:
-          // For distance, we'll sort client-side after fetching
-          // Use 'name' as orderBy to avoid missing field errors
-          query = query.orderBy('name');
-          break;
-      }
-
-      query = query.limit(_pageSize);
-
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      print('📡 Executing Firestore query with sortBy: $_sortBy');
-      final snapshot = await query.get();
-      print('✅ Got ${snapshot.docs.length} documents from Firestore');
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-        var newPharmacies = snapshot.docs
-            .map((doc) {
-              try {
-                print('📦 Parsing pharmacy: ${doc.id}');
-                return PharmacyModel.fromFirestore(doc);
-              } catch (e) {
-                print('❌ Error parsing pharmacy ${doc.id}: $e');
-                return null;
-              }
-            })
-            .whereType<PharmacyModel>()
-            .toList();
-
-        print('✅ Successfully parsed ${newPharmacies.length} pharmacies');
-
-        // Only sort client-side for distance (requires location calculation)
-        if (_sortBy == 'distance' && _userLocation != null) {
-          _sortPharmacies(newPharmacies);
-        }
-
-        if (mounted) {
-          setState(() {
-            _pharmacies.addAll(newPharmacies);
-            _hasMore = snapshot.docs.length == _pageSize;
-            _isLoading = false;
-          });
-        }
-
-        print('✅ Total pharmacies now: ${_pharmacies.length}');
+      if (_sortBy == 'distance' && _userLocation != null) {
+        await _loadPharmaciesByDistance();
       } else {
-        print('⚠️ No pharmacies found in Firestore');
-        if (mounted) {
-          setState(() {
-            _hasMore = false;
-            _isLoading = false;
-          });
-        }
+        await _loadPharmaciesNormal();
       }
+
+      print('✅ Total pharmacies now: ${_pharmacies.length}');
     } catch (e) {
       print('❌ Error loading pharmacies: $e');
       if (mounted) {
@@ -232,6 +171,167 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _loadPharmaciesByDistance() async {
+    try {
+      final requiredCount = (_geoPage + 1) * _pageSize;
+      await _ensureGeoCandidates(requiredCount);
+
+      final sorted = List<_PharmacyDistanceEntry>.from(_geoEntries)
+        ..sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+
+      final visible = sorted.take(requiredCount).map((e) => e.pharmacy).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _geoPage++;
+        _geoExhausted = !_geoHasMoreServer && visible.length >= sorted.length;
+        _pharmacies
+          ..clear()
+          ..addAll(visible);
+        _hasMore = !_geoExhausted;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error loading pharmacies by distance: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _ensureGeoCandidates(int requiredCount) async {
+    if (_userLocation == null) return;
+    if (!_geoHasMoreServer) return;
+
+    while (_geoHasMoreServer && _geoEntries.length < requiredCount) {
+      Query baseQuery = FirebaseFirestore.instance
+          .collection('pharmacies')
+          .where('status', isEqualTo: 'approved');
+
+      if (_filterInsuranceOnly) {
+        baseQuery = baseQuery.where('hasInsurance', isEqualTo: true);
+      }
+
+      baseQuery = baseQuery.orderBy('name');
+
+      Query query = baseQuery.limit(_geoBatchSize);
+      if (_geoLastDocument != null) {
+        query = query.startAfterDocument(_geoLastDocument!);
+      }
+
+      final snapshot = await query.get();
+      if (snapshot.docs.isEmpty) {
+        _geoHasMoreServer = false;
+        break;
+      }
+
+      _geoLastDocument = snapshot.docs.last;
+      _geoHasMoreServer = snapshot.docs.length == _geoBatchSize;
+
+      for (final doc in snapshot.docs) {
+        try {
+          final p = PharmacyModel.fromFirestore(doc);
+          if (_showOpenOnly &&
+              !PharmacyHoursHelper.isPharmacyOpen(
+                workingHours: p.workingHours,
+                holidays: p.holidays,
+              )) {
+            continue;
+          }
+
+          final dist = LocationService.calculateDistance(
+            _userLocation!.latitude,
+            _userLocation!.longitude,
+            p.latitude,
+            p.longitude,
+          );
+
+          _geoEntries.add(
+            _PharmacyDistanceEntry(pharmacy: p, distanceKm: dist),
+          );
+        } catch (_) {
+          // skip invalid docs
+        }
+      }
+
+      if (!_geoHasMoreServer) {
+        break;
+      }
+    }
+  }
+
+  Future<void> _loadPharmaciesNormal() async {
+    Query baseQuery = FirebaseFirestore.instance
+        .collection('pharmacies')
+        .where('status', isEqualTo: 'approved');
+
+    if (_filterInsuranceOnly) {
+      baseQuery = baseQuery.where('hasInsurance', isEqualTo: true);
+    }
+
+    switch (_sortBy) {
+      case 'rating':
+        baseQuery = baseQuery.orderBy('averageRating', descending: true);
+        break;
+      case 'name':
+      default:
+        baseQuery = baseQuery.orderBy('name');
+        break;
+    }
+
+    DocumentSnapshot? cursor = _lastDocument;
+    bool hasMoreLocal = _hasMore;
+    final collected = <PharmacyModel>[];
+
+    while (hasMoreLocal && collected.length < _pageSize) {
+      Query query = baseQuery.limit(_pageSize);
+
+      if (cursor != null) {
+        query = query.startAfterDocument(cursor);
+      }
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        hasMoreLocal = false;
+        break;
+      }
+
+      cursor = snapshot.docs.last;
+      hasMoreLocal = snapshot.docs.length == _pageSize;
+
+      final batch = snapshot.docs
+          .map((doc) {
+            try {
+              return PharmacyModel.fromFirestore(doc);
+            } catch (e) {
+              print('❌ Error parsing pharmacy ${doc.id}: $e');
+              return null;
+            }
+          })
+          .whereType<PharmacyModel>()
+          .where((p) => !_showOpenOnly || PharmacyHoursHelper.isPharmacyOpen(
+                workingHours: p.workingHours,
+                holidays: p.holidays,
+              ))
+          .toList();
+
+      collected.addAll(batch);
+    }
+
+    final pageItems = collected.take(_pageSize).toList();
+
+    if (mounted) {
+      setState(() {
+        _lastDocument = cursor;
+        _pharmacies.addAll(pageItems);
+        _hasMore = hasMoreLocal;
+        _isLoading = false;
+      });
     }
   }
 
@@ -265,6 +365,17 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
         pharmacies.sort((a, b) => a.name.compareTo(b.name));
         break;
     }
+  }
+
+  bool _matchesPharmacyQuickFilters(PharmacyModel pharmacy) {
+    if (_showOpenOnly) {
+      return PharmacyHoursHelper.isPharmacyOpen(
+        workingHours: pharmacy.workingHours,
+        holidays: pharmacy.holidays,
+      );
+    }
+
+    return true;
   }
 
   void _changeSortOption(String sortOption) {
@@ -322,7 +433,6 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
 
     // If sorting by distance but location not available, request it
     if (sortOption == 'distance' && _userLocation == null) {
-      // Reset insurance filter even if location request fails
       if (_filterInsuranceOnly && mounted) {
         setState(() {
           _activeQuickFilter = 'distance';
@@ -339,13 +449,21 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
         _activeQuickFilter = sortOption;
         _showOpenOnly = false;
         _sortBy = sortOption;
-        // Reset insurance filter when changing to other sort options
         _filterInsuranceOnly = false;
+
+        _pharmacies.clear();
+        _lastDocument = null;
+        _geoLastDocument = null;
+        _hasMore = true;
+        _geoPage = 0;
+        _geoExhausted = false;
+        _geoHasMoreServer = true;
+        _geoEntries.clear();
       });
       if (_searchQuery.isNotEmpty) {
         _searchPharmaciesInDatabase(_searchQuery);
       } else {
-        _refreshPharmacies();
+        _loadPharmacies();
       }
     }
   }
@@ -381,9 +499,14 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
     setState(() {
       _pharmacies.clear();
       _lastDocument = null;
+      _geoLastDocument = null;
       _hasMore = true;
       _searchQuery = '';
       _searchController.clear();
+      _geoPage = 0;
+      _geoExhausted = false;
+      _geoHasMoreServer = true;
+      _geoEntries.clear();
     });
     await _loadPharmacies();
   }
@@ -422,6 +545,7 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
                 pharmacy.center.toLowerCase().contains(lower) ||
                 pharmacy.governorate.toLowerCase().contains(lower);
           })
+          .where(_matchesPharmacyQuickFilters)
           .toList();
 
       _sortPharmacies(results);
@@ -450,18 +574,7 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
   }
 
   List<PharmacyModel> _getDisplayedPharmacies() {
-    var list = _pharmacies;
-
-    if (_showOpenOnly) {
-      list = list.where((pharmacy) {
-        return PharmacyHoursHelper.isPharmacyOpen(
-          workingHours: pharmacy.workingHours,
-          holidays: pharmacy.holidays,
-        );
-      }).toList();
-    }
-
-    return list;
+    return _pharmacies;
   }
 
   Widget _buildSortChip({
@@ -549,22 +662,7 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
         ),
       ),
       body: (_isInitializing || _isLoading) && _pharmacies.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SpinKitPulsingGrid(color: const Color(0xFF0B8293), size: 50),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'جاري تحميل الصيدليات...',
-                    style: TextStyle(
-                      color: Color(0xFF64748B),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            )
+          ? _buildInitialLoadingSkeleton()
           : Column(
               children: [
                 const SizedBox(height: 8),
@@ -727,4 +825,56 @@ class _ThePharmaciesScreenState extends State<ThePharmaciesScreen> {
             ),
     );
   }
+
+  Widget _buildInitialLoadingSkeleton() {
+    return Column(
+      children: [
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: const SkeletonShimmer(
+            child: SkeletonBox(
+              width: double.infinity,
+              height: 42,
+              borderRadius: BorderRadius.all(Radius.circular(14)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 34,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (context, index) {
+              return const SkeletonShimmer(
+                child: SkeletonBox(
+                  width: 86,
+                  height: 34,
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+              );
+            },
+            separatorBuilder: (context, index) => const SizedBox(width: 6),
+            itemCount: 5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 18),
+            itemCount: 5,
+            itemBuilder: (context, index) => const SkeletonPharmacyCard(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PharmacyDistanceEntry {
+  final PharmacyModel pharmacy;
+  final double distanceKm;
+
+  const _PharmacyDistanceEntry({required this.pharmacy, required this.distanceKm});
 }

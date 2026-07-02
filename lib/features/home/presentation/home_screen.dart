@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/daily_featured_clinics_service.dart';
 import '../../pharmacy/data/repositories/pharmacy_repository.dart';
 import '../../pharmacy/presentation/cubit/pharmacy_cubit.dart';
 import '../../pharmacy/presentation/screens/pharmacy_details_screen.dart';
@@ -16,6 +17,8 @@ import '../../clinic/presentation/screens/clinic_control_page.dart';
 import '../../clinic/presentation/screens/bookings_management_screen.dart';
 import '../../clinic/presentation/screens/clinics_selection_screen.dart';
 import '../../clinic/data/models/clinic_model.dart';
+import '../../clinic/data/models/booking_model.dart';
+import '../../clinic/data/repositories/booking_tracking_repository.dart';
 import '../../laboratory/data/models/laboratory_model.dart';
 import '../../laboratory/presentation/screens/laboratory_home_page.dart';
 import '../../laboratory/presentation/screens/laboratory_details_clinic_style_screen.dart';
@@ -25,11 +28,6 @@ import '../../radiology/presentation/screens/radiology_home_page.dart';
 import '../../radiology/presentation/cubit/radiology_cubit.dart';
 import '../../radiology/data/models/radiology_model.dart';
 import '../../radiology/data/repositories/radiology_repository.dart';
-import '../../rehabilitation/data/models/rehabilitation_center_model.dart';
-import '../../rehabilitation/presentation/screens/rehabilitation_centers_list_screen.dart';
-import '../../rehabilitation/presentation/screens/rehabilitation_center_detail_screen.dart';
-import '../../rehabilitation/presentation/screens/rehabilitation_center_control_page.dart';
-import '../../rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import '../../profile/presentation/screens/edit_profile_screen.dart';
 import '../../rehabilitation/data/repositories/rehabilitation_repository.dart';
 import '../../gym/data/models/gym_model.dart';
@@ -51,9 +49,11 @@ import '../../medicine_requests/presentation/screens/my_medicine_requests_screen
 import '../../admin/presentation/screens/additions_screen.dart';
 import '../../admin/presentation/screens/admin_home_page.dart';
 import '../../emergency_numbers/presentation/screens/emergency_numbers_screen.dart';
+import '../../../core/utils/app_route_observer.dart';
 import '../services/daily_step_tracking_service.dart';
 import 'widgets/widgets.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -62,26 +62,36 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends State<HomeScreen>
+    with WidgetsBindingObserver, RouteAware {
   static const Color _primary = Color(0xFF0EA5E9);
   static const Color _secondary = Color(0xFF14B8A6);
   static const Color _accent = Color(0xFFF97316);
   static const Color _background = Color(0xFFF7FAFC);
   static const Color _textPrimary = Color(0xFF0F172A);
   static const Color _textSecondary = Color(0xFF64748B);
-  static const String _bookingSettingsCollection = 'app_settings';
-  static const String _bookingSettingsDoc = 'booking';
 
   final DailyStepTrackingService _dailyStepTrackingService =
       DailyStepTrackingService();
   final TextEditingController _searchController = TextEditingController();
-  Timer? _searchDebounce;
   String? _lastTrackedUserId;
   int _bottomNavIndex = 0;
   bool _isSearchLoading = false;
   String _searchQuery = '';
   List<_HomeSearchResult> _searchResults = const [];
-  late final Future<bool> _isBookingEnabledFuture;
+  final BookingTrackingRepository _bookingTrackingRepository =
+      BookingTrackingRepository();
+  List<BookingTrackingInfo> _trackingItems = const [];
+  final Map<String, BookingQueueStatus> _queueStatusById = {};
+  final Map<String, String> _trackingErrors = {};
+  final Set<String> _trackingHiddenIds = {};
+  final Set<String> _refreshingTrackingIds = {};
+  final Map<String, BookingStatus> _bookingStatusById = {};
+  final Map<String, StreamSubscription> _bookingStatusListeners = {};
+  bool _isTrackingInfoLoading = false;
+  DateTime? _lastTrackingLoadAt;
+  String? _trackingUserId;
+  PageRoute<dynamic>? _trackedRoute;
 
   void _onPermissionChanged() {
     final authState = context.read<AuthCubit>().state;
@@ -92,45 +102,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<bool> _fetchIsBookingEnabled() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection(_bookingSettingsCollection)
-          .doc(_bookingSettingsDoc)
-          .get();
-
-      final data = doc.data();
-      if (data == null) return true;
-
-      final value = data['isBooking'];
-      return value is bool ? value : true;
-    } catch (e) {
-      debugPrint('Error loading booking settings: $e');
-      return true;
-    }
-  }
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _isBookingEnabledFuture = _fetchIsBookingEnabled();
     _dailyStepTrackingService.permissionGrantedNotifier.addListener(
       _onPermissionChanged,
     );
-    // Do not auto-prompt activity permission on launch.
-    // Reviewers flagged unexpected Settings app transitions after startup.
+    Future.microtask(_dailyStepTrackingService.requestPermissionOnFirstLaunch);
     Future.microtask(_ensureDailyTrackingForAuthenticatedUser);
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute && route != _trackedRoute) {
+      if (_trackedRoute != null) {
+        appRouteObserver.unsubscribe(this);
+      }
+      _trackedRoute = route;
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() {
+    final authState = context.read<AuthCubit>().state;
+    if (authState is Authenticated) {
+      _loadBookingTrackingInfo(userId: authState.user.uid);
+    }
+  }
+
+  @override
   void dispose() {
-    _searchDebounce?.cancel();
     _searchController.dispose();
     _dailyStepTrackingService.permissionGrantedNotifier.removeListener(
       _onPermissionChanged,
     );
     _dailyStepTrackingService.stop();
+    for (final listener in _bookingStatusListeners.values) {
+      listener.cancel();
+    }
+    _bookingStatusListeners.clear();
+    appRouteObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -188,6 +203,610 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _dismissKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  void _scheduleTrackingReload() {
+    if (_isTrackingInfoLoading) return;
+
+    final authState = context.read<AuthCubit>().state;
+    final currentUserId = authState is Authenticated
+        ? authState.user.uid
+        : null;
+
+    if (currentUserId == null) {
+      if (_trackingItems.isNotEmpty || _trackingHiddenIds.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _trackingItems = const [];
+            _queueStatusById.clear();
+            _trackingErrors.clear();
+            _trackingHiddenIds.clear();
+            _trackingUserId = null;
+          });
+        });
+      }
+      return;
+    }
+
+    final now = DateTime.now();
+    final shouldReloadUser = _trackingUserId != currentUserId;
+    final shouldReloadTime =
+        _lastTrackingLoadAt == null ||
+        now.difference(_lastTrackingLoadAt!) > const Duration(seconds: 4);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final shouldForceReload = await _bookingTrackingRepository
+          .consumeTrackingReload();
+      if (!mounted) return;
+      if (shouldForceReload || shouldReloadUser || shouldReloadTime) {
+        _loadBookingTrackingInfo(userId: currentUserId);
+      }
+    });
+  }
+
+  Future<void> _loadBookingTrackingInfo({required String userId}) async {
+    if (_isTrackingInfoLoading) return;
+    setState(() => _isTrackingInfoLoading = true);
+
+    var shouldFinalize = true;
+    try {
+      final items = await _bookingTrackingRepository.loadTrackings(
+        userId: userId,
+      );
+      final hiddenIds = await _bookingTrackingRepository
+          .loadHiddenTrackingIds();
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final activeItems = items.where((item) {
+        final apptDay = DateTime(
+          item.appointmentDate.year,
+          item.appointmentDate.month,
+          item.appointmentDate.day,
+        );
+        return apptDay.isAtSameMomentAs(today) || apptDay.isAfter(today);
+      }).toList();
+
+      final expiredItems = items
+          .where((item) {
+            final apptDay = DateTime(
+              item.appointmentDate.year,
+              item.appointmentDate.month,
+              item.appointmentDate.day,
+            );
+            return apptDay.isBefore(today);
+          })
+          .toList();
+
+      for (final expired in expiredItems) {
+        await _bookingTrackingRepository.removeTracking(expired.id);
+        _bookingStatusListeners[expired.id]?.cancel();
+        _bookingStatusListeners.remove(expired.id);
+      }
+
+      if (!mounted) {
+        shouldFinalize = false;
+        return;
+      }
+      final itemIds = activeItems.map((item) => item.id).toSet();
+      setState(() {
+        _trackingItems = activeItems;
+        _trackingHiddenIds
+          ..clear()
+          ..addAll(hiddenIds.where(itemIds.contains));
+        _trackingUserId = userId;
+        _trackingErrors.removeWhere((key, _) => !itemIds.contains(key));
+        _queueStatusById.removeWhere((key, _) => !itemIds.contains(key));
+        _bookingStatusById
+            .removeWhere((key, _) => !itemIds.contains(key));
+      });
+      final visibleItems = activeItems
+          .where((item) => !_trackingHiddenIds.contains(item.id))
+          .toList();
+      if (visibleItems.isNotEmpty) {
+        await Future.wait(visibleItems.map(_refreshBookingQueue));
+        await Future.wait(visibleItems.map(_setupBookingStatusListener));
+      }
+    } catch (_) {
+      // Ignore transient tracking load errors.
+    } finally {
+      if (shouldFinalize && mounted) {
+        setState(() {
+          _isTrackingInfoLoading = false;
+          _lastTrackingLoadAt = DateTime.now();
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshBookingQueue(BookingTrackingInfo info) async {
+    final trackingId = info.id;
+    if (_refreshingTrackingIds.contains(trackingId)) return;
+    setState(() {
+      _refreshingTrackingIds.add(trackingId);
+      _trackingErrors.remove(trackingId);
+    });
+
+    var removed = false;
+    var shouldFinalize = true;
+    try {
+      final status = await _bookingTrackingRepository.fetchQueueStatus(info);
+      if (!mounted) {
+        shouldFinalize = false;
+        return;
+      }
+      if (status.currentNumber > info.bookingNumber) {
+        await _bookingTrackingRepository.removeTracking(trackingId);
+        if (!mounted) {
+          shouldFinalize = false;
+          return;
+        }
+        setState(() {
+          _trackingItems = _trackingItems
+              .where((item) => item.id != trackingId)
+              .toList();
+          _queueStatusById.remove(trackingId);
+          _trackingHiddenIds.remove(trackingId);
+          _trackingErrors.remove(trackingId);
+          _bookingStatusById.remove(trackingId);
+        });
+        removed = true;
+      } else {
+        setState(() {
+          _queueStatusById[trackingId] = status;
+        });
+      }
+    } catch (_) {
+      if (!mounted) {
+        shouldFinalize = false;
+        return;
+      }
+      setState(() {
+        _trackingErrors[trackingId] = 'تعذر تحديث الدور حاليا';
+      });
+    } finally {
+      if (shouldFinalize && mounted) {
+        setState(() {
+          _refreshingTrackingIds.remove(trackingId);
+        });
+        if (removed) {
+          _scheduleTrackingReload();
+        }
+      }
+    }
+  }
+
+  Future<void> _setupBookingStatusListener(BookingTrackingInfo info) async {
+    final trackingId = info.id;
+    _bookingStatusListeners[trackingId]?.cancel();
+
+    final startOfDay = DateTime(
+      info.appointmentDate.year,
+      info.appointmentDate.month,
+      info.appointmentDate.day,
+    );
+    final endOfDay = DateTime(
+      info.appointmentDate.year,
+      info.appointmentDate.month,
+      info.appointmentDate.day,
+      23,
+      59,
+      59,
+    );
+
+    final stream = FirebaseFirestore.instance
+        .collection('bookings')
+        .where('clinicId', isEqualTo: info.clinicId)
+        .where(
+          'appointmentDate',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+        )
+        .where(
+          'appointmentDate',
+          isLessThanOrEqualTo: Timestamp.fromDate(endOfDay),
+        )
+        .snapshots();
+
+    final subscription = stream.listen((snapshot) {
+      if (!mounted) return;
+
+      final matchingDoc = snapshot.docs.where((doc) {
+        final data = doc.data();
+        final bookingNumber = data['bookingNumber'] as int?;
+        return bookingNumber == info.bookingNumber;
+      }).firstOrNull;
+
+      if (matchingDoc != null) {
+        final data = matchingDoc.data();
+        final statusStr = data['status'] as String? ?? 'pending';
+        BookingStatus? newStatus;
+        switch (statusStr) {
+          case 'confirmed':
+            newStatus = BookingStatus.confirmed;
+            break;
+          case 'cancelled':
+            newStatus = BookingStatus.cancelled;
+            break;
+          case 'completed':
+            newStatus = BookingStatus.completed;
+            break;
+          case 'noShow':
+            newStatus = BookingStatus.noShow;
+            break;
+          default:
+            newStatus = BookingStatus.pending;
+        }
+
+        final oldStatus = _bookingStatusById[trackingId];
+        if (oldStatus != newStatus) {
+          setState(() {
+            _bookingStatusById[trackingId] = newStatus!;
+          });
+
+          if (newStatus == BookingStatus.confirmed &&
+              oldStatus == BookingStatus.pending) {
+            NotificationService.showBookingStatusNotification(
+              title: 'تم تأكيد حجزك ✅',
+              body: 'تم تأكيد حجزك لدى د. ${info.doctorName} - ${info.departmentName}',
+              notificationId: 70000 + trackingId.hashCode.abs(),
+            );
+          } else if (newStatus == BookingStatus.cancelled) {
+            NotificationService.showBookingStatusNotification(
+              title: 'تم إلغاء حجزك',
+              body: 'تم إلغاء حجزك لدى د. ${info.doctorName}',
+              notificationId: 70000 + trackingId.hashCode.abs(),
+            );
+          }
+        }
+      }
+    });
+
+    _bookingStatusListeners[trackingId] = subscription;
+  }
+
+  Future<void> _hideTrackingCard(String trackingId) async {
+    await _bookingTrackingRepository.setTrackingHidden(trackingId, true);
+    if (!mounted) return;
+    setState(() {
+      _trackingHiddenIds.add(trackingId);
+    });
+  }
+
+  String _formatTrackingDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+
+  Widget _buildTrackingChip({
+    required String label,
+    required String value,
+    required IconData icon,
+    Color accentColor = const Color(0xFF0B7285),
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      constraints: const BoxConstraints(minHeight: 56),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 14, color: accentColor),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrackingMetric({required String label, required String value}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      constraints: const BoxConstraints(minHeight: 56),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0B7285),
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrackingCardsSection(List<BookingTrackingInfo> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final sortedItems = [...items]
+      ..sort((a, b) => b.appointmentDate.compareTo(a.appointmentDate));
+    final children = <Widget>[];
+    for (var i = 0; i < sortedItems.length; i++) {
+      children.add(_buildBookingTrackingCard(sortedItems[i]));
+      if (i != sortedItems.length - 1) {
+        children.add(const SizedBox(height: 10));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+
+  Widget _buildBookingTrackingCard(BookingTrackingInfo info) {
+    final queue = _queueStatusById[info.id];
+    final currentNumber = queue?.currentNumber.toString() ?? '--';
+    final patientsAhead = queue?.patientsAhead.toString() ?? '--';
+    final isRefreshing = _refreshingTrackingIds.contains(info.id);
+    final errorMessage = _trackingErrors[info.id];
+    final bookingStatus = _bookingStatusById[info.id] ?? BookingStatus.pending;
+
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+    switch (bookingStatus) {
+      case BookingStatus.confirmed:
+        statusColor = const Color(0xFF059669);
+        statusLabel = 'مؤكد';
+        statusIcon = Icons.check_circle_rounded;
+        break;
+      case BookingStatus.cancelled:
+        statusColor = const Color(0xFFDC2626);
+        statusLabel = 'ملغي';
+        statusIcon = Icons.cancel_rounded;
+        break;
+      case BookingStatus.completed:
+        statusColor = const Color(0xFF64748B);
+        statusLabel = 'تم';
+        statusIcon = Icons.event_available_rounded;
+        break;
+      case BookingStatus.noShow:
+        statusColor = const Color(0xFFB45309);
+        statusLabel = 'لم يحضر';
+        statusIcon = Icons.event_busy_rounded;
+        break;
+      case BookingStatus.pending:
+        statusColor = const Color(0xFFF59E0B);
+        statusLabel = 'في الانتظار';
+        statusIcon = Icons.hourglass_top_rounded;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      elevation: 2,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.merge(
+            Border(right: BorderSide(color: Color(0xFF0B7285), width: 0.5)),
+            Border(bottom: BorderSide(color: Color(0xFF0B7285), width: 1.5)),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            '[ تتبع حجزك ]',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  statusIcon,
+                                  size: 12,
+                                  color: statusColor,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  statusLabel,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: statusColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'د. ${info.doctorName}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0B7285),
+                        ),
+                      ),
+                      if (info.departmentName.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          info.departmentName,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _hideTrackingCard(info.id),
+                  icon: const Icon(Icons.close_rounded),
+                  color: const Color(0xFF64748B),
+                  splashRadius: 16,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTrackingChip(
+                    label: 'تاريخ الحجز',
+                    value: _formatTrackingDate(info.appointmentDate),
+                    icon: Icons.event_rounded,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildTrackingChip(
+                    label: 'رقمك',
+                    value: info.bookingNumber.toString(),
+                    icon: Icons.confirmation_number_rounded,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildTrackingMetric(
+                    label: 'الدور الحالي',
+                    value: currentNumber,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildTrackingMetric(
+                    label: 'المرضى قبلك',
+                    value: patientsAhead,
+                  ),
+                ),
+              ],
+            ),
+            if (errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                errorMessage,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFFB91C1C),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: isRefreshing
+                    ? null
+                    : () => _refreshBookingQueue(info),
+                icon: isRefreshing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: AppLoadingIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 16),
+                label: Text(
+                  isRefreshing ? 'جاري التحديث...' : 'تحديث الدور',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0B7285),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildOwnerFloatingActionButton({
@@ -345,8 +964,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        minimum: const EdgeInsets.fromLTRB(8, 4, 8, 4),
         child: Row(
           children: [
             Expanded(
@@ -405,7 +1027,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Mallawy Care',
+                  'Mallawi Cure',
                   style: TextStyle(
                     color: Color(0xFF0F4C5C),
                     fontSize: 17,
@@ -439,16 +1061,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           Align(
             alignment: Alignment.centerLeft,
-            child: FutureBuilder<bool>(
-              future: _isBookingEnabledFuture,
-              builder: (context, snapshot) {
-                final isBookingEnabled = snapshot.data ?? true;
-                if (!isBookingEnabled) {
-                  return const SizedBox.shrink();
-                }
-                return _buildCartAction(authState);
-              },
-            ),
+            child: _buildCartAction(authState),
           ),
         ],
       ),
@@ -552,7 +1165,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         controller: _searchController,
         textInputAction: TextInputAction.search,
         onTapOutside: (_) => _dismissKeyboard(),
-        onChanged: _onSearchChanged,
+        onChanged: _onSearchTextChanged,
         onSubmitted: _onSearchSubmitted,
         textAlignVertical: TextAlignVertical.center,
         style: const TextStyle(
@@ -622,35 +1235,83 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  void _onSearchChanged(String value) {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-      _performGlobalSearch(value);
+  Widget _buildSearchBar() {
+    return Row(
+      children: [
+        Expanded(child: _buildSearchField()),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: ElevatedButton(
+            onPressed: _isSearchLoading ? null : _triggerSearch,
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              backgroundColor: const Color(0xFF0B7285),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: const Color(0xFF94A3B8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: _isSearchLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: AppLoadingIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.search_rounded, size: 21),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _onSearchTextChanged(String value) {
+    if (_searchQuery.isEmpty && _searchResults.isEmpty && !_isSearchLoading) {
+      return;
+    }
+
+    setState(() {
+      _searchQuery = '';
+      _searchResults = const [];
+      _isSearchLoading = false;
     });
   }
 
   void _onSearchSubmitted(String value) {
-    final query = value.trim();
+    _triggerSearch();
+  }
+
+  Future<void> _triggerSearch() async {
+    final query = _searchController.text.trim();
     if (query.isEmpty) {
+      _clearSearch();
+      _dismissKeyboard();
       return;
     }
 
-    if (_searchResults.isNotEmpty) {
-      _openSearchResult(_searchResults.first);
+    _dismissKeyboard();
+    await _performGlobalSearch(query);
+
+    if (!mounted) return;
+
+    if (_searchResults.isEmpty && _openByCategoryKeyword(query)) {
       return;
     }
 
-    if (_openByCategoryKeyword(query)) {
-      return;
+    if (_searchResults.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا توجد نتائج مطابقة حاليًا')),
+      );
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('لا توجد نتائج مطابقة حاليًا')),
-    );
   }
 
   void _clearSearch() {
-    _searchDebounce?.cancel();
     _searchController.clear();
     setState(() {
       _searchQuery = '';
@@ -725,14 +1386,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         collection: 'gyms',
         type: _SearchEntityType.gym,
         displayType: 'جيم',
-        fields: const ['name', 'description', 'address'],
-        normalizedQuery: normalized,
-        constraints: (ref) => ref.limit(80),
-      ),
-      _searchCollection(
-        collection: 'rehabilitation_centers',
-        type: _SearchEntityType.rehabilitation,
-        displayType: 'مركز تأهيل',
         fields: const ['name', 'description', 'address'],
         normalizedQuery: normalized,
         constraints: (ref) => ref.limit(80),
@@ -971,7 +1624,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _openSearchResult(_HomeSearchResult result) async {
-    _searchDebounce?.cancel();
     _searchController.clear();
     setState(() {
       _searchQuery = '';
@@ -1146,49 +1798,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _showDetailsOpenError();
         }
         return;
-      case _SearchEntityType.rehabilitation:
-        if (result.id.isEmpty) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BlocProvider(
-                create: (_) => RehabilitationCubit(RehabilitationRepository()),
-                child: const RehabilitationCentersListScreen(),
-              ),
-            ),
-          );
-          return;
-        }
-        try {
-          final doc = await FirebaseFirestore.instance
-              .collection('rehabilitation_centers')
-              .doc(result.id)
-              .get();
-          final data = doc.data();
-
-          if (!doc.exists || data == null) {
-            _showDetailsOpenError();
-            return;
-          }
-
-          final center = RehabilitationCenterModel.fromMap({
-            ...data,
-            'id': doc.id,
-          });
-          if (!mounted) {
-            return;
-          }
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RehabilitationCenterDetailScreen(center: center),
-            ),
-          );
-        } catch (_) {
-          _showDetailsOpenError();
-        }
-        return;
     }
   }
 
@@ -1254,18 +1863,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
       return true;
     }
-    if (normalized.contains('تأهيل')) {
-      _openSearchResult(
-        const _HomeSearchResult(
-          id: '',
-          type: _SearchEntityType.rehabilitation,
-          displayType: 'مركز تأهيل',
-          title: 'مراكز التأهيل',
-          subtitle: '',
-        ),
-      );
-      return true;
-    }
     return false;
   }
 
@@ -1293,12 +1890,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildPrimaryServicesGrid() {
-    const Color pharmacyAccent = Color(0xFF26B7C9);
-    const Color clinicAccent = Color(0xFF21AEC9);
-    const Color labAccent = Color(0xFF1BA5C8);
-    const Color radiologyAccent = Color(0xFF159CC8);
-    const Color gymAccent = Color(0xFF1093C8);
-    const Color rehabAccent = Color(0xFF0A89C7);
+    const Color pharmacyAccent = Color(0xFF0B7285);
+    const Color clinicAccent = Color(0xFF0B7285);
+    const Color labAccent = Color(0xFF0B7285);
+    const Color radiologyAccent = Color(0xFF0B7285);
+    const Color gymAccent = Color(0xFF0B7285);
 
     return Column(
       children: [
@@ -1307,7 +1903,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Expanded(
               child: _HomePrimaryServiceCard(
                 title: 'الصيدليات',
-                subtitle: '',//طلب أدوية أونلاين
+                subtitle: 'طلب أدوية أونلاين',
                 icon: Icons.medication_rounded,
                 backgroundColor: Colors.white,
                 accentColor: pharmacyAccent,
@@ -1326,7 +1922,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Expanded(
               child: _HomePrimaryServiceCard(
                 title: 'العيادات',
-                subtitle: '',//احجز موعدك الآن
+                subtitle: 'احجز موعدك الآن',
                 icon: Icons.medical_services_rounded,
                 backgroundColor: Colors.white,
                 accentColor: clinicAccent,
@@ -1401,27 +1997,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 },
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _HomeSecondaryServiceCard(
-                title: 'التأهيل',
-                icon: Icons.healing_rounded,
-                accentColor: rehabAccent,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (_) =>
-                            RehabilitationCubit(RehabilitationRepository())
-                              ..getAvailableCenters(),
-                        child: const RehabilitationCentersListScreen(),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
           ],
         ),
       ],
@@ -1429,6 +2004,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildHomeTab(AuthState authState) {
+    _scheduleTrackingReload();
+
+    final visibleTrackings = authState is Authenticated
+        ? _trackingItems
+              .where((item) => !_trackingHiddenIds.contains(item.id))
+              .toList()
+        : const <BookingTrackingInfo>[];
+    final hasTrackingCards = visibleTrackings.isNotEmpty;
+    final contentBottomPadding = 24 + MediaQuery.of(context).padding.bottom;
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: _dismissKeyboard,
@@ -1440,13 +2025,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: EdgeInsets.fromLTRB(16, 10, 16, contentBottomPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTopHeader(authState),
                   const SizedBox(height: 8),
-                  _buildSearchField(),
+                  if (hasTrackingCards) ...[
+                    _buildTrackingCardsSection(visibleTrackings),
+                    const SizedBox(height: 12),
+                  ],
+                  _buildSearchBar(),
                   _buildSearchResults(),
                   const SizedBox(height: 18),
                   _buildPrimaryServicesGrid(),
@@ -1481,11 +2070,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 8),
                   const HomeMixedOffersCarousel(),
                   const SizedBox(height: 16),
-                  //  _buildSectionRow(title: 'نشاط المشي اليومي'),
-                  // const SizedBox(height: 8),
                   DailyActivityCard(onGuestTap: _openLoginScreen),
                   const SizedBox(height: 12),
-                  const DailyTipCard(),
+                  const DailyInfoCard(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -1546,7 +2133,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               Builder(
                 builder: (context) {
                   final userName = authState.user.displayName.trim().isEmpty
-                      ? 'مستخدم Mallawy Care'
+                      ? 'مستخدم ملوي كيور'
                       : authState.user.displayName.trim();
                   final initialSource =
                       authState.user.displayName.trim().isNotEmpty
@@ -1678,83 +2265,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 10),
               _HomeAccountActionCard(
-                title: 'حذف الحساب',
-                subtitle: 'حذف الحساب نهائياً من التطبيق',
-                icon: Icons.delete_forever_rounded,
-                iconColor: const Color(0xFFEF4444),
-                onTap: () async {
-                  final shouldDelete = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      title: const Row(
-                        children: [
-                          Icon(Icons.warning_rounded, color: Color(0xFFEF4444)),
-                          SizedBox(width: 8),
-                          Text('حذف الحساب'),
-                        ],
-                      ),
-                      content: const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'هل أنت متأكد من حذف حسابك نهائياً؟',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            'سيتم حذف:',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          SizedBox(height: 8),
-                          Text('• جميع بياناتك الشخصية'),
-                          Text('• سجل المواعيد والحجوزات'),
-                          Text('• الإشعارات والتفضيلات'),
-                          SizedBox(height: 12),
-                          Text(
-                            '⚠️ هذا الإجراء لا يمكن التراجع عنه!',
-                            style: TextStyle(
-                              color: Color(0xFFEF4444),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext, false),
-                          child: const Text('إلغاء'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(dialogContext, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFEF4444),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: const Text(
-                            'حذف نهائياً',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (shouldDelete == true && mounted) {
-                    await context.read<AuthCubit>().deleteAccount();
-                    if (mounted) {
-                      setState(() => _bottomNavIndex = 0);
-                    }
-                  }
-                },
-              ),
-              const SizedBox(height: 10),
-              _HomeAccountActionCard(
                 title: 'تسجيل الخروج',
                 subtitle: 'الخروج من الحساب الحالي',
                 icon: Icons.logout_rounded,
@@ -1853,19 +2363,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildCurrentTabBody(AuthState authState) {
-    if (_bottomNavIndex == 1) {
-      return _buildMedicinesTab(authState);
-    }
-
-    if (_bottomNavIndex == 2) {
-      return const EmergencyNumbersScreen();
-    }
-
-    if (_bottomNavIndex == 3) {
-      return _buildAccountTab(authState);
-    }
-
-    return _buildHomeTab(authState);
+    return IndexedStack(
+      index: _bottomNavIndex,
+      children: [
+        _buildHomeTab(authState),
+        _buildMedicinesTab(authState),
+        const EmergencyNumbersScreen(),
+        _buildAccountTab(authState),
+      ],
+    );
   }
 
   @override
@@ -1923,12 +2429,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           .limit(1)
                           .get(),
                       FirebaseFirestore.instance
-                          .collection('rehabilitation_centers')
-                          .where('authEmails', arrayContains: state.user.email)
-                          .where('isApproved', isEqualTo: true)
-                          .limit(1)
-                          .get(),
-                      FirebaseFirestore.instance
                           .collection('settingsforpatiants')
                           .limit(1)
                           .get(),
@@ -1940,8 +2440,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         final labSnapshot = snapshot.data![2];
                         final radiologySnapshot = snapshot.data![3];
                         final gymSnapshot = snapshot.data![4];
-                        final rehabSnapshot = snapshot.data![5];
-                        final settingsSnapshot = snapshot.data![6];
+                        final settingsSnapshot = snapshot.data![5];
 
                         bool hideClinicManagement = false;
                         if (settingsSnapshot.docs.isNotEmpty) {
@@ -1952,7 +2451,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               settingsData['ishidden'] == true;
                         }
 
-                        // Priority order: Pharmacy > Clinic > Laboratory > Radiology > Gym > Rehabilitation
+                        // Priority order: Pharmacy > Clinic > Laboratory > Radiology > Gym
                         if (pharmacySnapshot.docs.isNotEmpty) {
                           return _buildOwnerFloatingActionButton(
                             label: 'إدارة الصيدلية',
@@ -2106,22 +2605,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   builder: (context) => GymControlPage(
                                     gymEmail: state.user.email,
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                        } else if (rehabSnapshot.docs.isNotEmpty) {
-                          return _buildOwnerFloatingActionButton(
-                            label: 'إدارة مركز التأهيل',
-                            icon: Icons.dashboard,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      RehabilitationCenterControlPage(
-                                        centerEmail: state.user.email,
-                                      ),
                                 ),
                               );
                             },
@@ -2717,7 +3200,7 @@ class _HomeDoctorPreviewCard extends StatefulWidget {
 
 class _HomeDoctorPreviewCardState extends State<_HomeDoctorPreviewCard> {
   static const int _dailyFeaturedClinicsCount = 10;
-  static const int _dailyFeaturedClinicsFetchLimit = 10;
+  static const int _dailyFeaturedClinicsFetchLimit = 500;
   static const int _initialPage = 500;
 
   late final PageController _pageController;
@@ -2733,6 +3216,22 @@ class _HomeDoctorPreviewCardState extends State<_HomeDoctorPreviewCard> {
       viewportFraction: 0.92,
     );
     _clinicsFuture = _loadDailyClinics();
+    _scheduleDailyRefresh();
+  }
+
+  void _scheduleDailyRefresh() {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final timeUntilMidnight = tomorrow.difference(now);
+
+    Timer(timeUntilMidnight, () {
+      _autoScrollTimer?.cancel();
+      _clinicsFuture = _loadDailyClinics();
+      if (mounted) {
+        setState(() {});
+        _scheduleDailyRefresh();
+      }
+    });
   }
 
   @override
@@ -2785,72 +3284,63 @@ class _HomeDoctorPreviewCardState extends State<_HomeDoctorPreviewCard> {
     return null;
   }
 
-  int _stableHash(String value) {
-    var hash = 2166136261;
-    for (final unit in value.codeUnits) {
-      hash ^= unit;
-      hash = (hash * 16777619) & 0x7fffffff;
-    }
-    return hash;
-  }
-
-  int _daysSinceRotationEpoch(DateTime now) {
-    final utcDate = DateTime.utc(now.year, now.month, now.day);
-    final epoch = DateTime.utc(2024, 1, 1);
-    return utcDate.difference(epoch).inDays;
-  }
-
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _pickDailyClinics(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-    DateTime now,
-  ) {
-    if (docs.isEmpty) {
-      return const [];
-    }
-
-    final ranked = [...docs]
-      ..sort((a, b) => _stableHash(a.id).compareTo(_stableHash(b.id)));
-
-    if (ranked.length <= _dailyFeaturedClinicsCount) {
-      return ranked;
-    }
-
-    final startIndex =
-        (_daysSinceRotationEpoch(now) * _dailyFeaturedClinicsCount) %
-        ranked.length;
-
-    return List<QueryDocumentSnapshot<Map<String, dynamic>>>.generate(
-      _dailyFeaturedClinicsCount,
-      (index) => ranked[(startIndex + index) % ranked.length],
-    );
-  }
-
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-  _queryApprovedClinics() async {
-    final query = FirebaseFirestore.instance
-        .collection('clinics')
-        .where('status', isEqualTo: 'approved')
-        .where('isActive', isEqualTo: true)
-        .limit(_dailyFeaturedClinicsFetchLimit);
-
-    try {
-      final serverSnapshot = await query.get();
-      return serverSnapshot.docs;
-    } catch (_) {
-      final cacheSnapshot = await query.get(
-        const GetOptions(source: Source.cache),
-      );
-      return cacheSnapshot.docs;
-    }
-  }
-
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
   _loadDailyClinics() async {
-    final now = DateTime.now();
+    try {
+      final featuredIds =
+          await DailyFeaturedClinicsService.getTodayFeaturedClinicIds();
 
-    final rawDocs = await _queryApprovedClinics();
-    final dailyDocs = _pickDailyClinics(rawDocs, now);
-    return dailyDocs;
+      if (featuredIds.isEmpty) {
+        return _fallbackClinics();
+      }
+
+      final batches = <List<String>>[];
+      for (var i = 0; i < featuredIds.length; i += 10) {
+        batches.add(
+          featuredIds.sublist(
+            i,
+            i + 10 > featuredIds.length ? featuredIds.length : i + 10,
+          ),
+        );
+      }
+
+      final docs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+      for (final batch in batches) {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('clinics')
+            .where(FieldPath.documentId, whereIn: batch)
+            .get();
+        docs.addAll(snapshot.docs);
+      }
+
+      if (docs.isEmpty) {
+        return _fallbackClinics();
+      }
+
+      docs.shuffle();
+      return docs;
+    } catch (e) {
+      print('⚠️ _loadDailyClinics error: $e');
+      return _fallbackClinics();
+    }
+  }
+
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+  _fallbackClinics() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('clinics')
+          .where('status', isEqualTo: 'approved')
+          .where('isActive', isEqualTo: true)
+          .get();
+      final docs = snapshot.docs;
+      if (docs.isEmpty) return [];
+      docs.shuffle();
+      return docs.take(_dailyFeaturedClinicsCount).toList();
+    } catch (e) {
+      print('⚠️ _fallbackClinics error: $e');
+      return [];
+    }
   }
 
   Widget _clinicImagePlaceholder() {
@@ -2877,11 +3367,11 @@ class _HomeDoctorPreviewCardState extends State<_HomeDoctorPreviewCard> {
 
         if (snapshot.connectionState == ConnectionState.waiting &&
             docs.isEmpty) {
-          return _buildPlaceholder();
+          return _buildLoadingPlaceholder();
         }
 
         if (docs.isEmpty) {
-          return _buildPlaceholder();
+          return _buildEmptyPlaceholder();
         }
 
         _syncAutoScroll(docs.length);
@@ -3135,7 +3625,43 @@ class _HomeDoctorPreviewCardState extends State<_HomeDoctorPreviewCard> {
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildLoadingPlaceholder() {
+    return Container(
+      height: 304,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: const SkeletonShimmer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SkeletonBox(
+              width: double.infinity,
+              height: 154,
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+            SizedBox(height: 12),
+            SkeletonBox(width: 170, height: 14),
+            SizedBox(height: 8),
+            SkeletonBox(width: 140, height: 13),
+            SizedBox(height: 8),
+            SkeletonBox(width: double.infinity, height: 11),
+            SizedBox(height: 14),
+            SkeletonBox(
+              width: 92,
+              height: 32,
+              borderRadius: BorderRadius.all(Radius.circular(18)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyPlaceholder() {
     return Container(
       height: 304,
       decoration: BoxDecoration(
@@ -3341,7 +3867,6 @@ enum _SearchEntityType {
   laboratory,
   radiology,
   gym,
-  rehabilitation,
 }
 
 class _HomeSearchResult {
@@ -3447,7 +3972,10 @@ class _BottomNavPill extends StatelessWidget {
                 ? const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFF0FA8BC), Color(0xFF0B8293)],
+                    colors: [
+                      Color.fromARGB(255, 28, 127, 145),
+                      Color(0xFF0B7285),
+                    ],
                   )
                 : null,
             color: selected ? null : Colors.transparent,

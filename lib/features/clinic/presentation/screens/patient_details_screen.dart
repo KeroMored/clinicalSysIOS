@@ -40,14 +40,13 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
     return PopScope(
       canPop: true,
       onPopInvoked: (didPop) {
-        if (didPop) {
-          // إعادة تحميل قائمة المرضى بعد الرجوع
-          Future.microtask(() {
-            if (context.mounted) {
-              context.read<PatientCubit>().loadClinicPatients(widget.clinicId);
-            }
-          });
+        if (!didPop || !context.mounted) {
+          return;
         }
+
+        context.read<PatientCubit>().restoreClinicPatientsFromCache(
+          widget.clinicId,
+        );
       },
       child: Directionality(
         textDirection: TextDirection.rtl,
@@ -153,7 +152,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: () => Navigator.pop(context, true),
+              onTap: () => Navigator.pop(context),
               child: const Padding(
                 padding: EdgeInsets.all(10),
                 child: Icon(

@@ -73,7 +73,7 @@ class _SendAdminNotificationScreenState
       await FirebaseFirestore.instance
           .collection('admin_notifications_broadcast')
           .add({
-            'title': 'Mallawy Care',
+            'title': 'ملوي كيور | Mallawi Cure',
             'message': _messageController.text.trim(),
             'topic': 'all_users',
             'openStoreOnTap': _openStoreOnTap,
@@ -137,7 +137,7 @@ class _SendAdminNotificationScreenState
                     border: Border.all(color: const Color(0xFF7DD3FC)),
                   ),
                   child: const Text(
-                    'اسم المرسل في الإشعار سيكون: Mallawy Care',
+                    'اسم المرسل في الإشعار سيكون: ملوي كيور | Mallawi Cure',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF0C4A6E),
@@ -173,7 +173,7 @@ class _SendAdminNotificationScreenState
                   title: const Text(
                     'فتح التطبيق في المتجر عند الضغط على الإشعار',
                   ),
-                  subtitle: const Text('Google Play - Mallawy Health Care'),
+                  subtitle: const Text('Google Play - ملوي كيور | Mallawi Cure'),
                   onChanged: (value) => setState(() => _openStoreOnTap = value),
                 ),
                 Align(

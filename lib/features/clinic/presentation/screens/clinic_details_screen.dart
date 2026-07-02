@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/clinic_department.dart';
+import '../../data/repositories/booking_tracking_repository.dart';
 import '../../../../core/widgets/rating_widget.dart';
 import '../../../../core/widgets/like_button.dart';
-import '../../../../core/widgets/report_button.dart';
 import '../../../../core/utils/working_hours_helper.dart';
 import '../../../../core/utils/auth_helpers.dart';
 import 'book_appointment_screen.dart';
@@ -32,17 +34,101 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
   static const Color _primaryColor = Color(0xFF0F766E);
   static const Color _primaryDark = Color(0xFF115E59);
   static const Color _titleColor = Color(0xFF134E4A);
-  static const String _bookingSettingsCollection = 'app_settings';
-  static const String _bookingSettingsDoc = 'booking';
 
+  final BookingTrackingRepository _bookingTrackingRepository =
+      BookingTrackingRepository();
   late ClinicModel _clinic;
-  late final Future<bool> _isBookingEnabledFuture;
+  bool _trackingLoaded = false;
+  bool _hasActiveTrackingForClinic = false;
 
   @override
   void initState() {
     super.initState();
     _clinic = widget.clinic;
-    _isBookingEnabledFuture = _fetchIsBookingEnabled();
+    _incrementViews();
+    _loadTrackingInfo();
+  }
+
+  Future<void> _incrementViews() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('clinics')
+          .doc(_clinic.id)
+          .update({
+        'viewsCount': FieldValue.increment(1),
+        'profileViewsCount': FieldValue.increment(1),
+      });
+    } catch (e) {
+      // Permission denied for non-authenticated users - silently skip
+    }
+  }
+
+  Future<void> _loadTrackingInfo() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      if (mounted) {
+        setState(() {
+          _hasActiveTrackingForClinic = false;
+          _trackingLoaded = true;
+        });
+      }
+      return;
+    }
+
+    final items = await _bookingTrackingRepository.loadTrackings(
+      userId: userId,
+    );
+    final clinicItems = items
+        .where((item) => item.clinicId == _clinic.id)
+        .toList();
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    var hasActive = false;
+
+    for (final item in clinicItems) {
+      final apptDay = DateTime(
+        item.appointmentDate.year,
+        item.appointmentDate.month,
+        item.appointmentDate.day,
+      );
+
+      if (apptDay.isBefore(today)) {
+        await _bookingTrackingRepository.removeTracking(item.id);
+        continue;
+      }
+
+      try {
+        final status = await _bookingTrackingRepository.fetchQueueStatus(item);
+        if (status.currentNumber > item.bookingNumber) {
+          await _bookingTrackingRepository.removeTracking(item.id);
+        } else {
+          hasActive = true;
+        }
+      } catch (_) {
+        hasActive = true;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _hasActiveTrackingForClinic = hasActive;
+      _trackingLoaded = true;
+    });
+  }
+
+  Future<void> _showTrackingCard() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+    await _bookingTrackingRepository.setTrackingHiddenForClinic(
+      clinicId: _clinic.id,
+      hidden: false,
+      userId: userId,
+    );
+    await _bookingTrackingRepository.requestTrackingReload();
+    if (!mounted) return;
+    Navigator.popUntil(context, (route) => route.isFirst);
   }
 
   Future<void> _reloadClinic() async {
@@ -59,24 +145,6 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
       }
     } catch (e) {
       debugPrint('Error reloading clinic: $e');
-    }
-  }
-
-  Future<bool> _fetchIsBookingEnabled() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection(_bookingSettingsCollection)
-          .doc(_bookingSettingsDoc)
-          .get();
-
-      final data = doc.data();
-      if (data == null) return true;
-
-      final value = data['isBooking'];
-      return value is bool ? value : true;
-    } catch (e) {
-      debugPrint('Error loading booking settings: $e');
-      return true;
     }
   }
 
@@ -155,6 +223,9 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
         if (snapshot.hasData && snapshot.data!.exists) {
           _clinic = ClinicModel.fromFirestore(snapshot.data!);
         }
+
+        final hasTrackingForClinic =
+            _trackingLoaded && _hasActiveTrackingForClinic;
 
         return Directionality(
           textDirection: TextDirection.rtl,
@@ -327,6 +398,45 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                             left: 16,
                             child: _buildClinicStatusBadge(),
                           ),
+                          // Profile Views Counter
+                          if (_clinic.profileViewsCount > 0)
+                            Positioned(
+                              bottom: 18,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.visibility_outlined,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _clinic.profileViewsCount.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       )
                     else
@@ -378,9 +488,47 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                             left: 16,
                             child: _buildClinicStatusBadge(),
                           ),
+                          // Profile Views Counter
+                          if (_clinic.profileViewsCount > 0)
+                            Positioned(
+                              bottom: 16,
+                              right: 16,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.visibility_outlined,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _clinic.profileViewsCount.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                         ],
                       ),
-
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -709,90 +857,82 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
 
                           // Book Appointment Button
                           if (_clinic.onlineBookingEnabled) ...[
-                            FutureBuilder<bool>(
-                              future: _isBookingEnabledFuture,
-                              builder: (context, snapshot) {
-                                final isBookingEnabled = snapshot.data ?? true;
-                                if (!isBookingEnabled) {
-                                  return const SizedBox.shrink();
-                                }
-
-                                return Column(
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [_primaryColor, _primaryDark],
-                                          begin: Alignment.centerRight,
-                                          end: Alignment.centerLeft,
-                                        ),
-                                        borderRadius: BorderRadius.circular(28),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: _primaryColor.withValues(
-                                              alpha: 0.25,
-                                            ),
-                                            blurRadius: 14,
-                                            offset: const Offset(0, 7),
-                                          ),
-                                        ],
-                                      ),
-                                      child: SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton.icon(
-                                          onPressed: () async {
-                                            final isAuthenticated =
-                                                await AuthHelpers.requireAuth(
-                                                  context,
-                                                  message:
-                                                      'يجب تسجيل الدخول لحجز موعد في العيادة',
-                                                );
-
-                                            if (!isAuthenticated || !mounted) {
-                                              return;
-                                            }
-
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    BookAppointmentScreen(
-                                                      clinic: _clinic,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                          icon: const Icon(
-                                            Icons.calendar_month_rounded,
-                                            size: 22,
-                                          ),
-                                          label: const Text(
-                                            'احجز موعد الآن',
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.transparent,
-                                            shadowColor: Colors.transparent,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 16,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(28),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [_primaryColor, _primaryDark],
+                                  begin: Alignment.centerRight,
+                                  end: Alignment.centerLeft,
+                                ),
+                                borderRadius: BorderRadius.circular(28),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _primaryColor.withValues(
+                                      alpha: 0.25,
                                     ),
-                                    const SizedBox(height: 24),
-                                  ],
-                                );
-                              },
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 7),
+                                  ),
+                                ],
+                              ),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () async {
+                                    if (hasTrackingForClinic) {
+                                      await _showTrackingCard();
+                                      return;
+                                    }
+
+                                    final isAuthenticated =
+                                        await AuthHelpers.requireAuth(
+                                          context,
+                                          message:
+                                              'يجب تسجيل الدخول لحجز موعد في العيادة',
+                                        );
+
+                                    if (!isAuthenticated || !mounted) return;
+
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            BookAppointmentScreen(
+                                              clinic: _clinic,
+                                            ),
+                                      ),
+                                    );
+
+                                    await _loadTrackingInfo();
+                                  },
+                                  icon: const Icon(
+                                    Icons.calendar_month_rounded,
+                                    size: 22,
+                                  ),
+                                  label: Text(
+                                    hasTrackingForClinic
+                                        ? 'تتبع حجزي'
+                                        : 'احجز الآن',
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ),
+                            const SizedBox(height: 24),
                           ],
 
                           // Contact Section
@@ -902,7 +1042,7 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                                     ),
                                     child: ElevatedButton.icon(
                                       onPressed: () => _openWhatsApp(context),
-                                      icon: Icon(Icons.chat, size: 20),
+                                      icon: Icon(MdiIcons.whatsapp, size: 20),
                                       label: const Text(
                                         'واتساب',
                                         style: TextStyle(
@@ -969,23 +1109,6 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                                       serviceType: 'clinic',
                                       initialLikesCount: _clinic.totalLikes,
                                       iconSize: 26,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 55,
-                                  color: Colors.grey[200],
-                                ),
-                                // Report Button
-                                Expanded(
-                                  child: Center(
-                                    child: ReportButton(
-                                      serviceId: _clinic.id,
-                                      serviceType: 'clinic',
-                                      serviceName: _clinic.doctorName,
-                                      iconSize: 26,
-                                      showLabel: false,
                                     ),
                                   ),
                                 ),
