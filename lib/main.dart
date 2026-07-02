@@ -193,8 +193,8 @@ Future<void> _initializeLowPriorityServices() async {
 
   // Awesome notifications are low-priority at app startup.
   try {
-    // await DoctorOfTheDayNotification.initialize();
-    // await DoctorOfTheDayNotification.scheduleDailyNotification();
+    await DoctorOfTheDayNotification.initialize();
+    await DoctorOfTheDayNotification.scheduleDailyNotification();
 
     await DailyHealthTipNotificationService.initialize();
     await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
