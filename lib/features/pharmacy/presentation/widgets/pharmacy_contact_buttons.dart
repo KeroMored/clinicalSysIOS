@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class PharmacyContactButtons extends StatelessWidget {
   final String phone;
@@ -83,7 +84,7 @@ class PharmacyContactButtons extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.chat, size: 20, color: Colors.white),
+                    Icon(FontAwesomeIcons.whatsapp, size: 20, color: Colors.white),
                     const SizedBox(width: 8),
                     const Text(
                       'واتساب',

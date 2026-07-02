@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -515,7 +516,7 @@ class _NearExpireItemCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () =>
                             _openWhatsApp(context, item.pharmacyWhatsapp),
-                        icon: Icon(Icons.chat, size: 18),
+                        icon: Icon(FontAwesomeIcons.whatsapp, size: 18),
                         label: const Text('واتساب'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF25D366),

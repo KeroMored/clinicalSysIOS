@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1229,7 +1230,7 @@ class _LaboratoryDetailsScreenState extends State<LaboratoryDetailsScreen> {
                                           context,
                                           currentLab.whatsapp!,
                                         ),
-                                        icon: Icon(Icons.chat, size: 20),
+                                        icon: Icon(FontAwesomeIcons.whatsapp, size: 20),
                                         label: Text(
                                           'واتساب: ${currentLab.whatsapp}',
                                           style: const TextStyle(

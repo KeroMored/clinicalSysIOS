@@ -1,4 +1,5 @@
 import 'package:clinicalsystem/core/theme/app_theme.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart' as intl;
@@ -503,7 +504,7 @@ class PharmacyOfferDetailScreen extends StatelessWidget {
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () => _openWhatsApp(context),
-                            icon: Icon(Icons.chat, size: 20),
+                            icon: Icon(FontAwesomeIcons.whatsapp, size: 20),
                             label: const Text('واتساب'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.teal,

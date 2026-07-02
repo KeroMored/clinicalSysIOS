@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1051,7 +1052,7 @@ class _LaboratoryDetailsClinicStyleScreenState
                                         context,
                                         _laboratory.whatsapp!,
                                       ),
-                                      icon: Icon(Icons.chat, size: 20),
+                                      icon: Icon(FontAwesomeIcons.whatsapp, size: 20),
                                       label: const Text(
                                         'واتساب',
                                         style: TextStyle(

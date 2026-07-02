@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -896,7 +897,7 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
                                   keyboardType: TextInputType.phone,
                                   decoration: _buildInputDecoration(
                                     label: 'رقم الواتساب (اختياري)',
-                                    icon: Icons.chat,
+                                    icon: FontAwesomeIcons.whatsapp,
                                     hint: 'مثال: 01234567890',
                                   ),
                                   style: const TextStyle(
