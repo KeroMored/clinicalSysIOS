@@ -31,7 +31,7 @@ import 'features/rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import 'features/gym/data/repositories/gym_repository.dart';
 import 'features/gym/presentation/cubit/gym_cubit.dart';
 import 'features/clinic/presentation/widgets/doctor_of_day_notification.dart';
-import 'features/home/services/daily_health_tip_notification_service.dart';
+// import 'features/home/services/daily_health_tip_notification_service.dart'; // Disabled - uses awesome_notifications
 import 'features/clinic/data/repositories/patient_repository.dart';
 import 'features/clinic/presentation/cubit/patient_cubit.dart';
 import 'features/medicine_reminders/data/repositories/medicine_repository.dart';
@@ -196,8 +196,9 @@ Future<void> _initializeLowPriorityServices() async {
     await DoctorOfTheDayNotification.initialize();
     await DoctorOfTheDayNotification.scheduleDailyNotification();
 
-    await DailyHealthTipNotificationService.initialize();
-    await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
+    // DailyHealthTipNotificationService uses awesome_notifications (disabled for iOS)
+    // await DailyHealthTipNotificationService.initialize();
+    // await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
 
     // Medicine notification service initializes lazily when scheduling reminders.
     print('✅ Background services initialized successfully');
