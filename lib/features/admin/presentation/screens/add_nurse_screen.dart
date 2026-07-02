@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -507,7 +507,7 @@ class _AddNurseScreenState extends State<AddNurseScreen> {
                         _buildTextField(
                           controller: _nurseWhatsappController,
                           label: 'رقم الواتساب',
-                          icon: FontAwesomeIcons.whatsapp,
+                          icon: BoxIcons.bxl_whatsapp,
                           keyboardType: TextInputType.phone,
                           validator: (value) {
                             if (value == null || value.isEmpty) {

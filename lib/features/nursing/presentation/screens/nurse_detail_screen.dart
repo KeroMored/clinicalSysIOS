@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
@@ -375,7 +375,7 @@ class NurseDetailScreen extends StatelessWidget {
             ),
             const Divider(),
             _buildInfoRow(Icons.phone, 'رقم الهاتف', nurse.nursePhone),
-            _buildInfoRow(FontAwesomeIcons.whatsapp, 'واتساب', nurse.nurseWhatsApp),
+            _buildInfoRow(BoxIcons.bxl_whatsapp, 'واتساب', nurse.nurseWhatsApp),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -396,7 +396,7 @@ class NurseDetailScreen extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         _openWhatsApp(context, nurse.nurseWhatsApp),
-                    icon: Icon(FontAwesomeIcons.whatsapp),
+                    icon: Icon(BoxIcons.bxl_whatsapp),
                     label: const Text('واتساب'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0B8293),

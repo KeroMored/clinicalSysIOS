@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -343,7 +343,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                   _buildTextField(
                     controller: _whatsappController,
                     label: 'واتساب',
-                    icon: FontAwesomeIcons.whatsapp,
+                    icon: BoxIcons.bxl_whatsapp,
                     keyboardType: TextInputType.phone,
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'مطلوب' : null,

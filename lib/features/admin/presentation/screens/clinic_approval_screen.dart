@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -252,7 +252,7 @@ class _ClinicApprovalScreenState extends State<ClinicApprovalScreen> {
             _buildInfoRow(Icons.phone, clinicData['phone'] ?? ''),
             if (clinicData['whatsapp'] != null) ...[
               const SizedBox(height: 8),
-              _buildInfoRow(FontAwesomeIcons.whatsapp, clinicData['whatsapp']),
+              _buildInfoRow(BoxIcons.bxl_whatsapp, clinicData['whatsapp']),
             ],
             const SizedBox(height: 8),
             _buildInfoRow(

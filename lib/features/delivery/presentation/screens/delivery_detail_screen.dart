@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -328,7 +328,7 @@ class _DeliveryDetailScreenState extends State<DeliveryDetailScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: _openWhatsApp,
-                        icon: Icon(FontAwesomeIcons.whatsapp, size: 18),
+                        icon: Icon(BoxIcons.bxl_whatsapp, size: 18),
                         label: const Text(
                           'واتساب',
                           style: TextStyle(fontWeight: FontWeight.w700),

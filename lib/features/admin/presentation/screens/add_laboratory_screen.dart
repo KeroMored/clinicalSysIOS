@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -459,7 +459,7 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
                           decoration: InputDecoration(
                             labelText: 'رقم واتساب (اختياري)',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(FontAwesomeIcons.whatsapp),
+                            prefixIcon: Icon(BoxIcons.bxl_whatsapp),
                           ),
                         ),
                         const SizedBox(height: 16),

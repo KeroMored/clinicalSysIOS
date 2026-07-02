@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -1141,7 +1141,7 @@ class _BookingCard extends StatelessWidget {
                 // زر الواتساب
                 IconButton(
                   icon: const Icon(
-                    FontAwesomeIcons.whatsapp,
+                    BoxIcons.bxl_whatsapp,
                     color: Color(0xFF25D366),
                   ),
                   iconSize: 24,
@@ -1209,7 +1209,7 @@ class _BookingCard extends StatelessWidget {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   }
                 },
-                icon: const Icon(FontAwesomeIcons.whatsapp, size: 18),
+                icon: const Icon(BoxIcons.bxl_whatsapp, size: 18),
                 label: const Text('تم انتهاء التحليل'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF25D366),

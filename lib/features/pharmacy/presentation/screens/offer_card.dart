@@ -1,5 +1,5 @@
 import 'package:clinicalsystem/core/theme/app_theme.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -359,7 +359,7 @@ class OfferCard extends StatelessWidget {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: () => _openWhatsApp(context),
-                              icon: Icon(FontAwesomeIcons.whatsapp, size: 16),
+                              icon: Icon(BoxIcons.bxl_whatsapp, size: 16),
                               label: const Text(
                                 'واتساب',
                                 style: TextStyle(fontSize: 13),

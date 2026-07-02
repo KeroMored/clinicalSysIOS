@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../data/models/radiology_model.dart';
@@ -161,7 +161,7 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
               controller: _centerWhatsappController,
               decoration: InputDecoration(
                 labelText: 'رقم واتساب المركز *',
-                prefixIcon: Icon(FontAwesomeIcons.whatsapp),
+                prefixIcon: Icon(BoxIcons.bxl_whatsapp),
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.phone,

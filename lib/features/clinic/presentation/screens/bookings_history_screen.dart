@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:icons_plus/icons_plus.dart';
 import '../../data/models/booking_model.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
@@ -1503,7 +1503,7 @@ class _BookingCard extends StatelessWidget {
                     onPressed: () =>
                         _openWhatsApp(context, booking.patientPhone),
                     icon: Icon(
-                      FontAwesomeIcons.whatsapp,
+                      BoxIcons.bxl_whatsapp,
                       color: Colors.green,
                       size: 20,
                     ),
