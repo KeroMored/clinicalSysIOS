@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/rehabilitation_center_model.dart';
@@ -454,7 +454,7 @@ class _RehabilitationCenterDetailScreenState
                   if (_center.whatsapp != null) ...[
                     const SizedBox(height: 12),
                     _buildContactTile(
-                      BoxIcons.bxl_whatsapp,
+                      CupertinoIcons.logo_whatsapp,
                       'واتساب',
                       _center.whatsapp!,
                     ),
@@ -484,7 +484,7 @@ class _RehabilitationCenterDetailScreenState
                           child: ElevatedButton.icon(
                             onPressed: () =>
                                 _openWhatsApp(context, _center.whatsapp!),
-                            icon: Icon(BoxIcons.bxl_whatsapp),
+                            icon: Icon(CupertinoIcons.logo_whatsapp),
                             label: const Text('واتساب'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF14B86A),

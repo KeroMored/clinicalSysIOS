@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/patient_model.dart';
 import '../cubit/patient_cubit.dart';
@@ -207,7 +207,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
           const SizedBox(height: 14),
           _buildSectionCard(
             title: 'بيانات واتساب',
-            icon: BoxIcons.bxl_whatsapp,
+            icon: CupertinoIcons.logo_whatsapp,
             child: _buildWhatsappSection(),
           ),
           const SizedBox(height: 24),
@@ -316,7 +316,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
             decoration: _inputDecoration(
               label: 'رقم الواتساب',
               hint: '01xxxxxxxxx',
-              icon: BoxIcons.bxl_whatsapp,
+              icon: CupertinoIcons.logo_whatsapp,
               iconColor: const Color(0xFF16A34A),
             ),
           ),

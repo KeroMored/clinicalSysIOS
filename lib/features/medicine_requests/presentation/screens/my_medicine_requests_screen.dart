@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -480,7 +480,7 @@ class MyMedicineRequestsScreen extends StatelessWidget {
             if (request.whatsappNumber != null) ...[
               const SizedBox(height: 8),
               _buildInfoRow(
-                icon: BoxIcons.bxl_whatsapp,
+                icon: CupertinoIcons.logo_whatsapp,
                 label: 'واتساب',
                 value: request.whatsappNumber!,
                 color: const Color(0xFF25D366),

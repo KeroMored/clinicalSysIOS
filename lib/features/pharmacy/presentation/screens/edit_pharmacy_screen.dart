@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -922,7 +922,7 @@ class _EditPharmacyScreenState extends State<EditPharmacyScreen> {
                                   textAlign: TextAlign.left,
                                   decoration: _buildInputDecoration(
                                     label: 'رقم الواتساب',
-                                    icon: BoxIcons.bxl_whatsapp,
+                                    icon: CupertinoIcons.logo_whatsapp,
                                     iconColor: const Color(0xFF25D366),
                                   ),
                                   style: const TextStyle(

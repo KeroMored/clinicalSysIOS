@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -1681,7 +1681,7 @@ class _BookingCard extends StatelessWidget {
                 booking.patientPhone != 'غير محدد' &&
                 booking.patientPhone != 'لا يوجد')
               ListTile(
-                leading: Icon(BoxIcons.bxl_whatsapp, color: Colors.green),
+                leading: Icon(CupertinoIcons.logo_whatsapp, color: Colors.green),
                 title: const Text('واتساب'),
                 onTap: () {
                   Navigator.pop(context);

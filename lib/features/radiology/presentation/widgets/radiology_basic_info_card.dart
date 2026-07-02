@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import '../../data/models/radiology_model.dart';
 import 'radiology_info_row.dart';
 
@@ -36,7 +36,7 @@ class RadiologyBasicInfoCard extends StatelessWidget {
               value: radiology.centerPhone,
             ),
             RadiologyInfoRow(
-              icon: BoxIcons.bxl_whatsapp,
+              icon: CupertinoIcons.logo_whatsapp,
               label: 'واتساب المركز',
               value: radiology.centerWhatsApp,
             ),

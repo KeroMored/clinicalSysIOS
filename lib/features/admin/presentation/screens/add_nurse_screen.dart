@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -507,7 +507,7 @@ class _AddNurseScreenState extends State<AddNurseScreen> {
                         _buildTextField(
                           controller: _nurseWhatsappController,
                           label: 'رقم الواتساب',
-                          icon: BoxIcons.bxl_whatsapp,
+                          icon: CupertinoIcons.logo_whatsapp,
                           keyboardType: TextInputType.phone,
                           validator: (value) {
                             if (value == null || value.isEmpty) {

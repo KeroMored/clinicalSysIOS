@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -343,7 +343,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                   _buildTextField(
                     controller: _whatsappController,
                     label: 'واتساب',
-                    icon: BoxIcons.bxl_whatsapp,
+                    icon: CupertinoIcons.logo_whatsapp,
                     keyboardType: TextInputType.phone,
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'مطلوب' : null,

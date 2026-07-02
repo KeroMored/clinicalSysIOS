@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/radiology_model.dart';
 import 'radiology_info_row.dart';
@@ -67,7 +67,7 @@ class RadiologyLocationCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         _openWhatsApp(context, radiology.centerWhatsApp),
-                    icon: Icon(BoxIcons.bxl_whatsapp),
+                    icon: Icon(CupertinoIcons.logo_whatsapp),
                     label: const Text('واتساب'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,

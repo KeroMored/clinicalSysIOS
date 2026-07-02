@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 
 class PharmacyContactButtons extends StatelessWidget {
   final String phone;
@@ -84,7 +84,7 @@ class PharmacyContactButtons extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(BoxIcons.bxl_whatsapp, size: 20, color: Colors.white),
+                    Icon(CupertinoIcons.logo_whatsapp, size: 20, color: Colors.white),
                     const SizedBox(width: 8),
                     const Text(
                       'واتساب',

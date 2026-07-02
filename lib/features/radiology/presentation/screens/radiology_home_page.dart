@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
@@ -999,7 +999,7 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
             _buildInfoRow(Icons.location_on, 'العنوان', radiology.address),
             _buildInfoRow(Icons.phone, 'هاتف المركز', radiology.centerPhone),
             _buildInfoRow(
-              BoxIcons.bxl_whatsapp,
+              CupertinoIcons.logo_whatsapp,
               'واتساب المركز',
               radiology.centerWhatsApp,
             ),
@@ -1238,7 +1238,7 @@ class _RadiologyDetailScreenState extends State<RadiologyDetailScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         _openWhatsApp(context, radiology.centerWhatsApp),
-                    icon: Icon(BoxIcons.bxl_whatsapp),
+                    icon: Icon(CupertinoIcons.logo_whatsapp),
                     label: const Text('واتساب'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,

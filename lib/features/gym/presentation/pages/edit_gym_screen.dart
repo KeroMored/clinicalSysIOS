@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -959,7 +959,7 @@ class _EditGymScreenState extends State<EditGymScreen> {
                                   keyboardType: TextInputType.phone,
                                   decoration: _inputDecoration(
                                     label: 'رقم الواتساب',
-                                    icon: BoxIcons.bxl_whatsapp,
+                                    icon: CupertinoIcons.logo_whatsapp,
                                   ),
                                   validator: (v) =>
                                       (v == null || v.trim().isEmpty)

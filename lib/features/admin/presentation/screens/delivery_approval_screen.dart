@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
@@ -339,7 +339,7 @@ class _DeliveryApprovalScreenState extends State<DeliveryApprovalScreen> {
               }),
             ],
             _buildInfoRow(
-              BoxIcons.bxl_whatsapp,
+              CupertinoIcons.logo_whatsapp,
               'واتساب',
               delivery.deliveryWhatsApp,
             ),

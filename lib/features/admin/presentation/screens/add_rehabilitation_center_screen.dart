@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -444,7 +444,7 @@ class _AddRehabilitationCenterScreenState
                             controller: _whatsappController,
                             decoration: InputDecoration(
                               labelText: 'واتساب (اختياري)',
-                              prefixIcon: Icon(BoxIcons.bxl_whatsapp),
+                              prefixIcon: Icon(CupertinoIcons.logo_whatsapp),
                               border: OutlineInputBorder(),
                             ),
                             keyboardType: TextInputType.phone,

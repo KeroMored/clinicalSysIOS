@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:icons_plus/icons_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -623,7 +623,7 @@ class _MedicineRequestContactInfoScreenState
                     labelText: 'رقم الواتساب (اختياري)',
                     hintText: 'أدخل رقم الواتساب (إن وجد)',
                     prefixIcon: Icon(
-                      BoxIcons.bxl_whatsapp,
+                      CupertinoIcons.logo_whatsapp,
                       color: Color(0xFF0E7787),
                     ),
                     filled: true,
