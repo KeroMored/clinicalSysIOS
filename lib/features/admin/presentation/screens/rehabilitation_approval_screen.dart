@@ -5,7 +5,7 @@ import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../rehabilitation/data/models/rehabilitation_center_model.dart';
 import '../../../rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import '../../../rehabilitation/presentation/cubit/rehabilitation_state.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class RehabilitationApprovalScreen extends StatefulWidget {
   const RehabilitationApprovalScreen({super.key});

@@ -9,7 +9,7 @@ import '../cubit/medicine_cubit.dart';
 import '../cubit/medicine_state.dart';
 import '../widgets/schedule_selector.dart';
 import '../widgets/time_picker_widget.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddMedicineScreen extends StatefulWidget {
   const AddMedicineScreen({super.key});

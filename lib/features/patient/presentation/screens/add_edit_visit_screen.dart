@@ -8,7 +8,7 @@ import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/patient_model.dart';
 import '../../data/models/visit_model.dart';
 import '../cubit/visit_cubit.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddEditVisitScreen extends StatefulWidget {
   final PatientModel patient;

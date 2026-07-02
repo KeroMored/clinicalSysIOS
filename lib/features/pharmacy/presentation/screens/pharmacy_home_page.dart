@@ -9,7 +9,7 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../delivery/presentation/screens/delivery_list_screen.dart';
 import '../../../medicine_requests/presentation/screens/medicine_requests_list_screen.dart';
 import '../../../medicine_requests/presentation/screens/request_medicine_screen.dart';
-import 'package:mallawicure/features/medicine_requests/presentation/screens/my_medicine_requests_screen.dart';
+import 'package:clinicalsystem/features/medicine_requests/presentation/screens/my_medicine_requests_screen.dart';
 import 'all_offers_screen.dart';
 import 'near_expire_items_screen.dart';
 import 'the_pharmacies_screen.dart';

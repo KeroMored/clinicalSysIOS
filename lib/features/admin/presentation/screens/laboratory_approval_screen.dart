@@ -7,7 +7,7 @@ import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
 import '../../../laboratory/data/models/laboratory_model.dart';
 import 'laboratory_detail_approval_screen.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class LaboratoryApprovalScreen extends StatefulWidget {
   const LaboratoryApprovalScreen({super.key});

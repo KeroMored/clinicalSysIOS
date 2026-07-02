@@ -6,7 +6,7 @@ import '../../../../core/widgets/gradient_appbar.dart';
 import '../cubit/admin_cubit.dart';
 import '../cubit/admin_state.dart';
 import '../../../clinic/data/models/clinic_department.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class ClinicApprovalScreen extends StatefulWidget {
   const ClinicApprovalScreen({super.key});

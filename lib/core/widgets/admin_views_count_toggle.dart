@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/app_control_service.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// ويدجت للأدمن للتحكم السريع في عرض عدد المشاهدات
 /// يظهر كـ FAB أو IconButton في شاشات العروض

@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/clinic_department.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EditClinicScreen extends StatefulWidget {
   final ClinicModel clinic;

@@ -7,7 +7,7 @@ import '../../data/models/medicine_offer_model.dart';
 import '../../../../core/services/offer_sorting_service.dart';
 import '../../../../core/services/app_control_service.dart';
 import '../../../../core/widgets/admin_views_count_toggle.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// شاشة عروض الأدوية مع نظام ترتيب ديناميكي متقدم
 class MedicineOffersScreen extends StatefulWidget {

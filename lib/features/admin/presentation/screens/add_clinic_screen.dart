@@ -8,7 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../../clinic/data/models/clinic_model.dart';
 import '../../../clinic/data/models/clinic_department.dart';
 import '../../../clinic/data/repositories/clinic_repository.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddClinicScreen extends StatefulWidget {
   const AddClinicScreen({super.key});

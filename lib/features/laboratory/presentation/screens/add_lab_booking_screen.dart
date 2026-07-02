@@ -5,7 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/laboratory_model.dart';
 import '../../data/models/lab_booking_model.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// شاشة إضافة حجز من المعمل نفسه (للموظفين)
 class AddLabBookingScreen extends StatefulWidget {

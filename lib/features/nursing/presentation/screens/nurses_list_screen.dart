@@ -11,7 +11,7 @@ import 'nurse_detail_screen.dart';
 import '../widgets/nurse_card.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class NursesListScreen extends StatefulWidget {
   const NursesListScreen({super.key});

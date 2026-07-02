@@ -1,10 +1,10 @@
-import 'package:mallawicure/core/theme/app_theme.dart';
+import 'package:clinicalsystem/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart' as intl;
 import '../../data/repositories/pharmacy_repository.dart';
 import 'pharmacy_details_screen.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PharmacyOfferDetailScreen extends StatelessWidget {
   final String offerId;

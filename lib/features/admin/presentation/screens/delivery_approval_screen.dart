@@ -5,7 +5,7 @@ import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../delivery/data/models/delivery_model.dart';
 import '../../../delivery/presentation/cubit/delivery_cubit.dart';
 import '../../../delivery/presentation/cubit/delivery_state.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class DeliveryApprovalScreen extends StatefulWidget {
   const DeliveryApprovalScreen({super.key});

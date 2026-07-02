@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../data/models/clinic_department.dart';
 import '../../data/models/clinic_model.dart';
 import 'clinic_details_screen.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class ClinicsSearchDelegate extends SearchDelegate<void> {
   final ClinicDepartment? department;

@@ -8,7 +8,7 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/near_expire_item_model.dart';
 import 'edit_near_expire_item_screen.dart';
 import 'pharmacy_details_screen.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class NearExpireItemsScreen extends StatefulWidget {
   const NearExpireItemsScreen({super.key});

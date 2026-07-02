@@ -7,7 +7,7 @@ import '../cubit/medicine_offer_cubit.dart';
 import '../../data/models/medicine_offer_model.dart';
 import '../../../pharmacy/data/repositories/pharmacy_repository.dart';
 import '../../../pharmacy/data/models/pharmacy_model.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddMedicineOfferScreen extends StatefulWidget {
   const AddMedicineOfferScreen({super.key});

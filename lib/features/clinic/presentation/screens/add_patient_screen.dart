@@ -4,7 +4,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../data/models/patient_model.dart';
 import '../cubit/patient_cubit.dart';
 import '../cubit/patient_state.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class AddPatientScreen extends StatefulWidget {
   final String clinicId;

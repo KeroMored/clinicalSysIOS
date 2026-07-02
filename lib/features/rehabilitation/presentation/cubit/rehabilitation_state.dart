@@ -1,4 +1,4 @@
-import 'package:mallawicure/features/rehabilitation/data/models/rehabilitation_center_model.dart';
+import 'package:clinicalsystem/features/rehabilitation/data/models/rehabilitation_center_model.dart';
 
 abstract class RehabilitationState {}
 

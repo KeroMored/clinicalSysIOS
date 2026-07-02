@@ -5,7 +5,7 @@ import '../../data/models/emergency_number_model.dart';
 import '../cubit/emergency_cubit.dart';
 import '../cubit/emergency_state.dart';
 import '../widgets/emergency_card.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EmergencyNumbersScreen extends StatelessWidget {
   const EmergencyNumbersScreen({super.key});

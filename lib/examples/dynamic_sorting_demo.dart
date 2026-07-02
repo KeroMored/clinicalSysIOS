@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/services/offer_sorting_service.dart';
 import '../core/services/app_control_service.dart';
 import '../features/medicine_offers/data/models/medicine_offer_model.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// ملف تجريبي يوضح كيفية استخدام نظام الترتيب الديناميكي
 ///

@@ -7,7 +7,7 @@ import '../cubit/subscription_state.dart';
 import '../widgets/subscription_detail_widgets.dart';
 import '../widgets/add_payment_dialog.dart';
 import 'edit_place_details_screen.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class PlaceSubscriptionDetailsScreen extends StatelessWidget {
   final String placeId;

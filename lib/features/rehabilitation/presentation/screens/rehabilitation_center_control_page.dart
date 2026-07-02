@@ -5,7 +5,7 @@ import '../../../../core/widgets/gradient_appbar.dart';
 import '../../data/models/rehabilitation_center_model.dart';
 import 'edit_rehabilitation_center_screen.dart';
 import 'center_content_management_screen.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class RehabilitationCenterControlPage extends StatefulWidget {
   final String centerEmail;

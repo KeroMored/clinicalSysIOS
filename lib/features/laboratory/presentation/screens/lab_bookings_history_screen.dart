@@ -5,7 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../data/models/lab_booking_model.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:mallawicure/core/widgets/app_loading_indicator.dart';
+import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 const Color _labPrimaryColor = Color(0xFF0B8293);
 const Color _labTextColor = Color(0xFF0F172A);
