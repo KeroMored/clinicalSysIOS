@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -120,7 +120,7 @@ class PharmacyRequestDetailsScreen extends StatelessWidget {
                           : 'لا يوجد',
                     ),
                     _buildInfoRow(
-                      CupertinoIcons.logo_whatsapp,
+                      Icons.chat_bubble,
                       'واتساب',
                       request.whatsapp,
                     ),

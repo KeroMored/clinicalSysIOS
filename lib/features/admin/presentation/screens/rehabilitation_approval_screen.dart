@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
@@ -375,7 +375,7 @@ class _RehabilitationApprovalScreenState
             _buildInfoRow(Icons.phone, 'هاتف', center.phone),
             if (center.whatsapp != null) ...[
               const SizedBox(height: 8),
-              _buildInfoRow(CupertinoIcons.logo_whatsapp, 'واتساب', center.whatsapp!),
+              _buildInfoRow(Icons.chat_bubble, 'واتساب', center.whatsapp!),
             ],
             const SizedBox(height: 8),
             _buildInfoRow(Icons.location_on, 'العنوان', center.address),

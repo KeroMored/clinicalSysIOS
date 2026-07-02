@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'home_drawer_item.dart';
 import 'about_app_dialog.dart';
 import 'whatsapp_helper.dart';
@@ -91,7 +91,7 @@ class CustomHomeDrawer extends StatelessWidget {
             // const Divider(height: 1, indent: 22, endIndent: 22),
 
             HomeDrawerItem(
-              icon: CupertinoIcons.logo_whatsapp,
+              icon: Icons.chat_bubble,
               title: 'تواصل معنا',
               onTap: () async {
                 Navigator.pop(context);

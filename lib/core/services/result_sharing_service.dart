@@ -1,5 +1,5 @@
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/material.dart';
@@ -194,7 +194,7 @@ ${result.pdfUrl}
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _ShareButton(
-                  icon: CupertinoIcons.logo_whatsapp, // WhatsApp icon
+                  icon: Icons.chat_bubble, // WhatsApp icon
                   label: 'WhatsApp',
                   color: Color(0xFF25D366),
                   onTap: () async {

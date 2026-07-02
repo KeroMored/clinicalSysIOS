@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -881,7 +881,7 @@ class _MedicineRequestsListScreenState
                               ? request.allMedicines[0].quantity
                               : 1,
                         ),
-                        icon: Icon(CupertinoIcons.logo_whatsapp, size: 16),
+                        icon: Icon(Icons.chat_bubble, size: 16),
                         label: const Text(
                           'واتساب',
                           style: TextStyle(fontWeight: FontWeight.bold),

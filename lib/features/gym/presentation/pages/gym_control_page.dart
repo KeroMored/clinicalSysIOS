@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
@@ -247,7 +247,7 @@ class _GymControlPageState extends State<GymControlPage> {
 
                       // WhatsApp
                       _buildInfoRow(
-                        CupertinoIcons.logo_whatsapp,
+                        Icons.chat_bubble,
                         'واتساب',
                         _gym!.whatsapp,
                       ),

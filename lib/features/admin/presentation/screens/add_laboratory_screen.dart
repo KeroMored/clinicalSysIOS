@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -459,7 +459,7 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
                           decoration: InputDecoration(
                             labelText: 'رقم واتساب (اختياري)',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(CupertinoIcons.logo_whatsapp),
+                            prefixIcon: Icon(Icons.chat_bubble),
                           ),
                         ),
                         const SizedBox(height: 16),

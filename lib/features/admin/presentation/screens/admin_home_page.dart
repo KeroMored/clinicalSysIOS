@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'approve_pharmacies_screen.dart';
 import 'clinic_approval_screen.dart';
 import 'add_clinic_screen.dart';

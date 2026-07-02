@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
@@ -246,7 +246,7 @@ class _AddDeliveryScreenState extends State<AddDeliveryScreen> {
                         decoration: InputDecoration(
                           labelText: 'رقم الواتساب',
                           prefixIcon: Icon(
-                            CupertinoIcons.logo_whatsapp,
+                            Icons.chat_bubble,
                             color: Color(0xFF25D366),
                           ),
                           border: OutlineInputBorder(

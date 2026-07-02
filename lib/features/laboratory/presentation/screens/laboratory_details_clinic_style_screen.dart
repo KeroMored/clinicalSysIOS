@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1052,7 +1052,7 @@ class _LaboratoryDetailsClinicStyleScreenState
                                         context,
                                         _laboratory.whatsapp!,
                                       ),
-                                      icon: Icon(CupertinoIcons.logo_whatsapp, size: 20),
+                                      icon: Icon(Icons.chat_bubble, size: 20),
                                       label: const Text(
                                         'واتساب',
                                         style: TextStyle(

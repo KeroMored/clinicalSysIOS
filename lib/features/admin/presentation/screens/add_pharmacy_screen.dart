@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -628,7 +628,7 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
                             _buildTextField(
                               controller: _whatsappController,
                               label: 'رقم الواتساب (اختياري)',
-                              icon: CupertinoIcons.logo_whatsapp,
+                              icon: Icons.chat_bubble,
                               keyboardType: TextInputType.phone,
                             ),
                             const SizedBox(height: 16),
