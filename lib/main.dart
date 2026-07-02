@@ -196,8 +196,8 @@ Future<void> _initializeLowPriorityServices() async {
     // await DoctorOfTheDayNotification.initialize();
     // await DoctorOfTheDayNotification.scheduleDailyNotification();
 
-    // await DailyHealthTipNotificationService.initialize();
-    // await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
+    await DailyHealthTipNotificationService.initialize();
+    await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
 
     // Medicine notification service initializes lazily when scheduling reminders.
     print('✅ Background services initialized successfully');
@@ -230,7 +230,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => MedicineCubit(MedicineRepository())),
       ],
       child: MaterialApp(
-        title: "ملوي كير - MallawyC are",
+        title: "ملوي كيور - MallawyC are",
         debugShowCheckedModeBanner: false,
         theme: AppTheme.getTheme(),
         locale: const Locale('ar', 'EG'),
