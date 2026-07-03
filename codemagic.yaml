@@ -2,10 +2,14 @@ workflows:
   ios-build:
     name: iOS Build & Release
     instance_type: mac_mini_m2
+    max_build_duration: 120
     environment:
       flutter: stable
-      xcode: latest
+      xcode: 15.2
       cocoapods: default
+      vars:
+        XCODE_WORKSPACE: "Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
     
     triggering:
       events:
@@ -15,29 +19,29 @@ workflows:
         pattern: main
     
     scripts:
-      - name: Flutter version
+      - name: Set up environment
         script: |
+          echo "Flutter version:"
           flutter --version
+          echo "Xcode version:"
+          xcodebuild -version
       
       - name: Get Flutter dependencies
         script: |
           flutter pub get
       
+      - name: Clean and prepare
+        script: |
+          flutter clean
+          flutter pub get
+      
       - name: Install CocoaPods dependencies
         script: |
-          cd ios && pod install --repo-update
+          cd ios && pod install --repo-update && cd ..
       
-      - name: Build iOS IPA (Release)
+      - name: Build iOS (Archive mode)
         script: |
-          flutter build ios --release --no-codesign
-      
-      - name: Build and sign IPA
-        script: |
-          xcodebuild build-for-ipa \
-            -workspace ios/Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Release \
-            -derivedDataPath build/ios_build
+          flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
     
     artifacts:
       - build/ios/ipa/*.ipa

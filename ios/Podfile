@@ -45,6 +45,13 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
       config.build_settings['DEVELOPMENT_TEAM'] = '84M47YB8XR'
       config.build_settings['CODE_SIGN_STYLE'] = 'Automatic'
+      
+      # Suppress deprecation warnings
+      config.build_settings['GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS'] = 'NO'
+      config.build_settings['CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS'] = 'NO'
+      
+      # Treat warnings as informational, not errors
+      config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
     end
   end
 end
