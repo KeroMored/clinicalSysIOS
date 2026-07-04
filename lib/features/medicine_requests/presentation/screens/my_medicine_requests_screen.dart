@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -480,7 +479,7 @@ class MyMedicineRequestsScreen extends StatelessWidget {
             if (request.whatsappNumber != null) ...[
               const SizedBox(height: 8),
               _buildInfoRow(
-                icon: FontAwesomeIcons.whatsapp,
+                icon: Icons.chat,
                 label: 'واتساب',
                 value: request.whatsappNumber!,
                 color: const Color(0xFF25D366),

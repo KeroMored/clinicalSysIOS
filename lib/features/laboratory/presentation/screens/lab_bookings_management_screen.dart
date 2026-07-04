@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -1025,7 +1024,7 @@ class _BookingCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: Icon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366)),
+                      icon: Icon(Icons.chat, color: Color(0xFF25D366)),
                       onPressed: () =>
                           _openWhatsApp(context, booking.patientPhone),
                       tooltip: 'واتساب',

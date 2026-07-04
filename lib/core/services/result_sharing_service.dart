@@ -1,6 +1,5 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../features/laboratory/data/models/lab_result_model.dart';
@@ -194,7 +193,7 @@ ${result.pdfUrl}
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _ShareButton(
-                  icon: FontAwesomeIcons.whatsapp, // WhatsApp icon
+                  icon: Icons.chat, // WhatsApp icon
                   label: 'WhatsApp',
                   color: Color(0xFF25D366),
                   onTap: () async {

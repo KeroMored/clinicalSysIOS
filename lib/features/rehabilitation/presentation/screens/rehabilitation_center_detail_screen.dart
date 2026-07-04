@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -454,7 +453,7 @@ class _RehabilitationCenterDetailScreenState
                   if (_center.whatsapp != null) ...[
                     const SizedBox(height: 12),
                     _buildContactTile(
-                      FontAwesomeIcons.whatsapp,
+                      Icons.chat,
                       'واتساب',
                       _center.whatsapp!,
                     ),
@@ -484,7 +483,7 @@ class _RehabilitationCenterDetailScreenState
                           child: ElevatedButton.icon(
                             onPressed: () =>
                                 _openWhatsApp(context, _center.whatsapp!),
-                            icon: Icon(FontAwesomeIcons.whatsapp),
+                            icon: Icon(Icons.chat),
                             label: const Text('واتساب'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF14B86A),

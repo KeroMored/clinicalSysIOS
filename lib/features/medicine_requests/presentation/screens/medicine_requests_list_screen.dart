@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -881,7 +880,7 @@ class _MedicineRequestsListScreenState
                               ? request.allMedicines[0].quantity
                               : 1,
                         ),
-                        icon: Icon(FontAwesomeIcons.whatsapp, size: 16),
+                        icon: Icon(Icons.chat, size: 16),
                         label: const Text(
                           'واتساب',
                           style: TextStyle(fontWeight: FontWeight.bold),

@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -290,7 +289,7 @@ class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
               ),
               const SizedBox(width: 6),
               _buildContactButton(
-                icon: FontAwesomeIcons.whatsapp,
+                icon: Icons.chat,
                 color: const Color(0xFF16A34A),
                 onTap: () => _openWhatsApp(
                   patient.whatsappNumber ?? patient.phoneNumber,

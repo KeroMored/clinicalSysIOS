@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/radiology_model.dart';
 import 'radiology_info_row.dart';
@@ -67,7 +66,7 @@ class RadiologyLocationCard extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         _openWhatsApp(context, radiology.centerWhatsApp),
-                    icon: Icon(FontAwesomeIcons.whatsapp),
+                    icon: Icon(Icons.chat),
                     label: const Text('واتساب'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,

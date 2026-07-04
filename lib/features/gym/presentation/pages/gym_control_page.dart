@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -247,7 +246,7 @@ class _GymControlPageState extends State<GymControlPage> {
 
                       // WhatsApp
                       _buildInfoRow(
-                        FontAwesomeIcons.whatsapp,
+                        Icons.chat,
                         'واتساب',
                         _gym!.whatsapp,
                       ),

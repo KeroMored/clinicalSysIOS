@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/medicine_offer_model.dart';
@@ -290,7 +289,7 @@ class MedicineOfferCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () =>
                             _openWhatsApp(context, offer.pharmacyId),
-                        icon: Icon(FontAwesomeIcons.whatsapp, size: 20),
+                        icon: Icon(Icons.chat, size: 20),
                         label: const Text('واتساب'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF25D366),

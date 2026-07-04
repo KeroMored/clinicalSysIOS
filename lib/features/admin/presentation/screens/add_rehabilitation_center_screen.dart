@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -444,7 +443,7 @@ class _AddRehabilitationCenterScreenState
                             controller: _whatsappController,
                             decoration: InputDecoration(
                               labelText: 'واتساب (اختياري)',
-                              prefixIcon: Icon(FontAwesomeIcons.whatsapp),
+                              prefixIcon: Icon(Icons.chat),
                               border: OutlineInputBorder(),
                             ),
                             keyboardType: TextInputType.phone,

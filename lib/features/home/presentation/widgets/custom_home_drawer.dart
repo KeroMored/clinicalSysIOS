@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'home_drawer_item.dart';
 import 'about_app_dialog.dart';
@@ -91,7 +90,7 @@ class CustomHomeDrawer extends StatelessWidget {
             // const Divider(height: 1, indent: 22, endIndent: 22),
 
             HomeDrawerItem(
-              icon: FontAwesomeIcons.whatsapp,
+              icon: Icons.chat,
               title: 'تواصل معنا',
               onTap: () async {
                 Navigator.pop(context);

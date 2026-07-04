@@ -1,4 +1,3 @@
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
@@ -343,7 +342,7 @@ class _AddGymScreenState extends State<AddGymScreen> {
                   _buildTextField(
                     controller: _whatsappController,
                     label: 'واتساب',
-                    icon: FontAwesomeIcons.whatsapp,
+                    icon: Icons.chat,
                     keyboardType: TextInputType.phone,
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'مطلوب' : null,

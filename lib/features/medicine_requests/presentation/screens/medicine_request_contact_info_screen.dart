@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -623,7 +622,7 @@ class _MedicineRequestContactInfoScreenState
                     labelText: 'رقم الواتساب (اختياري)',
                     hintText: 'أدخل رقم الواتساب (إن وجد)',
                     prefixIcon: Icon(
-                      FontAwesomeIcons.whatsapp,
+                      Icons.chat,
                       color: Color(0xFF0E7787),
                     ),
                     filled: true,
