@@ -26,19 +26,48 @@ class MedicineNotificationService {
   static Future<void> initialize() async {
     if (_localNotificationsReady) return;
 
+    print('🔔 Initializing Medicine Notification Service...');
+
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
     );
     const initSettings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
     );
 
-    await _localNotifications.initialize(initSettings);
+    final initialized = await _localNotifications.initialize(initSettings);
+    print('📲 Medicine notifications initialized: $initialized');
 
+    // Request iOS permissions explicitly
+    if (Platform.isIOS) {
+      print('🍎 Requesting iOS notification permissions...');
+      final iosPlugin = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      
+      final granted = await iosPlugin?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      
+      print('🍎 iOS permissions granted: $granted');
+      
+      if (granted != true) {
+        print('⚠️ iOS notification permissions not granted!');
+        print('💡 Please enable notifications in Settings → App → Notifications');
+      }
+    }
+
+    // Android channels
     const medicineChannel = AndroidNotificationChannel(
       channelKey,
       channelName,
@@ -67,15 +96,10 @@ class MedicineNotificationService {
     await androidPlugin?.createNotificationChannel(followUpChannel);
     await androidPlugin?.requestNotificationsPermission();
 
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
-
     await _ensureExactAlarmPermission();
 
     _localNotificationsReady = true;
+    print('✅ Medicine Notification Service ready!');
   }
 
   static Future<void> _ensureInitialized() async {

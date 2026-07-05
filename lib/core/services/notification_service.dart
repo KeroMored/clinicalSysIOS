@@ -18,7 +18,9 @@ class NotificationService {
 
   /// Initialize notifications and request permissions
   Future<void> initialize() async {
-    // Initialize local notifications
+    print('🔔 Initializing notifications...');
+    
+    // Initialize local notifications FIRST
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
@@ -26,37 +28,57 @@ class NotificationService {
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
     );
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
-    await _localNotifications.initialize(
+    final initialized = await _localNotifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
+    
+    print('📲 Local notifications initialized: $initialized');
 
-    // Create notification channels
+    // Create notification channels (Android only)
     await _createNotificationChannels();
 
     // Request permission for iOS and Android 13+
+    print('🔐 Requesting notification permissions...');
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
       provisional: false,
+      announcement: false,
+      carPlay: false,
+      criticalAlert: false,
     );
 
+    print('🔔 Permission status: ${settings.authorizationStatus}');
+    
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print('✅ User granted notification permission');
+      
+      // Get FCM token
+      String? token = await _messaging.getToken();
+      print('📱 FCM Token: $token');
+      
+      if (token != null) {
+        print('✅ Successfully got FCM token');
+      } else {
+        print('⚠️ FCM token is null - may need APNs setup');
+      }
+    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+      print('⚠️ User granted provisional permission');
     } else {
       print('❌ User declined or has not accepted permission');
+      print('💡 Go to Settings → Notifications to enable');
     }
-
-    // Get FCM token
-    String? token = await _messaging.getToken();
-    print('📱 FCM Token: $token');
   }
 
   /// Create notification channels for Android
