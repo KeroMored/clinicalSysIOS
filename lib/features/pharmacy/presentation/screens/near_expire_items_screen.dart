@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/near_expire_item_model.dart';
+import '../../data/models/pharmacy_model.dart';
 import 'edit_near_expire_item_screen.dart';
 import 'pharmacy_details_screen.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
@@ -700,12 +702,58 @@ class _NearExpireItemCard extends StatelessWidget {
     }
   }
 
-  void _editItem(BuildContext context, NearExpireItemModel item) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditNearExpireItemScreen(item: item),
-      ),
-    );
+  void _editItem(BuildContext context, NearExpireItemModel item) async {
+    // جلب بيانات الصيدلية
+    try {
+      final pharmacyDoc = await FirebaseFirestore.instance
+          .collection('pharmacies')
+          .doc(item.pharmacyId)
+          .get();
+      
+      if (!pharmacyDoc.exists) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('خطأ: لم يتم العثور على الصيدلية')),
+          );
+        }
+        return;
+      }
+      
+      final pharmacy = PharmacyModel.fromJson({
+        ...pharmacyDoc.data()!,
+        'id': pharmacyDoc.id,
+      });
+      
+      // تحويل NearExpireItemModel إلى Map
+      final itemData = {
+        'medicineName': item.medicineName,
+        'medicineType': item.medicineType,
+        'medicineDescription': item.medicineDescription,
+        'expiryDate': item.expiryDate,
+        'quantity': item.quantity,
+        'totalPrice': item.totalPrice,
+        'imageUrl': item.imageUrl,
+      };
+      
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EditNearExpireItemScreen(
+              pharmacy: pharmacy,
+              userId: item.userId,
+              itemId: item.id,
+              itemData: itemData,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ: $e')),
+        );
+      }
+    }
   }
 }

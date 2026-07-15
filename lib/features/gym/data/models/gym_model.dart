@@ -10,7 +10,7 @@ class GymModel {
   final String center; // المركز (مثلاً: ملوي)
   final double latitude;
   final double longitude;
-  final String phone;
+  final List<String> phones; // Support multiple phone numbers
   final String whatsapp;
   final String? logoUrl;
   final List<String> images;
@@ -34,9 +34,13 @@ class GymModel {
   final bool hasFunctionalTraining; // تدريب وظيفي
   final bool hasGroupClasses; // حصص جماعية
 
+  // New dynamic lists for features and training types
+  final List<String> features; // قائمة المميزات الديناميكية
+  final List<String> trainingTypes; // قائمة أنواع التدريب الديناميكية
+
   // Working hours
-  final Map<String, WorkingHours> maleWorkingHours;
-  final Map<String, WorkingHours> femaleWorkingHours;
+  final Map<String, GymWorkingHours> maleWorkingHours;
+  final Map<String, GymWorkingHours> femaleWorkingHours;
 
   // Pricing
   final double? monthlySubscription;
@@ -73,7 +77,7 @@ class GymModel {
     this.center = 'ملوي',
     required this.latitude,
     required this.longitude,
-    required this.phone,
+    required this.phones,
     required this.whatsapp,
     this.logoUrl,
     required this.images,
@@ -92,6 +96,8 @@ class GymModel {
     this.hasBodybuilding = false,
     this.hasFunctionalTraining = false,
     this.hasGroupClasses = false,
+    this.features = const [],
+    this.trainingTypes = const [],
     this.averageRating = 0.0,
     this.totalRatings = 0,
     this.totalLikes = 0,
@@ -124,7 +130,9 @@ class GymModel {
       center: data['center'] ?? 'ملوي',
       latitude: (data['latitude'] ?? 0.0).toDouble(),
       longitude: (data['longitude'] ?? 0.0).toDouble(),
-      phone: data['phone'] ?? '',
+      phones: data['phones'] != null
+          ? List<String>.from(data['phones'])
+          : (data['phone'] != null ? [data['phone']] : []), // Backward compatibility
       whatsapp: data['whatsapp'] ?? '',
       logoUrl: data['logoUrl'],
       images: List<String>.from(data['images'] ?? []),
@@ -143,11 +151,13 @@ class GymModel {
       hasBodybuilding: data['hasBodybuilding'] ?? false,
       hasFunctionalTraining: data['hasFunctionalTraining'] ?? false,
       hasGroupClasses: data['hasGroupClasses'] ?? false,
+      features: List<String>.from(data['features'] ?? []),
+      trainingTypes: List<String>.from(data['trainingTypes'] ?? []),
       maleWorkingHours:
           (data['maleWorkingHours'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(
               key,
-              WorkingHours.fromMap(value as Map<String, dynamic>),
+              GymWorkingHours.fromMap(value as Map<String, dynamic>),
             ),
           ) ??
           {},
@@ -155,7 +165,7 @@ class GymModel {
           (data['femaleWorkingHours'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(
               key,
-              WorkingHours.fromMap(value as Map<String, dynamic>),
+              GymWorkingHours.fromMap(value as Map<String, dynamic>),
             ),
           ) ??
           {},
@@ -191,7 +201,7 @@ class GymModel {
       'center': center,
       'latitude': latitude,
       'longitude': longitude,
-      'phone': phone,
+      'phones': phones,
       'whatsapp': whatsapp,
       'logoUrl': logoUrl,
       'images': images,
@@ -210,6 +220,8 @@ class GymModel {
       'hasBodybuilding': hasBodybuilding,
       'hasFunctionalTraining': hasFunctionalTraining,
       'hasGroupClasses': hasGroupClasses,
+      'features': features,
+      'trainingTypes': trainingTypes,
       'maleWorkingHours': maleWorkingHours.map(
         (key, value) => MapEntry(key, value.toMap()),
       ),
@@ -260,6 +272,67 @@ class WorkingHours {
       'openTime': openTime,
       'closeTime': closeTime,
       'isHoliday': isHoliday,
+    };
+  }
+}
+
+class TimeSlot {
+  final String from;
+  final String to;
+
+  TimeSlot({required this.from, required this.to});
+
+  factory TimeSlot.fromMap(Map<String, dynamic> map) {
+    return TimeSlot(from: map['from'] ?? '09:00', to: map['to'] ?? '17:00');
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'from': from, 'to': to};
+  }
+}
+
+class GymWorkingHours {
+  final List<TimeSlot> slots;
+  final bool isClosed;
+
+  GymWorkingHours({
+    List<TimeSlot>? slots,
+    this.isClosed = false,
+  }) : slots = slots ?? [TimeSlot(from: '08:00', to: '22:00')];
+
+  factory GymWorkingHours.fromMap(Map<String, dynamic> map) {
+    List<TimeSlot> parsedSlots = [];
+    
+    // Support new format with slots
+    if (map['slots'] != null && map['slots'] is List) {
+      for (var slotMap in map['slots']) {
+        parsedSlots.add(TimeSlot.fromMap(slotMap as Map<String, dynamic>));
+      }
+    }
+    // Support old format with openTime/closeTime
+    else if (map['openTime'] != null && map['closeTime'] != null) {
+      parsedSlots.add(TimeSlot(
+        from: map['openTime'],
+        to: map['closeTime'],
+      ));
+    } else {
+      parsedSlots.add(TimeSlot(from: '08:00', to: '22:00'));
+    }
+
+    return GymWorkingHours(
+      slots: parsedSlots,
+      isClosed: map['isClosed'] ?? map['isHoliday'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'slots': slots.map((s) => s.toMap()).toList(),
+      'isClosed': isClosed,
+      // Keep old format for backward compatibility
+      'openTime': slots.isNotEmpty ? slots.first.from : '08:00',
+      'closeTime': slots.isNotEmpty ? slots.first.to : '22:00',
+      'isHoliday': isClosed,
     };
   }
 }

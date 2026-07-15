@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
@@ -243,9 +244,9 @@ class _MedicineRequestsListScreenState
           });
 
       // Stop all follow-up reminders for this request once user confirms contact.
-      // await MedicineNotificationService.cancelMedicineRequestFollowUp(
-      //   requestId,
-      // );
+      await MedicineNotificationService.cancelMedicineRequestFollowUp(
+        requestId,
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -273,9 +274,9 @@ class _MedicineRequestsListScreenState
           .delete();
 
       // Also cancel reminders when request is deleted.
-      // await MedicineNotificationService.cancelMedicineRequestFollowUp(
-      //   requestId,
-      // );
+      await MedicineNotificationService.cancelMedicineRequestFollowUp(
+        requestId,
+      );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

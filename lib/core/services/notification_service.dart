@@ -3,13 +3,14 @@ import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'deep_link_navigation_service.dart';
 
 class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  final DeepLinkNavigationService _deepLinkService = DeepLinkNavigationService();
 
   // Topic names
   static const String pharmacyTopic = 'pharmacy_requests';
@@ -18,9 +19,7 @@ class NotificationService {
 
   /// Initialize notifications and request permissions
   Future<void> initialize() async {
-    print('🔔 Initializing notifications...');
-    
-    // Initialize local notifications FIRST
+    // Initialize local notifications
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
@@ -28,57 +27,37 @@ class NotificationService {
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
-      defaultPresentAlert: true,
-      defaultPresentBadge: true,
-      defaultPresentSound: true,
     );
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
-    final initialized = await _localNotifications.initialize(
+    await _localNotifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
-    
-    print('📲 Local notifications initialized: $initialized');
 
-    // Create notification channels (Android only)
+    // Create notification channels
     await _createNotificationChannels();
 
     // Request permission for iOS and Android 13+
-    print('🔐 Requesting notification permissions...');
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
       provisional: false,
-      announcement: false,
-      carPlay: false,
-      criticalAlert: false,
     );
 
-    print('🔔 Permission status: ${settings.authorizationStatus}');
-    
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print('✅ User granted notification permission');
-      
-      // Get FCM token
-      String? token = await _messaging.getToken();
-      print('📱 FCM Token: $token');
-      
-      if (token != null) {
-        print('✅ Successfully got FCM token');
-      } else {
-        print('⚠️ FCM token is null - may need APNs setup');
-      }
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-      print('⚠️ User granted provisional permission');
     } else {
       print('❌ User declined or has not accepted permission');
-      print('💡 Go to Settings → Notifications to enable');
     }
+
+    // Get FCM token
+    String? token = await _messaging.getToken();
+    print('📱 FCM Token: $token');
   }
 
   /// Create notification channels for Android
@@ -184,7 +163,7 @@ class NotificationService {
 
   /// Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
-    print('Notification tapped: ${response.payload}');
+    print('🔔 Notification tapped: ${response.payload}');
 
     final payload = response.payload;
     if (payload == null || payload.isEmpty) return;
@@ -194,21 +173,16 @@ class NotificationService {
       if (decoded is Map<String, dynamic>) {
         _handleNotificationAction(decoded);
       }
-    } catch (_) {
-      // Backward compatibility for old simple payloads.
+    } catch (e) {
+      print('❌ Error decoding notification payload: $e');
     }
   }
 
   Future<void> _handleNotificationAction(Map<String, dynamic> data) async {
-    final openUrl = (data['openUrl'] ?? '').toString().trim();
-    if (openUrl.isEmpty) return;
-
-    final uri = Uri.tryParse(openUrl);
-    if (uri == null) return;
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    print('🚀 Handling notification action: $data');
+    
+    // استخدام Deep Link Navigation Service
+    await _deepLinkService.handleDeepLink(data);
   }
 
   /// Subscribe ALL users to the general topic for offers and announcements
@@ -497,25 +471,18 @@ class NotificationService {
 
   /// Handle notification taps
   void handleNotificationTaps() {
+    // عند فتح التطبيق من إشعار (التطبيق مغلق)
     _messaging.getInitialMessage().then((message) {
       if (message != null) {
+        print('🚀 App opened from notification (terminated state)');
         _handleNotificationAction(message.data);
       }
     });
 
+    // عند فتح التطبيق من إشعار (التطبيق في الخلفية)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('A new onMessageOpenedApp event was published!');
+      print('🚀 App opened from notification (background state)');
       _handleNotificationAction(message.data);
-
-      // Navigate to medicine requests screen or bookings screen based on type
-      final type = message.data['type'];
-      if (type == 'new_booking') {
-        // Navigate to bookings management
-        print('Navigate to bookings management');
-      } else if (type == 'new_medicine_request') {
-        // Navigate to medicine requests
-        print('Navigate to medicine requests');
-      }
     });
   }
 

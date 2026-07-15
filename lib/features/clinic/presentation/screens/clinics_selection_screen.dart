@@ -181,7 +181,7 @@ class ClinicsSelectionScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'د. ${clinic.doctorName}',
+                        clinic.doctorName,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

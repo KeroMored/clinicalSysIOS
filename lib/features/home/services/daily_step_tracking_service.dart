@@ -589,8 +589,7 @@ class DailyStepTrackingService {
 
       if (openSettingsIfPermanentlyDenied &&
           (status.isPermanentlyDenied || status.isRestricted)) {
-        // Keep Settings opening user-driven from UI only.
-        debugPrint('Activity permission permanently denied/restricted.');
+        await openAppSettings();
       }
 
       permissionGrantedNotifier.value = false;
@@ -619,8 +618,7 @@ class DailyStepTrackingService {
       }
 
       if (status.isPermanentlyDenied || status.isRestricted) {
-        // Avoid automatic jump to Settings; show guidance in UI instead.
-        debugPrint('Activity permission permanently denied/restricted.');
+        await openAppSettings();
       }
 
       permissionGrantedNotifier.value = false;

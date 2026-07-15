@@ -148,7 +148,7 @@ class ClinicWorkingHoursContent extends StatelessWidget {
             final isClosed = isHoliday || hours == null || hours.isClosed;
 
             final timeLabel = isHoliday
-                ? 'عطلة رسمية'
+                ? 'اجازة'
                 : (isClosed
                       ? 'مغلق'
                       : hours.slots

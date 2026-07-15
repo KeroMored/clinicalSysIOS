@@ -336,7 +336,7 @@ class _GymApprovalListScreenState extends State<GymApprovalListScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      gym.phone,
+                      gym.phones.isNotEmpty ? gym.phones.first : 'لا يوجد',
                       style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                     ),
                     const Spacer(),

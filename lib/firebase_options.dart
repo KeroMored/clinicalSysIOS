@@ -60,7 +60,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBLdZ6S-VUwar2Oi-CPNaEobc1LvKb8xA0',
-    appId: '1:718616577077:ios:2da3350695fb985c189d7c',
+    appId: '1:718616577077:ios:6593a7fcafb54348189d7c',
     messagingSenderId: '718616577077',
     projectId: 'clinicalsystem-4da35',
     storageBucket: 'clinicalsystem-4da35.firebasestorage.app',
@@ -69,11 +69,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyBLdZ6S-VUwar2Oi-CPNaEobc1LvKb8xA0',
-    appId: '1:718616577077:ios:dc5fe68a823452fc189d7c',
+    appId: '1:718616577077:ios:6593a7fcafb54348189d7c',
     messagingSenderId: '718616577077',
     projectId: 'clinicalsystem-4da35',
     storageBucket: 'clinicalsystem-4da35.firebasestorage.app',
-    iosBundleId: 'com.example.clinicalsystem',
+    iosBundleId: 'com.mored.mallawicure',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

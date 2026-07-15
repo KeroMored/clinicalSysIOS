@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../data/models/pharmacy_request_model.dart';
+import '../../data/models/medical_supply_request_model.dart';
 import 'admin_state.dart';
 
 class AdminCubit extends Cubit<AdminState> {
@@ -347,6 +348,78 @@ class AdminCubit extends Cubit<AdminState> {
     try {
       await repository.addRehabilitationCenter(center);
       emit(RehabilitationCenterAdded('تمت إضافة مركز التأهيل بنجاح'));
+    } catch (e) {
+      emit(AdminError(e.toString()));
+    }
+  }
+
+  // ============ MEDICAL SUPPLY FUNCTIONS ============
+
+  // Load medical supply requests by status
+  Future<void> loadMedicalSupplyRequestsByStatus(String status) async {
+    try {
+      emit(AdminLoading());
+      final requests = await repository.getMedicalSupplyRequestsByStatus(status);
+      emit(MedicalSupplyRequestsLoaded(requests));
+    } catch (e) {
+      emit(AdminError(e.toString()));
+    }
+  }
+
+  // Load pending medical supply requests
+  Future<void> loadPendingMedicalSupplyRequests() async {
+    try {
+      emit(AdminLoading());
+      final requests = await repository.getPendingMedicalSupplyRequests();
+      emit(MedicalSupplyRequestsLoaded(requests));
+    } catch (e) {
+      emit(AdminError(e.toString()));
+    }
+  }
+
+  // Approve medical supply request
+  Future<void> approveMedicalSupplyRequest(String requestId) async {
+    try {
+      await repository.approveMedicalSupplyRequest(requestId);
+      emit(MedicalSupplyRequestApproved('تم الموافقة على الطلب بنجاح'));
+      // Reload requests
+      await loadPendingMedicalSupplyRequests();
+    } catch (e) {
+      emit(AdminError(e.toString()));
+    }
+  }
+
+  // Reject medical supply request
+  Future<void> rejectMedicalSupplyRequest(String requestId, String reason) async {
+    try {
+      await repository.rejectMedicalSupplyRequest(requestId, reason);
+      emit(MedicalSupplyRequestRejected('تم رفض الطلب'));
+      // Reload requests
+      await loadPendingMedicalSupplyRequests();
+    } catch (e) {
+      emit(AdminError(e.toString()));
+    }
+  }
+
+  // Set medical supply status to pending
+  Future<void> setPendingMedicalSupplyRequest(String requestId) async {
+    try {
+      await repository.setPendingMedicalSupplyRequest(requestId);
+      emit(MedicalSupplyRequestSetToPending('تم تغيير حالة المكان إلى انتظار'));
+      // Reload requests
+      await loadPendingMedicalSupplyRequests();
+    } catch (e) {
+      emit(AdminError(e.toString()));
+    }
+  }
+
+  // Add medical supply directly (from admin)
+  Future<void> addMedicalSupplyDirectly(MedicalSupplyRequestModel request) async {
+    try {
+      emit(AdminLoading());
+      // Add directly to medical_supplies collection
+      await repository.addMedicalSupplyDirectly(request);
+      emit(MedicalSupplyAddedSuccessfully('تم إضافة مكان المستلزمات الطبية بنجاح'));
     } catch (e) {
       emit(AdminError(e.toString()));
     }

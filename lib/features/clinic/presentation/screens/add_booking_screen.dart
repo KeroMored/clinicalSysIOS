@@ -170,6 +170,7 @@ class _AddBookingScreenState extends State<AddBookingScreen> {
             : _phoneController.text.trim(),
         clinicId: widget.clinic.id,
         doctorName: widget.clinic.doctorName,
+        clinicType: widget.clinic.clinicType, // إضافة نوع العيادة
         bookingNumber: bookingNumber,
         status: _isPaid ? BookingStatus.confirmed : BookingStatus.pending,
         createdAt: widget.booking?.createdAt ?? DateTime.now(),

@@ -506,6 +506,8 @@ class _ReportsAdminScreenState extends State<ReportsAdminScreen>
         return 'صالة رياضية';
       case 'rehabilitation':
         return 'مركز تأهيل';
+      case 'medical_supply':
+        return 'مستلزمات طبية';
       default:
         return serviceType;
     }

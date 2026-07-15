@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/pharmacy_request_model.dart';
+import '../models/medical_supply_request_model.dart';
 import '../../../pharmacy/data/models/pharmacy_model.dart';
 import '../../../laboratory/data/models/laboratory_model.dart';
 
 class AdminRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Get all pending pharmacy requests
   Future<List<PharmacyRequestModel>> getPendingPharmacyRequests() async {
@@ -663,6 +666,287 @@ class AdminRepository {
           .set(centerData);
     } catch (e) {
       throw Exception('Failed to add rehabilitation center: $e');
+    }
+  }
+
+  // ============ MEDICAL SUPPLY FUNCTIONS ============
+
+  // Get medical supply requests by status
+  Future<List<MedicalSupplyRequestModel>> getMedicalSupplyRequestsByStatus(
+    String status,
+  ) async {
+    try {
+      Query query = _firestore.collection('medical_supplies');
+
+      // If status is not 'all', filter by status
+      if (status != 'all') {
+        query = query.where('status', isEqualTo: status);
+      }
+
+      final snapshot = await query.get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return MedicalSupplyRequestModel(
+          id: doc.id,
+          name: data['name'] ?? '',
+          address: data['address'] ?? '',
+          phones: data['phones'] != null
+              ? List<String>.from(data['phones'])
+              : (data['phone'] != null ? [data['phone']] : []),
+          whatsapp: data['whatsapp'] ?? '',
+          latitude: (data['latitude'] ?? 0.0).toDouble(),
+          longitude: (data['longitude'] ?? 0.0).toDouble(),
+          workingHours: data['workingHours'] ?? '',
+          holidays: data['holidays'] ?? '',
+          images: List<String>.from(data['images'] ?? []),
+          hasHomeDelivery: data['hasHomeDelivery'] ?? false,
+          deliveryFee: data['deliveryFee']?.toDouble(),
+          minimumOrderForDelivery: data['minimumOrderForDelivery']?.toDouble(),
+          services: List<String>.from(data['services'] ?? []),
+          status: data['status'] ?? 'pending',
+          requestDate: data['requestDate'] != null
+              ? (data['requestDate'] as Timestamp).toDate()
+              : DateTime.now(),
+          rejectionReason: data['rejectionReason'],
+          ownerName: data['ownerName'] ?? '',
+          ownerPhone: data['ownerPhone'] ?? '',
+          ownerEmail: data['ownerEmail'] ?? '',
+          description: data['description'],
+          governorate: data['governorate'] ?? 'المنيا',
+          center: data['center'] ?? 'ملوي',
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch medical supply requests: $e');
+    }
+  }
+
+  // Get pending medical supply requests
+  Future<List<MedicalSupplyRequestModel>> getPendingMedicalSupplyRequests() async {
+    try {
+      final snapshot = await _firestore
+          .collection('medical_supplies')
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return MedicalSupplyRequestModel(
+          id: doc.id,
+          name: data['name'] ?? '',
+          address: data['address'] ?? '',
+          phones: data['phones'] != null
+              ? List<String>.from(data['phones'])
+              : (data['phone'] != null ? [data['phone']] : []),
+          whatsapp: data['whatsapp'] ?? '',
+          latitude: (data['latitude'] ?? 0.0).toDouble(),
+          longitude: (data['longitude'] ?? 0.0).toDouble(),
+          workingHours: data['workingHours'] ?? '',
+          holidays: data['holidays'] ?? '',
+          images: List<String>.from(data['images'] ?? []),
+          hasHomeDelivery: data['hasHomeDelivery'] ?? false,
+          deliveryFee: data['deliveryFee']?.toDouble(),
+          minimumOrderForDelivery: data['minimumOrderForDelivery']?.toDouble(),
+          services: List<String>.from(data['services'] ?? []),
+          status: data['status'] ?? 'pending',
+          requestDate: data['requestDate'] != null
+              ? (data['requestDate'] as Timestamp).toDate()
+              : DateTime.now(),
+          rejectionReason: data['rejectionReason'],
+          ownerName: data['ownerName'] ?? '',
+          ownerPhone: data['ownerPhone'] ?? '',
+          ownerEmail: data['ownerEmail'] ?? '',
+          description: data['description'],
+          governorate: data['governorate'] ?? 'المنيا',
+          center: data['center'] ?? 'ملوي',
+        );
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch pending medical supply requests: $e');
+    }
+  }
+
+  // Approve medical supply request
+  Future<void> approveMedicalSupplyRequest(String requestId) async {
+    try {
+      // Get the document first to retrieve owner data
+      final doc = await _firestore
+          .collection('medical_supplies')
+          .doc(requestId)
+          .get();
+
+      if (!doc.exists) {
+        throw Exception('Medical supply request not found');
+      }
+
+      final data = doc.data()!;
+      final ownerEmail = data['ownerEmail'] as String?;
+      final ownerName = data['ownerName'] as String?;
+      final ownerPhone = data['ownerPhone'] as String?;
+
+      // Create Firebase Auth account for the owner
+      String? userId;
+      if (ownerEmail != null && ownerEmail.isNotEmpty) {
+        try {
+          // Generate a random password (owner will need to reset it)
+          final String tempPassword = 'Temp${DateTime.now().millisecondsSinceEpoch}';
+          
+          final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+            email: ownerEmail,
+            password: tempPassword,
+          );
+          
+          userId = userCredential.user?.uid;
+
+          // Create user document in users collection
+          if (userId != null) {
+            await _firestore.collection('users').doc(userId).set({
+              'uid': userId,
+              'email': ownerEmail,
+              'displayName': ownerName ?? 'صاحب مستلزمات',
+              'photoUrl': '',
+              'role': 'medical_supply_owner',
+              'medicalSupplyId': requestId,
+              'phoneNumber': ownerPhone,
+              'whatsappNumber': ownerPhone,
+              'address': '',
+            });
+          }
+
+          // Send password reset email
+          await _auth.sendPasswordResetEmail(email: ownerEmail);
+        } catch (authError) {
+          // If account already exists, try to find and update it
+          try {
+            final usersQuery = await _firestore
+                .collection('users')
+                .where('email', isEqualTo: ownerEmail)
+                .limit(1)
+                .get();
+
+            if (usersQuery.docs.isNotEmpty) {
+              userId = usersQuery.docs.first.id;
+              await _firestore.collection('users').doc(userId).update({
+                'role': 'medical_supply_owner',
+                'medicalSupplyId': requestId,
+              });
+            }
+          } catch (updateError) {
+            print('Could not update existing user: $updateError');
+          }
+        }
+      }
+
+      // Update status to approved and add authEmails array
+      await _firestore.collection('medical_supplies').doc(requestId).update({
+        'status': 'approved',
+        'approvedAt': FieldValue.serverTimestamp(),
+        'authEmails': ownerEmail != null ? [ownerEmail] : [],
+        'averageRating': 0.0,
+        'totalRatings': 0,
+        'totalLikes': 0,
+        'profileViewsCount': 0,
+      });
+    } catch (e) {
+      throw Exception('Failed to approve medical supply request: $e');
+    }
+  }
+
+  // Reject medical supply request
+  Future<void> rejectMedicalSupplyRequest(String requestId, String reason) async {
+    try {
+      await _firestore.collection('medical_supplies').doc(requestId).update({
+        'status': 'rejected',
+        'rejectionReason': reason,
+        'rejectedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to reject medical supply request: $e');
+    }
+  }
+
+  // Set medical supply status to pending
+  Future<void> setPendingMedicalSupplyRequest(String requestId) async {
+    try {
+      await _firestore.collection('medical_supplies').doc(requestId).update({
+        'status': 'pending',
+        'rejectionReason': FieldValue.delete(),
+      });
+    } catch (e) {
+      throw Exception('Failed to set medical supply to pending: $e');
+    }
+  }
+
+  // Add medical supply directly (from admin)
+  Future<void> addMedicalSupplyDirectly(MedicalSupplyRequestModel request) async {
+    try {
+      // Create Firebase Auth account for the owner
+      String? userId;
+      if (request.ownerEmail.isNotEmpty) {
+        try {
+          // Generate a random password (owner will need to reset it)
+          final String tempPassword = 'Temp${DateTime.now().millisecondsSinceEpoch}';
+          
+          final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+            email: request.ownerEmail,
+            password: tempPassword,
+          );
+          
+          userId = userCredential.user?.uid;
+
+          // Create user document in users collection
+          if (userId != null) {
+            await _firestore.collection('users').doc(userId).set({
+              'uid': userId,
+              'email': request.ownerEmail,
+              'displayName': request.ownerName,
+              'photoUrl': '',
+              'role': 'medical_supply_owner',
+              'medicalSupplyId': request.id,
+              'phoneNumber': request.ownerPhone,
+              'whatsappNumber': request.ownerPhone,
+              'address': '',
+            });
+          }
+
+          // Send password reset email
+          await _auth.sendPasswordResetEmail(email: request.ownerEmail);
+        } catch (authError) {
+          // If account already exists, try to find and update it
+          try {
+            final usersQuery = await _firestore
+                .collection('users')
+                .where('email', isEqualTo: request.ownerEmail)
+                .limit(1)
+                .get();
+
+            if (usersQuery.docs.isNotEmpty) {
+              userId = usersQuery.docs.first.id;
+              await _firestore.collection('users').doc(userId).update({
+                'role': 'medical_supply_owner',
+                'medicalSupplyId': request.id,
+              });
+            }
+          } catch (updateError) {
+            print('Could not update existing user: $updateError');
+          }
+        }
+      }
+
+      final data = request.toJson();
+      data['authEmails'] = [request.ownerEmail];
+      data['averageRating'] = 0.0;
+      data['totalRatings'] = 0;
+      data['totalLikes'] = 0;
+      data['profileViewsCount'] = 0;
+
+      await _firestore
+          .collection('medical_supplies')
+          .doc(request.id)
+          .set(data);
+    } catch (e) {
+      throw Exception('Failed to add medical supply directly: $e');
     }
   }
 }

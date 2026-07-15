@@ -1,16 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'offer_card.dart';
-import '../../data/models/pharmacy_offer_model.dart';
-import '../../../../core/services/pharmacy_offer_sorting_service.dart';
-import '../../../../core/services/app_control_service.dart';
-import '../../../../core/widgets/admin_views_count_toggle.dart';
+import '../../../../core/models/unified_offer_model.dart';
+import '../../../../core/services/unified_offers_service.dart';
+import '../../../../core/widgets/unified_offer_card.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
 
-/// شاشة كل العروض من جميع الصيدليات مع نظام ترتيب ديناميكي
+/// شاشة كل العروض من جميع المصادر (صيدليات، عيادات، جيمات) مع نظام ترتيب ديناميكي
 class AllOffersScreen extends StatefulWidget {
   const AllOffersScreen({super.key});
 
@@ -21,36 +18,29 @@ class AllOffersScreen extends StatefulWidget {
 class _AllOffersScreenState extends State<AllOffersScreen> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _topOffersController = ScrollController();
-  final PharmacyOfferSortingService _sortingService =
-      PharmacyOfferSortingService();
-  final AppControlService _appControlService = AppControlService();
+  final UnifiedOffersService _unifiedOffersService = UnifiedOffersService();
   Timer? _topOffersAutoScrollTimer;
   bool _isTopOffersAnimating = false;
   int _lastTopOffersCount = 0;
 
-  // قوائم العروض
-  final List<PharmacyOfferModel> _allFetchedOffers = [];
-  final List<PharmacyOfferModel> _displayedOffers = [];
+  // قوائم العروض الموحدة
+  final List<UnifiedOfferModel> _allFetchedOffers = [];
+  final List<UnifiedOfferModel> _displayedOffers = [];
 
   bool _isLoading = false;
   bool _hasMore = true;
-  DocumentSnapshot? _lastDocument;
 
   // إعدادات التقسيم والجلب
-  static const int _fetchBatchSize = 10;
+  static const int _fetchBatchSize = 15;
   static const int _displayPageSize = 10;
   int _currentDisplayPage = 0;
 
-  // إعدادات العرض
-  bool _showViewsCount = false;
-
-  // تتبع العروض التي تمت مشاهدتها (لتجنب زيادة العدد أكتر من مرة)
+  // تتبع العروض التي تمت مشاهدتها
   final Set<String> _viewedOffers = {};
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
     _loadInitialOffers();
     _scrollController.addListener(_onScroll);
   }
@@ -118,20 +108,6 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
     }
   }
 
-  /// تحميل إعدادات العرض من Firestore
-  Future<void> _loadSettings() async {
-    try {
-      final settings = await _appControlService.getOffersSettings();
-      if (mounted) {
-        setState(() {
-          _showViewsCount = settings.showViewsCount;
-        });
-      }
-    } catch (e) {
-      debugPrint('خطأ في تحميل الإعدادات: $e');
-    }
-  }
-
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
@@ -147,10 +123,9 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
     setState(() {
       _allFetchedOffers.clear();
       _displayedOffers.clear();
-      _lastDocument = null;
       _hasMore = true;
       _currentDisplayPage = 0;
-      _sortingService.resetDiversityTracking();
+      _unifiedOffersService.resetDiversityTracking();
     });
 
     await _fetchOffersFromFirestore();
@@ -164,19 +139,12 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
     setState(() => _isLoading = true);
 
     try {
-      Query query = FirebaseFirestore.instance
-          .collection('offers')
-          .where('isActive', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .limit(_fetchBatchSize);
+      // جلب العروض من جميع المصادر
+      final newOffers = await _unifiedOffersService.fetchAllOffers(
+        limit: _fetchBatchSize,
+      );
 
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final snapshot = await query.get();
-
-      if (snapshot.docs.isEmpty) {
+      if (newOffers.isEmpty) {
         if (mounted) {
           setState(() {
             _hasMore = false;
@@ -186,20 +154,10 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
         return;
       }
 
-      final newOffers = snapshot.docs
-          .map(
-            (doc) => PharmacyOfferModel.fromJson({
-              'id': doc.id,
-              ...doc.data() as Map<String, dynamic>,
-            }),
-          )
-          .toList();
-
       if (mounted) {
         setState(() {
           _allFetchedOffers.addAll(newOffers);
-          _lastDocument = snapshot.docs.last;
-          _hasMore = snapshot.docs.length == _fetchBatchSize;
+          _hasMore = newOffers.length == _fetchBatchSize;
           _isLoading = false;
         });
       }
@@ -226,7 +184,7 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
       return;
     }
 
-    final sortedOffers = _sortingService.sortOffers(
+    final sortedOffers = _unifiedOffersService.sortOffers(
       offers: _allFetchedOffers,
       pageNumber: 0,
       pageSize: _allFetchedOffers.length,
@@ -266,23 +224,13 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
   }
 
   /// زيادة عدد المشاهدات
-  Future<void> _incrementViewsCount(String offerId) async {
-    try {
-      await FirebaseFirestore.instance.collection('offers').doc(offerId).update(
-        {'viewsCount': FieldValue.increment(1)},
-      );
-    } catch (e) {
-      debugPrint('خطأ في زيادة عدد المشاهدات: $e');
+  void _markOfferViewed(UnifiedOfferModel offer) {
+    if (_viewedOffers.add(offer.id)) {
+      UnifiedOfferCard.incrementViewsCount(offer);
     }
   }
 
-  void _markOfferViewed(String offerId) {
-    if (_viewedOffers.add(offerId)) {
-      _incrementViewsCount(offerId);
-    }
-  }
-
-  Widget _buildHorizontalTopOffers(List<PharmacyOfferModel> offers) {
+  Widget _buildHorizontalTopOffers(List<UnifiedOfferModel> offers) {
     return SingleChildScrollView(
       controller: _topOffersController,
       scrollDirection: Axis.horizontal,
@@ -296,21 +244,10 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
               child: Builder(
                 builder: (context) {
                   final offer = offers[index];
-                  _markOfferViewed(offer.id);
-                  return OfferCard(
-                    offerId: offer.id,
-                    pharmacyId: offer.pharmacyId,
-                    pharmacyName: offer.pharmacyName,
-                    title: offer.title,
-                    description: offer.description,
-                    notes: offer.notes,
-                    images: offer.images,
-                    createdAt: offer.createdAt,
-                    isOwnerView: false,
-                    isActive: offer.isActive,
-                    showViewsCount: _showViewsCount,
-                    viewsCount: offer.viewsCount,
-                    category: offer.category,
+                  _markOfferViewed(offer);
+                  return UnifiedOfferCard(
+                    offer: offer,
+                    showViewsCount: true, // دايماً true
                   );
                 },
               ),
@@ -365,7 +302,7 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
     final featuredOffers = _displayedOffers.take(5).toList();
     final verticalOffers = _displayedOffers.length > 5
         ? _displayedOffers.sublist(5)
-        : <PharmacyOfferModel>[];
+        : <UnifiedOfferModel>[];
     final showBottomLoader =
         _hasMore ||
         (_currentDisplayPage + 1) * _displayPageSize < _allFetchedOffers.length;
@@ -407,7 +344,6 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
                 ),
                 centerTitle: true,
                 actions: [
-                  const AdminViewsCountToggle(displayType: 'icon'),
                   IconButton(
                     tooltip: 'الترتيب ديناميكي',
                     onPressed: null,
@@ -517,24 +453,13 @@ class _AllOffersScreenState extends State<AllOffersScreen> {
                         }
 
                         final offer = verticalOffers[index];
-                        _markOfferViewed(offer.id);
+                        _markOfferViewed(offer);
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: OfferCard(
-                            offerId: offer.id,
-                            pharmacyId: offer.pharmacyId,
-                            pharmacyName: offer.pharmacyName,
-                            title: offer.title,
-                            description: offer.description,
-                            notes: offer.notes,
-                            images: offer.images,
-                            createdAt: offer.createdAt,
-                            isOwnerView: false,
-                            isActive: offer.isActive,
-                            showViewsCount: _showViewsCount,
-                            viewsCount: offer.viewsCount,
-                            category: offer.category,
+                          child: UnifiedOfferCard(
+                            offer: offer,
+                            showViewsCount: true, // دايماً true
                           ),
                         );
                       },

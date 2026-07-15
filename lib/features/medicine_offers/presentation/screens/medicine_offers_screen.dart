@@ -5,8 +5,6 @@ import '../../../../core/widgets/gradient_appbar.dart';
 import '../widgets/medicine_offer_card.dart';
 import '../../data/models/medicine_offer_model.dart';
 import '../../../../core/services/offer_sorting_service.dart';
-import '../../../../core/services/app_control_service.dart';
-import '../../../../core/widgets/admin_views_count_toggle.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// شاشة عروض الأدوية مع نظام ترتيب ديناميكي متقدم
@@ -20,7 +18,6 @@ class MedicineOffersScreen extends StatefulWidget {
 class _MedicineOffersScreenState extends State<MedicineOffersScreen> {
   final ScrollController _scrollController = ScrollController();
   final OfferSortingService _sortingService = OfferSortingService();
-  final AppControlService _appControlService = AppControlService();
 
   // قوائم العروض
   final List<MedicineOfferModel> _allFetchedOffers =
@@ -37,16 +34,12 @@ class _MedicineOffersScreenState extends State<MedicineOffersScreen> {
   static const int _displayPageSize = 8; // نعرض 8 عروض في كل صفحة
   int _currentDisplayPage = 0;
 
-  // إعدادات العرض
-  bool _showViewsCount = false;
-
   // تتبع العروض التي تمت مشاهدتها (لتجنب زيادة العدد أكتر من مرة)
   final Set<String> _viewedOffers = {};
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
     _loadInitialOffers();
     _scrollController.addListener(_onScroll);
   }
@@ -55,21 +48,6 @@ class _MedicineOffersScreenState extends State<MedicineOffersScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  /// تحميل إعدادات العرض من Firestore
-  Future<void> _loadSettings() async {
-    try {
-      final settings = await _appControlService.getOffersSettings();
-      if (mounted) {
-        setState(() {
-          _showViewsCount = settings.showViewsCount;
-        });
-      }
-    } catch (e) {
-      // في حالة الخطأ، نستخدم القيمة الافتراضية (false)
-      debugPrint('خطأ في تحميل الإعدادات: $e');
-    }
   }
 
   /// مراقبة التمرير لتحميل المزيد من العروض
@@ -230,7 +208,6 @@ class _MedicineOffersScreenState extends State<MedicineOffersScreen> {
           title: 'عروض الأدوية',
           gradient: AppTheme.clinicGradient,
           actions: [
-            const AdminViewsCountToggle(displayType: 'icon'),
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Tooltip(

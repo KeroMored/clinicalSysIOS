@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+
 import '../../data/models/clinic_model.dart';
 import '../../data/models/clinic_department.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
@@ -1736,7 +1737,7 @@ class _EditClinicScreenState extends State<EditClinicScreen> {
                                   );
                                 },
                                 icon: const Icon(Icons.content_copy, size: 18),
-                                label: const Text('نسخ للكل'),
+                                label: const Text('نسخ السبت للكل'),
                                 style: TextButton.styleFrom(
                                   foregroundColor: const Color(0xFF0B8293),
                                   padding: const EdgeInsets.symmetric(

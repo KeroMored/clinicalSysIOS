@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
+
 import '../../../laboratory/data/models/laboratory_model.dart';
 import '../../../laboratory/data/models/working_hours.dart';
 import '../../../laboratory/data/models/lab_tests.dart';
@@ -12,6 +13,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import '../../../home/data/home_fab_cache_helper.dart';
 
 class AddLaboratoryScreen extends StatefulWidget {
   const AddLaboratoryScreen({super.key});
@@ -26,7 +28,7 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
 
   // Controllers
   final _labNameController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final List<TextEditingController> _phoneControllers = [TextEditingController()]; // Support multiple phones
   final _whatsappController = TextEditingController();
   final _emailController = TextEditingController();
   final _ownerNameController = TextEditingController();
@@ -45,9 +47,8 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
   bool _isLoadingLocation = false;
   String _locationStatus = '';
 
-  // Working Hours
-  final Map<String, TimeOfDay?> _workingHoursFrom = {};
-  final Map<String, TimeOfDay?> _workingHoursTo = {};
+  // Working Hours - Support for multiple time slots per day
+  final Map<String, List<Map<String, TextEditingController>>> _workingHoursControllers = {};
   final Map<String, bool> _isHolidayDays = {};
 
   // Available Tests
@@ -60,7 +61,7 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize working hours (all days available by default)
+    // Initialize working hours (all days available by default with one slot)
     final days = [
       'saturday',
       'sunday',
@@ -71,8 +72,12 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
       'friday',
     ];
     for (var day in days) {
-      _workingHoursFrom[day] = const TimeOfDay(hour: 8, minute: 0);
-      _workingHoursTo[day] = const TimeOfDay(hour: 20, minute: 0);
+      _workingHoursControllers[day] = [
+        {
+          'from': TextEditingController(text: '08:00'),
+          'to': TextEditingController(text: '20:00'),
+        }
+      ];
       _isHolidayDays[day] = false; // All days available by default
     }
   }
@@ -80,7 +85,9 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
   @override
   void dispose() {
     _labNameController.dispose();
-    _phoneController.dispose();
+    for (var controller in _phoneControllers) {
+      controller.dispose();
+    }
     _whatsappController.dispose();
     _emailController.dispose();
     _ownerNameController.dispose();
@@ -89,6 +96,13 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
     _descriptionController.dispose();
     _homeServiceFeeController.dispose();
     _certificationController.dispose();
+    // Dispose working hours controllers
+    for (var dayControllers in _workingHoursControllers.values) {
+      for (var slotControllers in dayControllers) {
+        slotControllers['from']?.dispose();
+        slotControllers['to']?.dispose();
+      }
+    }
     super.dispose();
   }
 
@@ -175,6 +189,90 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
       setState(() {
         _locationStatus = 'خطأ في تحديد الموقع: $e';
         _isLoadingLocation = false;
+      });
+    }
+  }
+
+  void _addTimeSlot(String day) {
+    setState(() {
+      _workingHoursControllers[day]!.add({
+        'from': TextEditingController(text: '12:00'),
+        'to': TextEditingController(text: '14:00'),
+      });
+    });
+  }
+
+  void _removeTimeSlot(String day, int index) {
+    setState(() {
+      if (_workingHoursControllers[day]!.length > 1) {
+        _workingHoursControllers[day]![index]['from']?.dispose();
+        _workingHoursControllers[day]![index]['to']?.dispose();
+        _workingHoursControllers[day]!.removeAt(index);
+      }
+    });
+  }
+
+  void _copyToAllDays(String sourceDay) {
+    final sourceSlots = _workingHoursControllers[sourceDay]!;
+    final sourceIsClosed = _isHolidayDays[sourceDay] ?? false;
+
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('نسخ السبت للكل'),
+          content: const Text('هل تريد نسخ مواعيد السبت لباقي الأيام؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  for (var day in _workingHoursControllers.keys) {
+                    if (day != sourceDay) {
+                      // Dispose old controllers
+                      for (var slot in _workingHoursControllers[day]!) {
+                        slot['from']?.dispose();
+                        slot['to']?.dispose();
+                      }
+                      // Create new controllers with copied values
+                      _workingHoursControllers[day] = sourceSlots.map((slot) {
+                        return {
+                          'from': TextEditingController(text: slot['from']!.text),
+                          'to': TextEditingController(text: slot['to']!.text),
+                        };
+                      }).toList();
+                      _isHolidayDays[day] = sourceIsClosed;
+                    }
+                  }
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم نسخ المواعيد لجميع الأيام')),
+                );
+              },
+              child: const Text('نعم'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addPhoneField() {
+    setState(() {
+      _phoneControllers.add(TextEditingController());
+    });
+  }
+
+  void _removePhoneField(int index) {
+    if (_phoneControllers.length > 1) {
+      setState(() {
+        _phoneControllers[index].dispose();
+        _phoneControllers.removeAt(index);
       });
     }
   }
@@ -280,15 +378,20 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
         );
       }
 
-      // Prepare working hours
+      // Prepare working hours with multiple slots support
       final Map<String, WorkingHours> workingHours = {};
-      _workingHoursFrom.forEach((day, fromTime) {
-        final toTime = _workingHoursTo[day];
+      _workingHoursControllers.forEach((day, slotControllers) {
         final isHoliday = _isHolidayDays[day] ?? false;
+        
+        final slots = slotControllers.map((controllers) {
+          return TimeSlot(
+            from: controllers['from']!.text,
+            to: controllers['to']!.text,
+          );
+        }).toList();
 
         workingHours[day] = WorkingHours(
-          openTime: _formatTimeOfDay(fromTime!),
-          closeTime: _formatTimeOfDay(toTime!),
+          slots: slots,
           isHoliday: isHoliday,
         );
       });
@@ -299,7 +402,14 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
         name: _labNameController.text.trim(),
         ownerName: _ownerNameController.text.trim(),
         authEmails: [_emailController.text.trim()],
-        ownerPhone: _phoneController.text.trim(),
+        ownerPhone: _phoneControllers.first.text.trim(),
+        phones: _phoneControllers
+            .map((c) => c.text.trim())
+            .where((phone) => phone.isNotEmpty)
+            .toList(),
+        whatsapp: _whatsappController.text.trim().isEmpty
+            ? null
+            : _whatsappController.text.trim(),
         address: _addressController.text.trim(),
         city: '', // Empty for now
         governorate: '', // Empty for now
@@ -323,6 +433,9 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
       );
 
       await _labRepo.addLaboratory(laboratory);
+
+      // Clear FAB cache so it updates on home screen
+      await HomeFABCacheHelper.clearCache();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -438,17 +551,50 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Contact Information
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'رقم للتواصل',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.phone),
+                        // Contact Information - Multiple Phone Numbers
+                        ...List.generate(_phoneControllers.length, (index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _phoneControllers[index],
+                                    keyboardType: TextInputType.phone,
+                                    decoration: InputDecoration(
+                                      labelText: index == 0
+                                          ? 'رقم للتواصل'
+                                          : 'رقم إضافي ${index}',
+                                      border: const OutlineInputBorder(),
+                                      prefixIcon: const Icon(Icons.phone),
+                                    ),
+                                    validator: (value) {
+                                      if (index == 0 && (value?.isEmpty ?? true)) {
+                                        return 'مطلوب';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                if (_phoneControllers.length > 1)
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle,
+                                        color: Colors.red),
+                                    onPressed: () => _removePhoneField(index),
+                                    tooltip: 'حذف الرقم',
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                        
+                        TextButton.icon(
+                          onPressed: _addPhoneField,
+                          icon: const Icon(Icons.add_circle_outline),
+                          label: const Text('إضافة رقم آخر'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF06B6D4),
                           ),
-                          validator: (value) =>
-                              value?.isEmpty ?? true ? 'مطلوب' : null,
                         ),
                         const SizedBox(height: 16),
 
@@ -833,14 +979,33 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
       'friday': 'الجمعة',
     };
 
-    return dayNames.entries.map((entry) {
+    final widgets = <Widget>[];
+
+    // Add "Copy to All" button for Saturday
+    widgets.add(
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: ElevatedButton.icon(
+          onPressed: () => _copyToAllDays('saturday'),
+          icon: const Icon(Icons.copy_all),
+          label: const Text('نسخ مواعيد السبت للكل'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF06B6D4),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12,horizontal: 12),
+          ),
+        ),
+      ),
+    );
+
+    widgets.addAll(dayNames.entries.map((entry) {
       final day = entry.key;
       final dayName = entry.value;
       final isHoliday = _isHolidayDays[day] ?? false;
-      final fromTime = _workingHoursFrom[day];
-      final toTime = _workingHoursTo[day];
+      final slotControllers = _workingHoursControllers[day] ?? [];
 
       return Card(
+        shape: Border.all(),
         margin: const EdgeInsets.only(bottom: 12),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -861,7 +1026,7 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
                     children: [
                       Text(isHoliday ? 'إجازة' : 'متاح'),
                       Switch(
-                        value: !isHoliday, // Inverted: ON = available
+                        value: !isHoliday,
                         onChanged: (value) {
                           setState(() {
                             _isHolidayDays[day] = !value;
@@ -873,67 +1038,87 @@ class _AddLaboratoryScreenState extends State<AddLaboratoryScreen> {
                 ],
               ),
               if (!isHoliday) ...[
+                const SizedBox(height: 12),
+                ...List.generate(slotControllers.length, (index) {
+                  final controllers = slotControllers[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: controllers['from'],
+                            decoration: InputDecoration(
+                              labelText: 'من ${index + 1}',
+                              border: const OutlineInputBorder(),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            readOnly: true,
+                            onTap: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: const TimeOfDay(hour: 8, minute: 0),
+                              );
+                              if (time != null) {
+                                controllers['from']!.text =
+                                    '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            controller: controllers['to'],
+                            decoration: InputDecoration(
+                              labelText: 'إلى ${index + 1}',
+                              border: const OutlineInputBorder(),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            readOnly: true,
+                            onTap: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: const TimeOfDay(hour: 20, minute: 0),
+                              );
+                              if (time != null) {
+                                controllers['to']!.text =
+                                    '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                              }
+                            },
+                          ),
+                        ),
+                        if (slotControllers.length > 1)
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            onPressed: () => _removeTimeSlot(day, index),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () async {
-                          final time = await showTimePicker(
-                            context: context,
-                            initialTime:
-                                fromTime ?? const TimeOfDay(hour: 8, minute: 0),
-                          );
-                          if (time != null) {
-                            setState(() => _workingHoursFrom[day] = time);
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'من',
-                            border: OutlineInputBorder(),
-                          ),
-                          child: Text(
-                            fromTime != null
-                                ? '${fromTime.hour.toString().padLeft(2, '0')}:${fromTime.minute.toString().padLeft(2, '0')}'
-                                : '--:--',
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () async {
-                          final time = await showTimePicker(
-                            context: context,
-                            initialTime:
-                                toTime ?? const TimeOfDay(hour: 20, minute: 0),
-                          );
-                          if (time != null) {
-                            setState(() => _workingHoursTo[day] = time);
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'إلى',
-                            border: OutlineInputBorder(),
-                          ),
-                          child: Text(
-                            toTime != null
-                                ? '${toTime.hour.toString().padLeft(2, '0')}:${toTime.minute.toString().padLeft(2, '0')}'
-                                : '--:--',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                TextButton.icon(
+                  onPressed: () => _addTimeSlot(day),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('إضافة فترة أخرى'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF06B6D4),
+                  ),
                 ),
               ],
             ],
           ),
         ),
       );
-    }).toList();
+    }).toList());
+
+    return widgets;
   }
 }

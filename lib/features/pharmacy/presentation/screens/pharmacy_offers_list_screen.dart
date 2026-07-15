@@ -5,8 +5,6 @@ import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/pharmacy_offer_model.dart';
 import 'offer_card.dart';
 import '../../../../core/services/pharmacy_offer_sorting_service.dart';
-import '../../../../core/services/app_control_service.dart';
-import '../../../../core/widgets/admin_views_count_toggle.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// شاشة عروض الصيدلية مع نظام ترتيب ديناميكي متقدم
@@ -41,7 +39,6 @@ class _PharmacyOffersListScreenState extends State<PharmacyOffersListScreen> {
   final ScrollController _scrollController = ScrollController();
   final PharmacyOfferSortingService _sortingService =
       PharmacyOfferSortingService();
-  final AppControlService _appControlService = AppControlService();
 
   // قوائم العروض
   final List<PharmacyOfferModel> _allFetchedOffers =
@@ -58,16 +55,12 @@ class _PharmacyOffersListScreenState extends State<PharmacyOffersListScreen> {
   static const int _displayPageSize = 8; // نعرض 8 عروض في كل صفحة
   int _currentDisplayPage = 0;
 
-  // إعدادات العرض
-  bool _showViewsCount = false;
-
   // تتبع العروض التي تمت مشاهدتها (لتجنب زيادة العدد أكتر من مرة)
   final Set<String> _viewedOffers = {};
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
     _loadInitialOffers();
     _scrollController.addListener(_onScroll);
   }
@@ -76,20 +69,6 @@ class _PharmacyOffersListScreenState extends State<PharmacyOffersListScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  /// تحميل إعدادات العرض من Firestore
-  Future<void> _loadSettings() async {
-    try {
-      final settings = await _appControlService.getOffersSettings();
-      if (mounted) {
-        setState(() {
-          _showViewsCount = settings.showViewsCount;
-        });
-      }
-    } catch (e) {
-      debugPrint('خطأ في تحميل الإعدادات: $e');
-    }
   }
 
   void _onScroll() {
@@ -280,7 +259,6 @@ class _PharmacyOffersListScreenState extends State<PharmacyOffersListScreen> {
                 ),
                 centerTitle: true,
                 actions: [
-                  const AdminViewsCountToggle(displayType: 'icon'),
                   IconButton(
                     tooltip: 'الترتيب ديناميكي',
                     onPressed: null,
@@ -410,7 +388,7 @@ class _PharmacyOffersListScreenState extends State<PharmacyOffersListScreen> {
                                 createdAt: offer.createdAt,
                                 isOwnerView: isOwner,
                                 isActive: offer.isActive,
-                                showViewsCount: _showViewsCount,
+                                showViewsCount: true, // دايماً true
                                 viewsCount: offer.viewsCount,
                                 category: offer.category,
                               ),

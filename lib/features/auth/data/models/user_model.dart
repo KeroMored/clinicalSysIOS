@@ -5,6 +5,7 @@ class UserModel {
   final String photoUrl;
   final String role; // 'user', 'pharmacy', 'admin'
   final String? pharmacyId; // إذا كان صاحب صيدلية
+  final String? medicalSupplyId; // إذا كان صاحب مستلزمات طبية
   final String? phoneNumber; // رقم الهاتف
   final String? whatsappNumber; // رقم الواتساب
   final String? address; // العنوان
@@ -16,6 +17,7 @@ class UserModel {
     this.photoUrl = '',
     this.role = 'user', // default: مستخدم عادي
     this.pharmacyId,
+    this.medicalSupplyId,
     this.phoneNumber,
     this.whatsappNumber,
     this.address,
@@ -32,6 +34,7 @@ class UserModel {
       photoUrl: _asString(json['photoUrl']),
       role: resolvedRole.isEmpty ? 'user' : resolvedRole,
       pharmacyId: _asNullableString(json['pharmacyId']),
+      medicalSupplyId: _asNullableString(json['medicalSupplyId']),
       phoneNumber: _asNullableString(json['phoneNumber']),
       whatsappNumber: _asNullableString(json['whatsappNumber']),
       address: _asNullableString(json['address']),
@@ -59,6 +62,7 @@ class UserModel {
       'photoUrl': photoUrl,
       'role': role,
       'pharmacyId': pharmacyId,
+      'medicalSupplyId': medicalSupplyId,
       'phoneNumber': phoneNumber,
       'whatsappNumber': whatsappNumber,
       'address': address,
@@ -73,6 +77,7 @@ class UserModel {
     String? photoUrl,
     String? role,
     String? pharmacyId,
+    String? medicalSupplyId,
     String? phoneNumber,
     String? whatsappNumber,
     String? address,
@@ -84,6 +89,7 @@ class UserModel {
       photoUrl: photoUrl ?? this.photoUrl,
       role: role ?? this.role,
       pharmacyId: pharmacyId ?? this.pharmacyId,
+      medicalSupplyId: medicalSupplyId ?? this.medicalSupplyId,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       whatsappNumber: whatsappNumber ?? this.whatsappNumber,
       address: address ?? this.address,
@@ -107,6 +113,9 @@ class UserModel {
 
   // Check if user is rehabilitation center owner
   bool get isRehabilitationOwner => role == 'rehabilitation_center';
+
+  // Check if user is medical supply owner
+  bool get isMedicalSupplyOwner => role == 'medical_supply_owner';
 
   // Check if user is admin
   bool get isAdmin => role == 'admin';

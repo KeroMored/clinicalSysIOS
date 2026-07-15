@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'home_drawer_item.dart';
 import 'about_app_dialog.dart';
 import 'whatsapp_helper.dart';
@@ -61,15 +62,15 @@ class CustomHomeDrawer extends StatelessWidget {
                           height: 1.2,
                         ),
                       ),
-                     // const SizedBox(height: 4),
-                      // const Text(
-                      //   'خدماتك الصحية في مكان واحد',
-                      //   style: TextStyle(
-                      //     color: Color.fromRGBO(255, 255, 255, 1),
-                      //     fontSize: 12,
-                      //     fontWeight: FontWeight.w600,
-                      //   ),
-                      // ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'خدماتك الصحية في مكان واحد',
+                        style: TextStyle(
+                          color: Color.fromRGBO(255, 255, 255, 1),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -78,16 +79,16 @@ class CustomHomeDrawer extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // HomeDrawerItem(
-            //   icon: Icons.info_outline_rounded,
-            //   title: 'من نحن',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     AboutAppDialog.show(context);
-            //   },
-            // ),
+            HomeDrawerItem(
+              icon: Icons.info_outline_rounded,
+              title: 'من نحن',
+              onTap: () {
+                Navigator.pop(context);
+                AboutAppDialog.show(context);
+              },
+            ),
 
-            // const Divider(height: 1, indent: 22, endIndent: 22),
+            const Divider(height: 1, indent: 22, endIndent: 22),
 
             HomeDrawerItem(
               icon: Icons.chat,
@@ -98,16 +99,16 @@ class CustomHomeDrawer extends StatelessWidget {
               },
             ),
 
-            // const Divider(height: 1, indent: 22, endIndent: 22),
+            const Divider(height: 1, indent: 22, endIndent: 22),
 
-            // HomeDrawerItem(
-            //   icon: Icons.share_rounded,
-            //   title: 'مشاركة التطبيق',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     ShareAppDialog.show(context);
-            //   },
-            // ),
+            HomeDrawerItem(
+              icon: Icons.share_rounded,
+              title: 'مشاركة التطبيق',
+              onTap: () {
+                Navigator.pop(context);
+                ShareAppDialog.show(context);
+              },
+            ),
 
             const SizedBox(height: 4),
             const Divider(height: 1, indent: 22, endIndent: 22),
@@ -122,16 +123,16 @@ class CustomHomeDrawer extends StatelessWidget {
               },
             ),
 
-            // const Divider(height: 1, indent: 22, endIndent: 22),
+            const Divider(height: 1, indent: 22, endIndent: 22),
 
-            // HomeDrawerItem(
-            //   icon: Icons.description_outlined,
-            //   title: 'الشروط والأحكام',
-            //   onTap: () {
-            //     Navigator.pop(context);
-            //     TermsAndConditionsDialog.show(context);
-            //   },
-            // ),
+            HomeDrawerItem(
+              icon: Icons.description_outlined,
+              title: 'الشروط والأحكام',
+              onTap: () {
+                Navigator.pop(context);
+                TermsAndConditionsDialog.show(context);
+              },
+            ),
 
             const Divider(height: 1, indent: 22, endIndent: 22),
             const SizedBox(height: 12),

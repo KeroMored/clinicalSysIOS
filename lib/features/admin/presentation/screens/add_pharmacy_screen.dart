@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'dart:io';
 import '../../data/models/pharmacy_request_model.dart';
 import '../cubit/admin_cubit.dart';
@@ -12,6 +13,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_appbar.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import '../../../home/data/home_fab_cache_helper.dart';
 
 class AddPharmacyScreen extends StatefulWidget {
   const AddPharmacyScreen({super.key});
@@ -446,15 +448,20 @@ class _AddPharmacyScreenState extends State<AddPharmacyScreen> {
           ),
         ),
         child: BlocConsumer<AdminCubit, AdminState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is PharmacyAddedSuccessfully) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم إضافة الصيدلية بنجاح'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              Navigator.pop(context);
+              // Clear FAB cache so it updates on home screen
+              await HomeFABCacheHelper.clearCache();
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تم إضافة الصيدلية بنجاح'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context);
+              }
             } else if (state is AdminError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

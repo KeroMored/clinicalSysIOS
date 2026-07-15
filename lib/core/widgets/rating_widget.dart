@@ -52,6 +52,8 @@ class _RatingWidgetState extends State<RatingWidget> {
         return 'gyms';
       case 'delivery':
         return 'deliveries';
+      case 'medical_supply':
+        return 'medical_supplies';
       default:
         return 'clinics';
     }

@@ -20,39 +20,12 @@ class PharmacyHomePage extends StatefulWidget {
 }
 
 class _PharmacyHomePageState extends State<PharmacyHomePage> {
-  static const String _bookingSettingsCollection = 'app_settings';
-  static const String _bookingSettingsDoc = 'booking';
   final TextEditingController _searchController = TextEditingController();
-  late final Future<bool> _isBookingEnabledFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _isBookingEnabledFuture = _fetchIsBookingEnabled();
-  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<bool> _fetchIsBookingEnabled() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection(_bookingSettingsCollection)
-          .doc(_bookingSettingsDoc)
-          .get();
-
-      final data = doc.data();
-      if (data == null) return true;
-
-      final value = data['isBooking'];
-      return value is bool ? value : true;
-    } catch (e) {
-      debugPrint('Error loading booking settings: $e');
-      return true;
-    }
   }
 
   void _openPharmaciesSearch(BuildContext context, String rawQuery) {
@@ -88,19 +61,7 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
             fontWeight: FontWeight.w700,
           ),
         ),
-        actions: [
-          FutureBuilder<bool>(
-            future: _isBookingEnabledFuture,
-            builder: (context, snapshot) {
-              final isBookingEnabled = snapshot.data ?? true;
-              if (!isBookingEnabled) {
-                return const SizedBox.shrink();
-              }
-              return _buildCartAction(context);
-            },
-          ),
-          const SizedBox(width: 4),
-        ],
+        actions: [_buildCartAction(context), const SizedBox(width: 4)],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -113,25 +74,9 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
               const SizedBox(height: 14),
               //  _buildHeroCard(),
               //const SizedBox(height: 14),
-              FutureBuilder<bool>(
-                future: _isBookingEnabledFuture,
-                builder: (context, snapshot) {
-                  final isBookingEnabled = snapshot.data ?? true;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildMainOptions(
-                        context,
-                        isBookingEnabled: isBookingEnabled,
-                      ),
-                      if (isBookingEnabled) ...[
-                        const SizedBox(height: 14),
-                        _buildMedicineRequestInfoCard(),
-                      ],
-                    ],
-                  );
-                },
-              ),
+              _buildMainOptions(context),
+              const SizedBox(height: 14),
+              _buildMedicineRequestInfoCard(),
             ],
           ),
         ),
@@ -321,10 +266,7 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
     );
   }
 
-  Widget _buildMainOptions(
-    BuildContext context, {
-    required bool isBookingEnabled,
-  }) {
+  Widget _buildMainOptions(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, authState) {
         final isPharmacyOwner =
@@ -346,25 +288,22 @@ class _PharmacyHomePageState extends State<PharmacyHomePage> {
                   onTap: () =>
                       _pushWithFade(context, const ThePharmaciesScreen()),
                 ),
-                if (isBookingEnabled)
-                  _buildFeatureCard(
-                    icon: Icons.local_offer_rounded,
-                    title: 'العروض\nوالخصومات',
-                    onTap: () =>
-                        _pushWithFade(context, const AllOffersScreen()),
-                  ),
-                if (isBookingEnabled)
-                  _buildFeatureCard(
-                    icon: Icons.medication_rounded,
-                    title: 'طلب دواء',
-                    onTap: () => _pushWithFade(
-                      context,
-                      BlocProvider.value(
-                        value: context.read<AuthCubit>(),
-                        child: const RequestMedicineScreen(),
-                      ),
+                _buildFeatureCard(
+                  icon: Icons.local_offer_rounded,
+                  title: 'العروض\nوالخصومات',
+                  onTap: () => _pushWithFade(context, const AllOffersScreen()),
+                ),
+                _buildFeatureCard(
+                  icon: Icons.medication_rounded,
+                  title: 'طلب دواء',
+                  onTap: () => _pushWithFade(
+                    context,
+                    BlocProvider.value(
+                      value: context.read<AuthCubit>(),
+                      child: const RequestMedicineScreen(),
                     ),
                   ),
+                ),
                 _buildFeatureCard(
                   icon: Icons.delivery_dining_rounded,
                   title: 'الدليفري',

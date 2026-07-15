@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/widgets/like_button.dart';
@@ -78,7 +79,7 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
                     : _gym.femaleWorkingHours));
 
     final today = source[dayKey];
-    if (today == null || today.isHoliday) {
+    if (today == null || today.isClosed) {
       return false;
     }
 
@@ -91,18 +92,30 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
       return (h * 60) + m;
     }
 
-    final open = parse(today.openTime);
-    final close = parse(today.closeTime);
-    if (open < 0 || close < 0) {
-      return false;
-    }
-
     final nowMinutes = (now.hour * 60) + now.minute;
-    if (close >= open) {
-      return nowMinutes >= open && nowMinutes <= close;
+
+    // Check if current time falls within any of the slots
+    for (final slot in today.slots) {
+      final open = parse(slot.from);
+      final close = parse(slot.to);
+      
+      if (open < 0 || close < 0) {
+        continue;
+      }
+
+      if (close >= open) {
+        if (nowMinutes >= open && nowMinutes <= close) {
+          return true;
+        }
+      } else {
+        // Handles overnight slots (e.g., 23:00 - 02:00)
+        if (nowMinutes >= open || nowMinutes <= close) {
+          return true;
+        }
+      }
     }
 
-    return nowMinutes >= open || nowMinutes <= close;
+    return false;
   }
 
   Widget _buildGymStatusBadge() {
@@ -313,39 +326,36 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
                         children: [
                           Container(
                             height: 280,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  _primaryColor.withValues(alpha: 0.14),
-                                  _primaryDark.withValues(alpha: 0.08),
-                                ],
-                              ),
-                              borderRadius: const BorderRadius.vertical(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(
                                 bottom: Radius.circular(28),
                               ),
                             ),
                             child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.92),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _primaryColor.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      blurRadius: 30,
-                                      offset: const Offset(0, 10),
-                                    ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(40),
+                                child: Image.asset(
+                                  'assets/images/clinicLogo.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Dark gradient overlay for text visibility
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.25),
+                                    Colors.black.withValues(alpha: 0.65),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.fitness_center_rounded,
-                                  size: 80,
-                                  color: _primaryColor,
+                                borderRadius: const BorderRadius.vertical(
+                                  bottom: Radius.circular(28),
                                 ),
                               ),
                             ),
@@ -602,30 +612,75 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
                                       width: 1.5,
                                     ),
                                   ),
-                                  child: ElevatedButton.icon(
-                                    onPressed: () =>
-                                        _makePhoneCall(context, _gym.phone),
-                                    icon: const Icon(Icons.phone, size: 20),
-                                    label: Text(
-                                      'اتصال: ${_gym.phone}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: _primaryDark,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                        horizontal: 16,
-                                      ),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
+                                  child: _gym.phones.length == 1
+                                      ? ElevatedButton.icon(
+                                          onPressed: () =>
+                                              _makePhoneCall(context, _gym.phones.first),
+                                          icon: const Icon(Icons.phone, size: 20),
+                                          label: Text(
+                                            'اتصال: ${_gym.phones.first}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: _primaryDark,
+                                            foregroundColor: Colors.white,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                              horizontal: 16,
+                                            ),
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        )
+                                      : PopupMenuButton<String>(
+                                          onSelected: (phone) => _makePhoneCall(context, phone),
+                                          itemBuilder: (context) => _gym.phones
+                                              .map(
+                                                (phone) => PopupMenuItem(
+                                                  value: phone,
+                                                  child: Row(
+                                                    children: [
+                                                      const Icon(Icons.phone, size: 18),
+                                                      const SizedBox(width: 8),
+                                                      Text(phone),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                              horizontal: 16,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _primaryDark,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.phone, size: 20, color: Colors.white),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'اتصال (${_gym.phones.length} أرقام)',
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                const Icon(Icons.arrow_drop_down, color: Colors.white, size: 20),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                 ),
                                 const SizedBox(height: 12),
                                 Container(
@@ -871,23 +926,12 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
   }
 
   Widget _buildGymFeatures() {
-    final features = <String>[];
+    // Use new dynamic features list, fallback to old boolean fields for backward compatibility
+    final List<String> featuresList = _gym.features.isNotEmpty
+        ? _gym.features
+        : _buildLegacyFeatures();
 
-    if (_gym.hasPersonalTraining) features.add('مدرب شخصي');
-    if (_gym.hasNutritionConsultation) features.add('استشارات تغذية');
-    if (_gym.hasSwimmingPool) features.add('حمام سباحة');
-    if (_gym.hasSauna) features.add('ساونا');
-    if (_gym.hasSteamRoom) features.add('غرفة بخار');
-    if (_gym.hasYogaClasses) features.add('يوجا');
-    if (_gym.hasCrossFit) features.add('كروس فيت');
-    if (_gym.hasMartialArts) features.add('فنون قتالية');
-    if (_gym.hasCardio) features.add('كارديو');
-    if (_gym.hasWeightLifting) features.add('رفع أثقال');
-    if (_gym.hasBodybuilding) features.add('كمال أجسام');
-    if (_gym.hasFunctionalTraining) features.add('تدريب وظيفي');
-    if (_gym.hasGroupClasses) features.add('حصص جماعية');
-
-    if (features.isEmpty) {
+    if (featuresList.isEmpty) {
       return const Text(
         'لا توجد مميزات إضافية',
         style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
@@ -923,7 +967,7 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...features.map(
+        ...featuresList.map(
           (feature) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
@@ -950,6 +994,25 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
         ),
       ],
     );
+  }
+
+  // Legacy support for old boolean fields
+  List<String> _buildLegacyFeatures() {
+    final features = <String>[];
+    if (_gym.hasPersonalTraining) features.add('مدرب شخصي');
+    if (_gym.hasNutritionConsultation) features.add('استشارات تغذية');
+    if (_gym.hasSwimmingPool) features.add('حمام سباحة');
+    if (_gym.hasSauna) features.add('ساونا');
+    if (_gym.hasSteamRoom) features.add('غرفة بخار');
+    if (_gym.hasYogaClasses) features.add('يوجا');
+    if (_gym.hasCrossFit) features.add('كروس فيت');
+    if (_gym.hasMartialArts) features.add('فنون قتالية');
+    if (_gym.hasCardio) features.add('كارديو');
+    if (_gym.hasWeightLifting) features.add('رفع أثقال');
+    if (_gym.hasBodybuilding) features.add('كمال أجسام');
+    if (_gym.hasFunctionalTraining) features.add('تدريب وظيفي');
+    if (_gym.hasGroupClasses) features.add('حصص جماعية');
+    return features;
   }
 
   Widget _buildWorkingHoursSection() {
@@ -1014,7 +1077,7 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
     required String title,
     required IconData icon,
     required Color iconColor,
-    required Map<String, WorkingHours> workingHours,
+    required Map<String, GymWorkingHours> workingHours,
   }) {
     final today = _todayDayKey();
 
@@ -1054,9 +1117,7 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
                 ? _primaryColor
                 : const Color(0xFF1E293B);
 
-            final timeText = hours == null || hours.isHoliday
-                ? 'إجازة'
-                : '${_formatTime12Arabic(hours.openTime)} - ${_formatTime12Arabic(hours.closeTime)}';
+            final isClosed = hours == null || hours.isClosed;
 
             return Container(
               margin: const EdgeInsets.only(bottom: 6),
@@ -1068,6 +1129,7 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
               child: Row(
                 children: [
                   Expanded(
+                    flex: 3,
                     child: Row(
                       children: [
                         Text(
@@ -1102,14 +1164,35 @@ class _GymDetailsScreenState extends State<GymDetailsScreen> {
                       ],
                     ),
                   ),
-                  Text(
-                    timeText,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: hours == null || hours.isHoliday
-                          ? const Color(0xFFB91C1C)
-                          : const Color(0xFF475569),
-                      fontWeight: FontWeight.w700,
+                  Expanded(
+                    flex: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (isClosed)
+                          Text(
+                            'إجازة',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: const Color(0xFFB91C1C),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          )
+                        else
+                          ...hours.slots.map((slot) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                '${_formatTime12Arabic(slot.from)} - ${_formatTime12Arabic(slot.to)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            );
+                          }),
+                      ],
                     ),
                   ),
                 ],

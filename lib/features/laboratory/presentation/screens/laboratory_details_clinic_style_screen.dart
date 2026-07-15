@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/utils/auth_helpers.dart';
@@ -30,36 +31,14 @@ class _LaboratoryDetailsClinicStyleScreenState
   static const Color _primaryColor = Color(0xFF0F766E);
   static const Color _primaryDark = Color(0xFF115E59);
   static const Color _titleColor = Color(0xFF134E4A);
-  static const String _bookingSettingsCollection = 'app_settings';
-  static const String _bookingSettingsDoc = 'booking';
 
   late LaboratoryModel _laboratory;
-  late final Future<bool> _isBookingEnabledFuture;
   bool _showAllTests = false;
 
   @override
   void initState() {
     super.initState();
     _laboratory = widget.laboratory;
-    _isBookingEnabledFuture = _fetchIsBookingEnabled();
-  }
-
-  Future<bool> _fetchIsBookingEnabled() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection(_bookingSettingsCollection)
-          .doc(_bookingSettingsDoc)
-          .get();
-
-      final data = doc.data();
-      if (data == null) return true;
-
-      final value = data['isBooking'];
-      return value is bool ? value : true;
-    } catch (e) {
-      debugPrint('Error loading booking settings: $e');
-      return true;
-    }
   }
 
   bool _isLabOpenNow() {
@@ -242,12 +221,6 @@ class _LaboratoryDetailsClinicStyleScreenState
             final isHoliday = hours?.isHoliday ?? false;
             final isClosed = isHoliday || hours == null;
 
-            final timeLabel = isHoliday
-                ? 'عطلة رسمية'
-                : (isClosed
-                      ? 'مغلق'
-                      : '${_formatTimeToArabic(hours.openTime)} - ${_formatTimeToArabic(hours.closeTime)}');
-
             return Container(
               margin: const EdgeInsets.only(bottom: 9),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
@@ -311,15 +284,35 @@ class _LaboratoryDetailsClinicStyleScreenState
                     flex: 4,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        timeLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: isClosed
-                              ? const Color(0xFF6B7280)
-                              : _primaryColor,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (isClosed)
+                            Text(
+                              isHoliday ? 'اجازة' : 'مغلق',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF6B7280),
+                              ),
+                            )
+                          else
+                            ...hours.slots.map((slot) {
+                              final slotTime =
+                                  '${_formatTimeToArabic(slot.from)} - ${_formatTimeToArabic(slot.to)}';
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 2),
+                                child: Text(
+                                  slotTime,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: _primaryColor,
+                                  ),
+                                ),
+                              );
+                            }),
+                        ],
                       ),
                     ),
                   ),
@@ -582,39 +575,36 @@ class _LaboratoryDetailsClinicStyleScreenState
                         children: [
                           Container(
                             height: 280,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  _primaryColor.withValues(alpha: 0.14),
-                                  _primaryDark.withValues(alpha: 0.08),
-                                ],
-                              ),
-                              borderRadius: const BorderRadius.vertical(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(
                                 bottom: Radius.circular(28),
                               ),
                             ),
                             child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.92),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _primaryColor.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      blurRadius: 30,
-                                      offset: const Offset(0, 10),
-                                    ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(40),
+                                child: Image.asset(
+                                  'assets/images/clinicLogo.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Dark gradient overlay for text visibility
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.25),
+                                    Colors.black.withValues(alpha: 0.65),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.science_rounded,
-                                  size: 80,
-                                  color: _primaryColor,
+                                borderRadius: const BorderRadius.vertical(
+                                  bottom: Radius.circular(28),
                                 ),
                               ),
                             ),
@@ -858,92 +848,69 @@ class _LaboratoryDetailsClinicStyleScreenState
                           const SizedBox(height: 12),
 
                           Container(
-                            child: FutureBuilder<bool>(
-                              future: _isBookingEnabledFuture,
-                              builder: (context, snapshot) {
-                                final isBookingEnabled = snapshot.data ?? true;
-                                if (!isBookingEnabled) {
-                                  return const SizedBox.shrink();
-                                }
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [_primaryColor, _primaryDark],
+                                begin: Alignment.centerRight,
+                                end: Alignment.centerLeft,
+                              ),
+                              borderRadius: BorderRadius.circular(28),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _primaryColor.withValues(alpha: 0.25),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 7),
+                                ),
+                              ],
+                            ),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final isAuthenticated =
+                                      await AuthHelpers.requireAuth(
+                                        context,
+                                        message:
+                                            'يجب تسجيل الدخول لحجز موعد في المعمل',
+                                      );
 
-                                return Column(
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [_primaryColor, _primaryDark],
-                                          begin: Alignment.centerRight,
-                                          end: Alignment.centerLeft,
-                                        ),
-                                        borderRadius:
-                                            BorderRadius.circular(28),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: _primaryColor.withValues(
-                                              alpha: 0.25,
-                                            ),
-                                            blurRadius: 14,
-                                            offset: const Offset(0, 7),
-                                          ),
-                                        ],
-                                      ),
-                                      child: SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton.icon(
-                                          onPressed: () async {
-                                            final isAuthenticated =
-                                                await AuthHelpers.requireAuth(
-                                                  context,
-                                                  message:
-                                                      'يجب تسجيل الدخول لحجز موعد في المعمل',
-                                                );
+                                  if (!isAuthenticated || !mounted) return;
 
-                                            if (!isAuthenticated || !mounted) {
-                                              return;
-                                            }
-
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    LabBookingScreen(
-                                                      laboratory: _laboratory,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                          icon: const Icon(
-                                            Icons.calendar_month_rounded,
-                                            size: 22,
-                                          ),
-                                          label: const Text(
-                                            'احجز موعد الآن',
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.transparent,
-                                            shadowColor: Colors.transparent,
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 16,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(28),
-                                            ),
-                                          ),
-                                        ),
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => LabBookingScreen(
+                                        laboratory: _laboratory,
                                       ),
                                     ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                );
-                              },
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.calendar_month_rounded,
+                                  size: 22,
+                                ),
+                                label: const Text(
+                                  'احجز موعد الآن',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 16),
 
                           Container(
                             padding: const EdgeInsets.all(20),

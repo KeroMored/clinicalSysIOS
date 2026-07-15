@@ -358,7 +358,7 @@ class _GymsListScreenState extends State<GymsListScreen> {
         break;
     }
 
-    Map<String, WorkingHours> hours = {};
+    Map<String, GymWorkingHours> hours = {};
     if (gym.hasMaleSection && gym.maleWorkingHours.isNotEmpty) {
       hours = gym.maleWorkingHours;
     } else if (gym.hasFemaleSection && gym.femaleWorkingHours.isNotEmpty) {
@@ -370,7 +370,7 @@ class _GymsListScreenState extends State<GymsListScreen> {
     }
 
     final working = hours[dayKey];
-    if (working == null || working.isHoliday) {
+    if (working == null || working.isClosed) {
       return false;
     }
 
@@ -383,18 +383,30 @@ class _GymsListScreenState extends State<GymsListScreen> {
       return (h * 60) + m;
     }
 
-    final open = parse(working.openTime);
-    final close = parse(working.closeTime);
-    if (open < 0 || close < 0) {
-      return false;
-    }
-
     final nowMinutes = (now.hour * 60) + now.minute;
-    if (close >= open) {
-      return nowMinutes >= open && nowMinutes <= close;
+
+    // Check if current time falls within any of the slots
+    for (final slot in working.slots) {
+      final open = parse(slot.from);
+      final close = parse(slot.to);
+      
+      if (open < 0 || close < 0) {
+        continue;
+      }
+
+      if (close >= open) {
+        if (nowMinutes >= open && nowMinutes <= close) {
+          return true;
+        }
+      } else {
+        // Handles overnight slots (e.g., 23:00 - 02:00)
+        if (nowMinutes >= open || nowMinutes <= close) {
+          return true;
+        }
+      }
     }
 
-    return nowMinutes >= open || nowMinutes <= close;
+    return false;
   }
 
   Widget _buildFilterChip({

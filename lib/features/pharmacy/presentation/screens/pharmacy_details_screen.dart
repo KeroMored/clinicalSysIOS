@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../cubit/pharmacy_cubit.dart';
 import '../../../../core/widgets/rating_widget.dart';
 import '../../../../core/widgets/like_button.dart';
@@ -29,14 +29,9 @@ class PharmacyDetailsScreen extends StatefulWidget {
 }
 
 class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
-  static const String _bookingSettingsCollection = 'app_settings';
-  static const String _bookingSettingsDoc = 'booking';
-  late final Future<bool> _isBookingEnabledFuture;
-
   @override
   void initState() {
     super.initState();
-    _isBookingEnabledFuture = _fetchIsBookingEnabled();
     context.read<PharmacyCubit>().loadPharmacyDetails(widget.pharmacyId);
     _incrementProfileViews();
   }
@@ -51,24 +46,6 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
       });
     } catch (e) {
       // Permission denied for non-authenticated users - silently skip
-    }
-  }
-
-  Future<bool> _fetchIsBookingEnabled() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection(_bookingSettingsCollection)
-          .doc(_bookingSettingsDoc)
-          .get();
-
-      final data = doc.data();
-      if (data == null) return true;
-
-      final value = data['isBooking'];
-      return value is bool ? value : true;
-    } catch (e) {
-      debugPrint('Error loading booking settings: $e');
-      return true;
     }
   }
 
@@ -248,8 +225,12 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withValues(alpha: 0.12),
-                            Colors.black.withValues(alpha: 0.45),
+                            const Color.fromARGB(0, 255, 255, 255).withValues(alpha: 0.0),
+                            const Color.fromARGB(0, 255, 255, 255).withValues(alpha: 0.0),
+                            const Color.fromARGB(0, 255, 255, 255).withValues(alpha: 0.10),
+                            Colors.black.withValues(alpha: 0.25),
+
+                            Colors.black.withValues(alpha: 0.70),
                           ],
                         ),
                       ),
@@ -262,11 +243,14 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             pharmacy.name,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900
+                              
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -609,22 +593,10 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
             const SizedBox(height: 10),
           ],
 
-          FutureBuilder<bool>(
-            future: _isBookingEnabledFuture,
-            builder: (context, snapshot) {
-              final isBookingEnabled = snapshot.data ?? true;
-              if (!isBookingEnabled) {
-                return const SizedBox.shrink();
-              }
-              return Column(
-                children: [
-                  const SizedBox(height: 12),
-                  _buildOffersButton(context, pharmacy),
-                  const SizedBox(height: 12),
-                ],
-              );
-            },
-          ),
+          const SizedBox(height: 12),
+          _buildOffersButton(context, pharmacy),
+
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -1030,19 +1002,14 @@ class _PharmacyDetailsScreenState extends State<PharmacyDetailsScreen> {
   Widget _buildPlaceholderImage() {
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
-        ),
+      color: Colors.white
       ),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(60),
-          child: SvgPicture.asset(
-            'assets/images/pharmacy.svg',
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-          ),
+          padding: const EdgeInsets.all(0),
+          child: Image.asset(
+            'assets/images/LO.png',
+          )
         ),
       ),
     );

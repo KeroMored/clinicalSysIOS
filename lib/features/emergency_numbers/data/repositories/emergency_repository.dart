@@ -45,14 +45,14 @@ class EmergencyRepository {
         icon: Icons.security,
         color: Color(0xFF8B5CF6),
       ),
-      const EmergencyNumberModel(
+    /*   const EmergencyNumberModel(
         id: '6',
         title: 'مكافحة المخدرات',
         number: '122',
         description: 'الإبلاغ عن قضايا المخدرات',
         icon: Icons.report,
         color: Color(0xFFDC2626),
-      ),
+      ), */
     ];
   }
 }

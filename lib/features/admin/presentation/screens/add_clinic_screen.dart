@@ -5,10 +5,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
 import 'package:geolocator/geolocator.dart';
+
 import '../../../clinic/data/models/clinic_model.dart';
 import '../../../clinic/data/models/clinic_department.dart';
 import '../../../clinic/data/repositories/clinic_repository.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
+import '../../../home/data/home_fab_cache_helper.dart';
 
 class AddClinicScreen extends StatefulWidget {
   const AddClinicScreen({super.key});
@@ -483,6 +485,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
       final clinic = ClinicModel(
         id: '',
         doctorName: _doctorNameController.text.trim(),
+        clinicType: null, // سيقوم الدكتور بكتابة اسمه بالصيغة التي يفضلها
         department: _selectedDepartment!,
         specialization: _servicesControllers
             .map((c) => c.text.trim())
@@ -514,6 +517,9 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
 
       // Add to Firestore
       await _clinicRepo.addClinic(clinic);
+
+      // Clear FAB cache so it updates on home screen
+      await HomeFABCacheHelper.clearCache();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -607,10 +613,18 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                         const SizedBox(height: 4),
                         const Divider(),
                         const SizedBox(height: 12),
+                        
+                        // Clinic Type Selector (د. أو مركز)
+                        // Doctor/Center Name
                         TextFormField(
                           controller: _doctorNameController,
                           decoration: InputDecoration(
-                            labelText: 'اسم الدكتور *',
+                            labelText: 'اسم الدكتور / المركز *',
+                            hintText: 'مثال: د. أحمد محمد / مركز د. أحمد',
+                            hintStyle: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
                             prefixIcon: const Icon(
                               Icons.person,
                               color: Color(0xFF06B6D4),
@@ -628,7 +642,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'اسم الدكتور مطلوب';
+                              return 'اسم الدكتور / المركز مطلوب';
                             }
                             return null;
                           },
@@ -1792,7 +1806,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                   () => _pickImage(),
                 ),
                 const SizedBox(height: 24),
-
+/* 
                 // Working Hours
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -1822,7 +1836,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 12), */
                 _buildWorkingHoursSection(),
                 const SizedBox(height: 32),
 
@@ -2046,7 +2060,7 @@ class _AddClinicScreenState extends State<AddClinicScreen> {
                     );
                   },
                   icon: const Icon(Icons.content_copy, size: 18),
-                  label: const Text('نسخ للكل'),
+                  label: const Text('نسخ السبت للكل'),
                   style: TextButton.styleFrom(
                     foregroundColor: const Color(0xFF06B6D4),
                     padding: const EdgeInsets.symmetric(

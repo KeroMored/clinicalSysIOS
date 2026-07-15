@@ -892,7 +892,7 @@ class _ClinicsListScreenState extends State<ClinicsListScreen> {
                       ),
                       const SizedBox(height: 7),
                       Text(
-                        'د. ${clinic.doctorName}',
+                        clinic.doctorName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

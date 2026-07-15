@@ -120,6 +120,8 @@ class LikeService {
         return 'rehabilitation_centers';
       case 'delivery':
         return 'deliveries';
+      case 'medical_supply':
+        return 'medical_supplies';
       default:
         return serviceType;
     }

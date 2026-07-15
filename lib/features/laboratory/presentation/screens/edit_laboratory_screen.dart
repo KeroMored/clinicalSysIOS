@@ -47,8 +47,8 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
     'الخميس',
     'الجمعة',
   ];
-  final Map<String, TimeOfDay?> _workingHoursFrom = {};
-  final Map<String, TimeOfDay?> _workingHoursTo = {};
+  // Working Hours - Support for multiple time slots per day
+  final Map<String, List<Map<String, TextEditingController>>> _workingHoursControllers = {};
   final Map<String, bool> _isClosedDays = {};
 
   // Theme colors - matching laboratory gradient
@@ -110,21 +110,38 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
               .toList()
         : [TextEditingController()];
 
-    // Initialize working hours
+    // Initialize working hours with multiple slots support
     for (var i = 0; i < _englishDays.length; i++) {
       final day = _englishDays[i];
       final hours = widget.laboratory.workingHours[day];
 
       if (hours != null) {
         _isClosedDays[day] = hours.isHoliday;
-        if (!hours.isHoliday &&
-            hours.openTime != 'مغلق' &&
-            hours.closeTime != 'مغلق') {
-          _workingHoursFrom[day] = _parseTimeOfDay(hours.openTime);
-          _workingHoursTo[day] = _parseTimeOfDay(hours.closeTime);
+        if (!hours.isHoliday && hours.slots.isNotEmpty) {
+          // Initialize controllers for each slot
+          _workingHoursControllers[day] = hours.slots.map((slot) {
+            return {
+              'from': TextEditingController(text: slot.from),
+              'to': TextEditingController(text: slot.to),
+            };
+          }).toList();
+        } else {
+          // Default single slot
+          _workingHoursControllers[day] = [
+            {
+              'from': TextEditingController(text: '08:00'),
+              'to': TextEditingController(text: '20:00'),
+            }
+          ];
         }
       } else {
         _isClosedDays[day] = false;
+        _workingHoursControllers[day] = [
+          {
+            'from': TextEditingController(text: '08:00'),
+            'to': TextEditingController(text: '20:00'),
+          }
+        ];
       }
     }
   }
@@ -146,6 +163,13 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
     }
     for (var controller in _testsControllers) {
       controller.dispose();
+    }
+    // Dispose working hours controllers
+    for (var dayControllers in _workingHoursControllers.values) {
+      for (var slotControllers in dayControllers) {
+        slotControllers['from']?.dispose();
+        slotControllers['to']?.dispose();
+      }
     }
     super.dispose();
   }
@@ -216,22 +240,76 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
     bool isFrom,
     String day,
   ) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: isFrom
-          ? (_workingHoursFrom[day] ?? const TimeOfDay(hour: 9, minute: 0))
-          : (_workingHoursTo[day] ?? const TimeOfDay(hour: 17, minute: 0)),
-    );
+    // This method is deprecated - not used in new slot-based approach
+  }
 
-    if (picked != null) {
-      setState(() {
-        if (isFrom) {
-          _workingHoursFrom[day] = picked;
-        } else {
-          _workingHoursTo[day] = picked;
-        }
+  void _addTimeSlot(String day) {
+    setState(() {
+      _workingHoursControllers[day]!.add({
+        'from': TextEditingController(text: '12:00'),
+        'to': TextEditingController(text: '14:00'),
       });
-    }
+    });
+  }
+
+  void _removeTimeSlot(String day, int index) {
+    setState(() {
+      if (_workingHoursControllers[day]!.length > 1) {
+        _workingHoursControllers[day]![index]['from']?.dispose();
+        _workingHoursControllers[day]![index]['to']?.dispose();
+        _workingHoursControllers[day]!.removeAt(index);
+      }
+    });
+  }
+
+  void _copyToAllDays(String sourceDay) {
+    final sourceSlots = _workingHoursControllers[sourceDay]!;
+    final sourceIsClosed = _isClosedDays[sourceDay] ?? false;
+
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('نسخ السبت للكل'),
+          content: const Text('هل تريد نسخ مواعيد السبت لباقي الأيام؟'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  for (var day in _workingHoursControllers.keys) {
+                    if (day != sourceDay) {
+                      // Dispose old controllers
+                      for (var slot in _workingHoursControllers[day]!) {
+                        slot['from']?.dispose();
+                        slot['to']?.dispose();
+                      }
+                      // Create new controllers with copied values
+                      _workingHoursControllers[day] = sourceSlots.map((slot) {
+                        return {
+                          'from': TextEditingController(text: slot['from']!.text),
+                          'to': TextEditingController(text: slot['to']!.text),
+                        };
+                      }).toList();
+                      _isClosedDays[day] = sourceIsClosed;
+                    }
+                  }
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم نسخ المواعيد لجميع الأيام')),
+                );
+              },
+              child: const Text('نعم'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _saveChanges() async {
@@ -249,24 +327,35 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
         }
       }
 
-      // Prepare working hours
+      // Prepare working hours with multiple slots support
       Map<String, dynamic> workingHoursMap = {};
       for (var day in _englishDays) {
-        final from = _workingHoursFrom[day];
-        final to = _workingHoursTo[day];
+        final slotControllers = _workingHoursControllers[day];
         final isHoliday = _isClosedDays[day] ?? false;
 
         if (isHoliday) {
           workingHoursMap[day] = {
-            'openTime': 'مغلق',
-            'closeTime': 'مغلق',
             'isHoliday': true,
+            'isClosed': true,
+            'slots': [],
+            'openTime': 'مغلق',  // للتوافق مع النظام القديم
+            'closeTime': 'مغلق',
           };
-        } else if (from != null && to != null) {
+        } else if (slotControllers != null && slotControllers.isNotEmpty) {
+          final slots = slotControllers.map((controllers) {
+            return {
+              'from': controllers['from']!.text,
+              'to': controllers['to']!.text,
+            };
+          }).toList();
+
           workingHoursMap[day] = {
-            'openTime': _formatTimeOfDay(from),
-            'closeTime': _formatTimeOfDay(to),
             'isHoliday': false,
+            'isClosed': false,
+            'slots': slots,
+            // Keep old format for backward compatibility
+            'openTime': slotControllers.first['from']!.text,
+            'closeTime': slotControllers.first['to']!.text,
           };
         }
       }
@@ -481,7 +570,7 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
                           ),
                         ],
                       ),
-                      child: AppLoadingIndicator(
+                      child: const AppLoadingIndicator(
                         color: _primaryColor,
                         strokeWidth: 3,
                       ),
@@ -1028,11 +1117,26 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
                               title: 'مواعيد العمل',
                               icon: Icons.access_time_rounded,
                               children: [
+                                // Add "Copy to All" button
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: ElevatedButton.icon(
+                                    onPressed: () => _copyToAllDays('saturday'),
+                                    icon: const Icon(Icons.copy_all),
+                                    label: const Text('نسخ مواعيد السبت للكل'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: _primaryColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12,horizontal: 12),
+                                    ),
+                                  ),
+                                ),
                                 ...List.generate(_englishDays.length, (index) {
                                   final englishDay = _englishDays[index];
                                   final arabicDay = _arabicDays[index];
                                   final isClosed =
                                       _isClosedDays[englishDay] ?? false;
+                                  final slotControllers = _workingHoursControllers[englishDay] ?? [];
 
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 12),
@@ -1151,96 +1255,77 @@ class _EditLaboratoryScreenState extends State<EditLaboratoryScreen> {
                                           ),
                                           if (!isClosed) ...[
                                             const SizedBox(height: 12),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: _primaryColor
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            10,
+                                            ...List.generate(slotControllers.length, (slotIndex) {
+                                              final controllers = slotControllers[slotIndex];
+                                              return Padding(
+                                                padding: const EdgeInsets.only(bottom: 8),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: TextFormField(
+                                                        controller: controllers['from'],
+                                                        decoration: InputDecoration(
+                                                          labelText: 'من ${slotIndex + 1}',
+                                                          border: const OutlineInputBorder(),
+                                                          contentPadding: const EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 8,
                                                           ),
-                                                      border: Border.all(
-                                                        color: _primaryColor
-                                                            .withOpacity(0.3),
-                                                      ),
-                                                    ),
-                                                    child: OutlinedButton.icon(
-                                                      onPressed: () =>
-                                                          _selectTime(
-                                                            context,
-                                                            true,
-                                                            englishDay,
-                                                          ),
-                                                      icon: null,
-                                                      label: Text(
-                                                        _workingHoursFrom[englishDay] !=
-                                                                null
-                                                            ? 'من: ${_formatTimeOfDay(_workingHoursFrom[englishDay]!)}'
-                                                            : 'من: مغلق',
-                                                        style: TextStyle(
-                                                          color: _primaryColor,
-                                                          fontWeight:
-                                                              FontWeight.bold,
                                                         ),
-                                                      ),
-                                                      style: OutlinedButton.styleFrom(
-                                                        side: BorderSide.none,
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              vertical: 12,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: _primaryColor
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            10,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: _primaryColor
-                                                            .withOpacity(0.3),
+                                                        readOnly: true,
+                                                        onTap: () async {
+                                                          final time = await showTimePicker(
+                                                            context: context,
+                                                            initialTime: const TimeOfDay(hour: 8, minute: 0),
+                                                          );
+                                                          if (time != null) {
+                                                            controllers['from']!.text =
+                                                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                                                          }
+                                                        },
                                                       ),
                                                     ),
-                                                    child: OutlinedButton.icon(
-                                                      onPressed: () =>
-                                                          _selectTime(
-                                                            context,
-                                                            false,
-                                                            englishDay,
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: TextFormField(
+                                                        controller: controllers['to'],
+                                                        decoration: InputDecoration(
+                                                          labelText: 'إلى ${slotIndex + 1}',
+                                                          border: const OutlineInputBorder(),
+                                                          contentPadding: const EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 8,
                                                           ),
-                                                      icon: null,
-                                                      label: Text(
-                                                        _workingHoursTo[englishDay] !=
-                                                                null
-                                                            ? 'إلى: ${_formatTimeOfDay(_workingHoursTo[englishDay]!)}'
-                                                            : 'إلى: مغلق',
-                                                        style: TextStyle(
-                                                          color: _primaryColor,
-                                                          fontWeight:
-                                                              FontWeight.bold,
                                                         ),
-                                                      ),
-                                                      style: OutlinedButton.styleFrom(
-                                                        side: BorderSide.none,
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              vertical: 12,
-                                                            ),
+                                                        readOnly: true,
+                                                        onTap: () async {
+                                                          final time = await showTimePicker(
+                                                            context: context,
+                                                            initialTime: const TimeOfDay(hour: 20, minute: 0),
+                                                          );
+                                                          if (time != null) {
+                                                            controllers['to']!.text =
+                                                                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                                                          }
+                                                        },
                                                       ),
                                                     ),
-                                                  ),
+                                                    if (slotControllers.length > 1)
+                                                      IconButton(
+                                                        icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                                        onPressed: () => _removeTimeSlot(englishDay, slotIndex),
+                                                      ),
+                                                  ],
                                                 ),
-                                              ],
+                                              );
+                                            }),
+                                            TextButton.icon(
+                                              onPressed: () => _addTimeSlot(englishDay),
+                                              icon: const Icon(Icons.add_circle_outline),
+                                              label: const Text('إضافة فترة أخرى'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: _primaryColor,
+                                              ),
                                             ),
                                           ],
                                         ],

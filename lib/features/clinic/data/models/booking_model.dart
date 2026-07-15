@@ -19,6 +19,7 @@ class BookingModel {
   final String patientPhone;
   final String clinicId;
   final String doctorName;
+  final String? clinicType; // "doctor" أو "center" أو null
   final int bookingNumber; // رقم الحجز (يتم توليده تلقائياً)
   final BookingStatus status;
   final DateTime createdAt;
@@ -38,6 +39,7 @@ class BookingModel {
     required this.patientPhone,
     required this.clinicId,
     required this.doctorName,
+    this.clinicType, // Optional
     required this.bookingNumber,
     this.status = BookingStatus.pending,
     required this.createdAt,
@@ -51,6 +53,11 @@ class BookingModel {
     this.visitType = VisitType.examination, // الافتراضي: كشف
   });
 
+  /// الحصول على اسم الدكتور/المركز كما هو بدون إضافة بادئة
+  String get displayName {
+    return doctorName;
+  }
+
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
@@ -60,6 +67,7 @@ class BookingModel {
       patientPhone: data['patientPhone'] ?? '',
       clinicId: data['clinicId'] ?? '',
       doctorName: data['doctorName'] ?? '',
+      clinicType: data['clinicType'], // قراءة النوع من Firestore
       bookingNumber: data['bookingNumber'] ?? 0,
       status: _parseStatus(data['status']),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -83,6 +91,7 @@ class BookingModel {
       'patientPhone': patientPhone,
       'clinicId': clinicId,
       'doctorName': doctorName,
+      'clinicType': clinicType, // حفظ النوع في Firestore
       'bookingNumber': bookingNumber,
       'status': _statusToString(status),
       'createdAt': Timestamp.fromDate(createdAt),
@@ -182,6 +191,7 @@ class BookingModel {
     String? patientPhone,
     String? clinicId,
     String? doctorName,
+    String? clinicType,
     int? bookingNumber,
     BookingStatus? status,
     DateTime? createdAt,
@@ -200,6 +210,7 @@ class BookingModel {
       patientPhone: patientPhone ?? this.patientPhone,
       clinicId: clinicId ?? this.clinicId,
       doctorName: doctorName ?? this.doctorName,
+      clinicType: clinicType ?? this.clinicType,
       bookingNumber: bookingNumber ?? this.bookingNumber,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,

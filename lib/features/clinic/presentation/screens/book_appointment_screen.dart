@@ -182,6 +182,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         patientPhone: _phoneController.text.trim(),
         clinicId: widget.clinic.id,
         doctorName: widget.clinic.doctorName,
+        clinicType: widget.clinic.clinicType, // إضافة نوع العيادة
         bookingNumber: bookingNumber,
         status: BookingStatus.pending,
         createdAt: DateTime.now(),
@@ -201,6 +202,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         BookingTrackingInfo(
           clinicId: widget.clinic.id,
           doctorName: widget.clinic.doctorName,
+          clinicType: widget.clinic.clinicType, // إضافة نوع العيادة
           departmentName: widget.clinic.department.arabicName,
           bookingNumber: bookingNumber,
           appointmentDate: _selectedAppointmentDate,
@@ -208,9 +210,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         ),
       );
 
+      final clinicName = widget.clinic.doctorName;
       NotificationService.showBookingStatusNotification(
-        title: 'تم الحجز بنجاح',
-        body: 'حجزك لدى د. ${widget.clinic.doctorName} في انتظار التأكيد',
+        title: '⏳ في انتظار تأكيد الحجز',
+        body: 'تم إرسال طلب حجزك لدى $clinicName وسيتم إشعارك عند التأكيد',
         notificationId: 70001,
       );
 
@@ -734,7 +737,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'د. ${widget.clinic.doctorName}',
+                                widget.clinic.doctorName,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,

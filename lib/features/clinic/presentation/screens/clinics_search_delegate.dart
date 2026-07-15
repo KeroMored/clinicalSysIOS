@@ -122,7 +122,7 @@ class ClinicsSearchDelegate extends SearchDelegate<void> {
                   ),
                 ),
                 title: Text(
-                  'د. ${clinic.doctorName}',
+                  clinic.doctorName,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(

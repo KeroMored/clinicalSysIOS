@@ -1,6 +1,8 @@
+import 'package:clinicalsystem/features/home/data/home_fab_cache_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
+
 import '../../data/models/radiology_model.dart';
 import '../../data/models/working_hours.dart';
 import '../cubit/radiology_cubit.dart';
@@ -708,6 +710,9 @@ class _AddRadiologyScreenState extends State<AddRadiologyScreen> {
       // Add to Firestore
       if (!mounted) return;
       await context.read<RadiologyCubit>().addRadiologyCenter(radiology);
+
+      // Clear FAB cache so it updates on home screen
+      await HomeFABCacheHelper.clearCache();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

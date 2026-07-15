@@ -6,7 +6,7 @@ class ShareAppDialog extends StatelessWidget {
   const ShareAppDialog({super.key});
 
   static const String appLink =
-      'https://play.google.com/store/apps/details?id=com.mored.mallawycare';
+      'https://play.google.com/store/apps/details?id=com.mored.MallawyHealthCare';
 
   static String get shareMessage =>
       '''

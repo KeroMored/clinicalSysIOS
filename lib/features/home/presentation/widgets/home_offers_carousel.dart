@@ -1,22 +1,17 @@
 import 'dart:async';
-import 'dart:math' as math;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../../gym/presentation/pages/gym_offer_detail_screen.dart';
-import '../../../pharmacy/presentation/screens/pharmacy_offer_detail_screen.dart';
+import '../../../pharmacy/presentation/screens/offer_details_screen.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 import 'package:clinicalsystem/core/widgets/skeleton_cards.dart';
+import 'package:clinicalsystem/core/models/unified_offer_model.dart';
+import 'package:clinicalsystem/core/services/unified_offers_service.dart';
 
-enum _OfferSourceType { pharmacy, gym }
+enum _OfferSourceType { pharmacy, clinic, gym, medicalSupply }
 
-const int _dailyPharmacyOffersCount = 8;
-const int _dailyGymOffersCount = 2;
-const int _dailyTotalOffersCount =
-    _dailyPharmacyOffersCount + _dailyGymOffersCount;
-const int _dailyPharmacyOffersFetchLimit = 8;
-const int _dailyGymContentFetchLimit = 4;
+// استراتيجية جديدة: 10 عروض من جميع المصادر (صيدليات + عيادات + جيم)
+const int _dailyTotalOffersCount = 10;
 
 class HomeMixedOffersCarousel extends StatefulWidget {
   const HomeMixedOffersCarousel({super.key});
@@ -28,7 +23,7 @@ class HomeMixedOffersCarousel extends StatefulWidget {
 
 class _HomeMixedOffersCarouselState extends State<HomeMixedOffersCarousel> {
   late Future<List<_HomeOfferItem>> _offersFuture;
-  final Map<String, String> _gymNamesCache = {};
+  final UnifiedOffersService _offersService = UnifiedOffersService();
 
   @override
   void initState() {
@@ -41,310 +36,61 @@ class _HomeMixedOffersCarouselState extends State<HomeMixedOffersCarousel> {
     super.dispose();
   }
 
-  int _stableHash(String value) {
-    var hash = 2166136261;
-    for (final unit in value.codeUnits) {
-      hash ^= unit;
-      hash = (hash * 16777619) & 0x7fffffff;
-    }
-    return hash;
-  }
-
-  int _daysSinceRotationEpoch(DateTime now) {
-    final utcDate = DateTime.utc(now.year, now.month, now.day);
-    final epoch = DateTime.utc(2024, 1, 1);
-    return utcDate.difference(epoch).inDays;
-  }
-
-  DateTime? _extractCreatedAt(Map<String, dynamic> data) {
-    final raw = data['createdAt'];
-    if (raw is Timestamp) {
-      return raw.toDate();
-    }
-    if (raw is DateTime) {
-      return raw;
-    }
-    if (raw is int) {
-      return DateTime.fromMillisecondsSinceEpoch(raw);
-    }
-    if (raw is String) {
-      return DateTime.tryParse(raw);
-    }
-    return null;
-  }
-
-  double _offerQualityScore(_HomeOfferItem offer, DateTime now) {
-    final createdAt = offer.createdAt;
-    final ageDays = createdAt == null ? 365 : now.difference(createdAt).inDays;
-    final freshnessScore = (30 - ageDays).clamp(0, 30).toDouble();
-    final discountScore = (offer.discountPercentage ?? 0).clamp(0, 90);
-    final hasImageBonus = offer.imageUrl.isNotEmpty ? 8.0 : 0.0;
-    final hasPriceBonus = (offer.oldPrice != null || offer.newPrice != null)
-        ? 4.0
-        : 0.0;
-    final validSavingBonus =
-        (offer.oldPrice != null &&
-            offer.newPrice != null &&
-            offer.newPrice! < offer.oldPrice!)
-        ? 5.0
-        : 0.0;
-
-    return (freshnessScore * 1.6) +
-        discountScore +
-        hasImageBonus +
-        hasPriceBonus +
-        validSavingBonus;
-  }
-
-  List<_HomeOfferItem> _pickDailyItems(List<_HomeOfferItem> source, int count) {
-    if (source.isEmpty || count <= 0) {
-      return const [];
-    }
-
-    final now = DateTime.now();
-    final ranked = [...source]
-      ..sort((a, b) {
-        final scoreA = _offerQualityScore(a, now);
-        final scoreB = _offerQualityScore(b, now);
-
-        final byScore = scoreB.compareTo(scoreA);
-        if (byScore != 0) {
-          return byScore;
-        }
-
-        return _stableHash(a.id).compareTo(_stableHash(b.id));
-      });
-
-    if (ranked.length <= count) {
-      return ranked;
-    }
-
-    final rotationPoolSize = math.min(
-      ranked.length,
-      math.max(count * 2, count),
-    );
-    final rotationPool = ranked.take(rotationPoolSize).toList();
-    final startIndex =
-        (_daysSinceRotationEpoch(now) * count) % rotationPool.length;
-
-    return List<_HomeOfferItem>.generate(
-      count,
-      (index) => rotationPool[(startIndex + index) % rotationPool.length],
-    );
-  }
-
-  _HomeOfferItem? _mapPharmacyOfferDoc(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data();
-    final title = (data['title']?.toString() ?? '').trim();
-    if (title.isEmpty) {
-      return null;
-    }
-
-    final images = (data['images'] as List<dynamic>? ?? const [])
-        .map((e) => e.toString().trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    final imageUrl = images.isNotEmpty
-        ? images.first
-        : (data['imageUrl']?.toString() ?? '');
-    final normalizedImageUrl = imageUrl.trim();
-    final normalizedImages = images.isNotEmpty
-        ? images
-        : (normalizedImageUrl.isNotEmpty
-              ? <String>[normalizedImageUrl]
-              : const <String>[]);
-    final discount = _extractPercent(data, const [
-      'discountPercentage',
-      'discount',
-    ]);
-    final oldPrice = _extractPrice(data, const [
-      'oldPrice',
-      'priceBefore',
-      'beforePrice',
-      'listPrice',
-    ]);
-    var newPrice = _extractPrice(data, const [
-      'newPrice',
-      'priceAfter',
-      'afterPrice',
-      'price',
-      'offerPrice',
-    ]);
-
-    if (newPrice == null && oldPrice != null && discount != null) {
-      newPrice = oldPrice * (1 - (discount / 100));
-    }
-
-    final safeOldPrice = oldPrice;
-    final safeNewPrice =
-        (newPrice != null && safeOldPrice != null && newPrice > safeOldPrice)
-        ? safeOldPrice
-        : newPrice;
-
-    return _HomeOfferItem(
-      id: doc.id,
-      sourceType: _OfferSourceType.pharmacy,
-      title: title,
-      subtitle: (data['pharmacyName']?.toString() ?? 'صيدلية').trim(),
-      description: (data['description']?.toString() ?? '').trim(),
-      imageUrl: normalizedImageUrl,
-      images: normalizedImages,
-      pharmacyId: (data['pharmacyId']?.toString() ?? '').trim(),
-      notes: (data['notes']?.toString() ?? '').trim(),
-      category: (data['category']?.toString() ?? 'عام').trim(),
-      oldPrice: safeOldPrice,
-      newPrice: safeNewPrice,
-      discountPercentage: discount,
-      gymId: null,
-      createdAt: _extractCreatedAt(data),
-    );
-  }
-
-  Future<List<_HomeOfferItem>> _buildGymOffersFromDocs(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> gymOfferDocs,
-  ) async {
-    if (gymOfferDocs.isEmpty) {
-      return const [];
-    }
-
-    final gymIds = gymOfferDocs
-        .map((doc) => (doc.data()['gymId']?.toString() ?? '').trim())
-        .where((id) => id.isNotEmpty)
-        .toSet();
-
-    final missingIds = gymIds.where((id) => !_gymNamesCache.containsKey(id));
-    if (missingIds.isNotEmpty) {
-      final gymDocs = await Future.wait(
-        missingIds.map(
-          (id) => FirebaseFirestore.instance.collection('gyms').doc(id).get(),
-        ),
-      );
-
-      for (final gymDoc in gymDocs) {
-        if (!gymDoc.exists) {
-          _gymNamesCache[gymDoc.id] = 'جيم';
-          continue;
-        }
-
-        final gymData = gymDoc.data();
-        final gymName = (gymData?['name']?.toString() ?? 'جيم').trim();
-        _gymNamesCache[gymDoc.id] = gymName.isEmpty ? 'جيم' : gymName;
-      }
-    }
-
-    return gymOfferDocs.map((doc) {
-      final data = doc.data();
-      final gymId = (data['gymId']?.toString() ?? '').trim();
-      final gymName = gymId.isNotEmpty
-          ? (_gymNamesCache[gymId] ?? 'جيم')
-          : 'جيم';
-      final discount = _extractPercent(data, const [
-        'discountPercentage',
-        'discount',
-      ]);
-      final mediaUrl = (data['mediaUrl']?.toString() ?? '').trim();
-      final oldPrice = _extractPrice(data, const [
-        'oldPrice',
-        'priceBefore',
-        'beforePrice',
-        'listPrice',
-      ]);
-      var newPrice = _extractPrice(data, const [
-        'newPrice',
-        'priceAfter',
-        'afterPrice',
-        'price',
-        'offerPrice',
-      ]);
-
-      if (newPrice == null && oldPrice != null && discount != null) {
-        newPrice = oldPrice * (1 - (discount / 100));
-      }
-
-      return _HomeOfferItem(
-        id: doc.id,
-        sourceType: _OfferSourceType.gym,
-        title: (data['title']?.toString() ?? 'عرض جيم').trim(),
-        subtitle: gymName,
-        description: (data['description']?.toString() ?? '').trim(),
-        imageUrl: mediaUrl,
-        images: mediaUrl.isNotEmpty ? <String>[mediaUrl] : const <String>[],
-        pharmacyId: null,
-        notes: '',
-        category: 'عروض الجيم',
-        oldPrice: oldPrice,
-        newPrice: newPrice,
-        discountPercentage: discount,
-        gymId: gymId,
-        createdAt: _extractCreatedAt(data),
-      );
-    }).toList();
-  }
-
-  Future<List<_HomeOfferItem>> _fetchPharmacyOffers() async {
-    final query = FirebaseFirestore.instance
-        .collection('offers')
-        .where('isActive', isEqualTo: true)
-        .orderBy('createdAt', descending: true)
-        .limit(_dailyPharmacyOffersFetchLimit);
-    QuerySnapshot<Map<String, dynamic>> snapshot;
+  /// تحميل العروض باستخدام الاستراتيجية الذكية الموحدة
+  Future<List<_HomeOfferItem>> _loadDailyOffers() async {
     try {
-      snapshot = await query.get();
-    } catch (_) {
-      snapshot = await query.get(const GetOptions(source: Source.cache));
-    }
-
-    return snapshot.docs
-        .map(_mapPharmacyOfferDoc)
-        .whereType<_HomeOfferItem>()
-        .toList();
-  }
-
-  Future<List<_HomeOfferItem>> _fetchGymOffers() async {
-    final gymContentQuery = FirebaseFirestore.instance
-        .collection('gym_content')
-        .orderBy('createdAt', descending: true)
-        .limit(_dailyGymContentFetchLimit);
-
-    QuerySnapshot<Map<String, dynamic>> snapshot;
-    try {
-      snapshot = await gymContentQuery.get();
-    } catch (_) {
-      snapshot = await gymContentQuery.get(
-        const GetOptions(source: Source.cache),
+      // جلب العروض من جميع المصادر باستخدام الخدمة الموحدة
+      final unifiedOffers = await _offersService.fetchAllOffers(
+        limit: _dailyTotalOffersCount * 2, // جلب ضعف العدد ثم اختيار الأفضل
       );
-    }
 
-    final gymOfferDocs = snapshot.docs.where((doc) {
-      final type = (doc.data()['type']?.toString() ?? '').trim().toLowerCase();
-      return type == 'offer';
-    }).toList();
+      // ترتيب العروض باستخدام النظام الديناميكي
+      final sortedOffers = _offersService.sortOffers(
+        offers: unifiedOffers,
+        pageNumber: 0,
+        pageSize: _dailyTotalOffersCount,
+      );
 
-    if (gymOfferDocs.isEmpty) {
+      // تحويل من UnifiedOfferModel إلى _HomeOfferItem
+      return sortedOffers.take(_dailyTotalOffersCount).map((offer) {
+        return _HomeOfferItem(
+          id: offer.id,
+          sourceType: _mapOfferType(offer.offerType),
+          title: offer.title,
+          subtitle: offer.sourceName,
+          description: offer.description,
+          imageUrl: offer.images.isNotEmpty ? offer.images.first : '',
+          images: offer.images,
+          pharmacyId: offer.offerType == OfferType.pharmacy ? offer.sourceId : null,
+          clinicId: offer.offerType == OfferType.clinic ? offer.sourceId : null,
+          gymId: offer.offerType == OfferType.gym ? offer.sourceId : null,
+          medicalSupplyId: offer.offerType == OfferType.medicalSupply ? offer.sourceId : null,
+          notes: offer.notes,
+          category: offer.category,
+          oldPrice: null, // يمكن إضافة دعم السعر لاحقاً
+          newPrice: null,
+          discountPercentage: null,
+          createdAt: offer.createdAt,
+        );
+      }).toList();
+    } catch (e) {
+      print('❌ Error loading daily offers: $e');
       return [];
     }
-
-    return _buildGymOffersFromDocs(gymOfferDocs);
   }
 
-  Future<List<_HomeOfferItem>> _loadDailyOffers() async {
-    final pharmacyOffers = await _fetchPharmacyOffers();
-    final gymOffers = await _fetchGymOffers();
-
-    final selectedPharmacy = _pickDailyItems(
-      pharmacyOffers,
-      _dailyPharmacyOffersCount,
-    );
-    final selectedGym = _pickDailyItems(gymOffers, _dailyGymOffersCount);
-
-    final mixed = _buildMixedOffers(
-      pharmacyOffers: selectedPharmacy,
-      gymOffers: selectedGym,
-    );
-    return mixed;
+  /// تحويل نوع العرض من UnifiedOfferModel إلى النوع المحلي
+  _OfferSourceType _mapOfferType(OfferType type) {
+    switch (type) {
+      case OfferType.pharmacy:
+        return _OfferSourceType.pharmacy;
+      case OfferType.clinic:
+        return _OfferSourceType.clinic;
+      case OfferType.gym:
+        return _OfferSourceType.gym;
+      case OfferType.medicalSupply:
+        return _OfferSourceType.medicalSupply;
+    }
   }
 
   @override
@@ -356,7 +102,7 @@ class _HomeMixedOffersCarouselState extends State<HomeMixedOffersCarousel> {
 
         if (snapshot.connectionState == ConnectionState.waiting &&
             mixed.isEmpty) {
-          return const _HomeOffersLoading(title: 'عروض الصيدليات والجيم');
+          return const _HomeOffersLoading(title: 'العروض والخصومات');
         }
 
         if (mixed.isEmpty) {
@@ -366,41 +112,24 @@ class _HomeMixedOffersCarouselState extends State<HomeMixedOffersCarousel> {
         return _HomeOffersCarousel(
           offers: mixed,
           onOfferTap: (offer) {
+            // فتح صفحة التفاصيل الموحدة لجميع أنواع العروض
+            String collectionName = '';
             if (offer.sourceType == _OfferSourceType.pharmacy) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PharmacyOfferDetailScreen(
-                    offerId: offer.id,
-                    pharmacyId: offer.pharmacyId ?? '',
-                    pharmacyName: offer.subtitle,
-                    title: offer.title,
-                    description: offer.description,
-                    notes: offer.notes,
-                    images: offer.images,
-                    createdAt: offer.createdAt,
-                    category: offer.category.isEmpty ? 'عام' : offer.category,
-                    discountPercentage: offer.discountPercentage,
-                  ),
-                ),
-              );
-              return;
+              collectionName = 'offers';
+            } else if (offer.sourceType == _OfferSourceType.clinic) {
+              collectionName = 'clinic_offers';
+            } else if (offer.sourceType == _OfferSourceType.gym) {
+              collectionName = 'gym_offers';
+            } else if (offer.sourceType == _OfferSourceType.medicalSupply) {
+              collectionName = 'medical_supply_offers';
             }
 
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => GymOfferDetailScreen(
+                builder: (_) => OfferDetailsScreen(
                   offerId: offer.id,
-                  gymId: offer.gymId ?? '',
-                  gymName: offer.subtitle,
-                  title: offer.title,
-                  description: offer.description,
-                  imageUrl: offer.imageUrl,
-                  createdAt: offer.createdAt,
-                  discountPercentage: offer.discountPercentage,
-                  oldPrice: offer.oldPrice,
-                  newPrice: offer.newPrice,
+                  collectionName: collectionName,
                 ),
               ),
             );
@@ -409,91 +138,6 @@ class _HomeMixedOffersCarouselState extends State<HomeMixedOffersCarousel> {
       },
     );
   }
-}
-
-List<_HomeOfferItem> _buildMixedOffers({
-  required List<_HomeOfferItem> pharmacyOffers,
-  required List<_HomeOfferItem> gymOffers,
-}) {
-  final pharmacyBatch = pharmacyOffers.take(_dailyPharmacyOffersCount).toList();
-  final gymBatch = gymOffers.take(_dailyGymOffersCount).toList();
-  final mixed = <_HomeOfferItem>[];
-
-  int pharmacyIndex = 0;
-  int gymIndex = 0;
-
-  const layoutPattern = <_OfferSourceType>[
-    _OfferSourceType.pharmacy,
-    _OfferSourceType.pharmacy,
-    _OfferSourceType.pharmacy,
-    _OfferSourceType.pharmacy,
-    _OfferSourceType.gym,
-    _OfferSourceType.pharmacy,
-    _OfferSourceType.pharmacy,
-    _OfferSourceType.pharmacy,
-    _OfferSourceType.gym,
-    _OfferSourceType.pharmacy,
-  ];
-
-  for (final slot in layoutPattern) {
-    if (slot == _OfferSourceType.pharmacy) {
-      if (pharmacyIndex < pharmacyBatch.length) {
-        mixed.add(pharmacyBatch[pharmacyIndex++]);
-      } else if (gymIndex < gymBatch.length) {
-        mixed.add(gymBatch[gymIndex++]);
-      }
-      continue;
-    }
-
-    if (gymIndex < gymBatch.length) {
-      mixed.add(gymBatch[gymIndex++]);
-    } else if (pharmacyIndex < pharmacyBatch.length) {
-      mixed.add(pharmacyBatch[pharmacyIndex++]);
-    }
-  }
-
-  if (mixed.length < _dailyTotalOffersCount) {
-    for (final offer in pharmacyOffers.skip(_dailyPharmacyOffersCount)) {
-      if (mixed.length == _dailyTotalOffersCount) break;
-      mixed.add(offer);
-    }
-  }
-
-  if (mixed.length < _dailyTotalOffersCount) {
-    for (final offer in gymOffers.skip(_dailyGymOffersCount)) {
-      if (mixed.length == _dailyTotalOffersCount) break;
-      mixed.add(offer);
-    }
-  }
-
-  return mixed;
-}
-
-double? _extractPrice(Map<String, dynamic> data, List<String> keys) {
-  for (final key in keys) {
-    final raw = data[key];
-    if (raw is num) {
-      return raw.toDouble();
-    }
-
-    if (raw is String) {
-      final normalized = raw.replaceAll(RegExp(r'[^0-9.]'), '');
-      final parsed = double.tryParse(normalized);
-      if (parsed != null) {
-        return parsed;
-      }
-    }
-  }
-
-  return null;
-}
-
-double? _extractPercent(Map<String, dynamic> data, List<String> keys) {
-  final percent = _extractPrice(data, keys);
-  if (percent == null || percent <= 0 || percent >= 100) {
-    return null;
-  }
-  return percent;
 }
 
 class _HomeOffersCarousel extends StatefulWidget {
@@ -585,14 +229,20 @@ class _HomeOffersCarouselState extends State<_HomeOffersCarousel> {
               },
               itemBuilder: (context, index) {
                 final offer = widget.offers[index % widget.offers.length];
-                final sourceColor =
-                    offer.sourceType == _OfferSourceType.pharmacy
+                
+                // تحديد اللون حسب المصدر
+                final sourceColor = offer.sourceType == _OfferSourceType.pharmacy
                     ? const Color(0xFF0B7285)
-                    : const Color(0xFFEA580C);
-                final imageLoadingGradient =
-                    offer.sourceType == _OfferSourceType.pharmacy
+                    : offer.sourceType == _OfferSourceType.clinic
+                        ? const Color(0xFF0B8293)
+                        : const Color(0xFFEA580C);
+                
+                // تحديد gradient التحميل حسب المصدر
+                final imageLoadingGradient = offer.sourceType == _OfferSourceType.pharmacy
                     ? const [Color(0xFFF5FAF9), Color(0xFFE6F0EE)]
-                    : const [Color(0xFFFFF4EC), Color(0xFFFFE7D4)];
+                    : offer.sourceType == _OfferSourceType.clinic
+                        ? const [Color(0xFFE0F2F1), Color(0xFFB2DFDB)]
+                        : const [Color(0xFFFFF4EC), Color(0xFFFFE7D4)];
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -831,12 +481,14 @@ class _HomeOfferItem {
   final String imageUrl;
   final List<String> images;
   final String? pharmacyId;
+  final String? clinicId; // إضافة دعم العيادات
+  final String? gymId;
+  final String? medicalSupplyId; // إضافة دعم المستلزمات الطبية
   final String notes;
   final String category;
   final double? oldPrice;
   final double? newPrice;
   final double? discountPercentage;
-  final String? gymId;
   final DateTime? createdAt;
 
   const _HomeOfferItem({
@@ -847,14 +499,16 @@ class _HomeOfferItem {
     required this.description,
     required this.imageUrl,
     required this.images,
-    required this.pharmacyId,
+    this.pharmacyId,
+    this.clinicId, // إضافة كمعامل اختياري
+    this.gymId,
+    this.medicalSupplyId, // إضافة كمعامل اختياري
     required this.notes,
     required this.category,
-    required this.oldPrice,
-    required this.newPrice,
-    required this.discountPercentage,
-    required this.gymId,
-    required this.createdAt,
+    this.oldPrice,
+    this.newPrice,
+    this.discountPercentage,
+    this.createdAt,
   });
 }
 
@@ -867,10 +521,18 @@ class _OfferImagePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = sourceType == _OfferSourceType.pharmacy
         ? Icons.medication_rounded
-        : Icons.fitness_center_rounded;
+        : sourceType == _OfferSourceType.clinic
+            ? Icons.local_hospital_rounded
+            : sourceType == _OfferSourceType.medicalSupply
+                ? Icons.medical_services_rounded
+                : Icons.fitness_center_rounded;
     final label = sourceType == _OfferSourceType.pharmacy
         ? 'عرض صيدلية'
-        : 'عرض جيم';
+        : sourceType == _OfferSourceType.clinic
+            ? 'عرض عيادة'
+            : sourceType == _OfferSourceType.medicalSupply
+                ? 'عرض مستلزمات طبية'
+                : 'عرض جيم';
 
     return Container(
       decoration: const BoxDecoration(

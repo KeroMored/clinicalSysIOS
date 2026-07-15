@@ -7,6 +7,7 @@ import 'add_delivery_screen.dart';
 import 'add_rehabilitation_center_screen.dart';
 import '../../../radiology/presentation/screens/add_radiology_screen.dart';
 import '../../../gym/presentation/pages/add_gym_screen.dart';
+import '../../../medical_supply/presentation/screens/add_medical_supply_screen.dart';
 
 class AdditionsScreen extends StatelessWidget {
   const AdditionsScreen({super.key});
@@ -218,6 +219,22 @@ class AdditionsScreen extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AddGymScreen()),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Medical Supplies Card
+                _buildServiceCard(
+                  context,
+                  icon: Icons.medical_services_rounded,
+                  title: 'إضافة مكان مستلزمات طبية',
+                  subtitle: 'أضف متجر مستلزمات طبية',
+                  color: const Color(0xFFEC4899),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AddMedicalSupplyScreen(),
+                    ),
                   ),
                 ),
               ],

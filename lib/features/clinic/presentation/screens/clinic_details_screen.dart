@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/clinic_model.dart';
 import '../../data/models/clinic_department.dart';
@@ -235,7 +236,7 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               title: Text(
-                'د. ${_clinic.doctorName}',
+                _clinic.doctorName,
                 maxLines: 1,
                 style: const TextStyle(
                   color: Colors.white,
@@ -444,39 +445,36 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                         children: [
                           Container(
                             height: 280,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  _primaryColor.withValues(alpha: 0.14),
-                                  _primaryDark.withValues(alpha: 0.08),
-                                ],
-                              ),
-                              borderRadius: const BorderRadius.vertical(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(
                                 bottom: Radius.circular(28),
                               ),
                             ),
                             child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(32),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.92),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _primaryColor.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      blurRadius: 30,
-                                      offset: const Offset(0, 10),
-                                    ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(40),
+                                child: Image.asset(
+                                  'assets/images/clinicLogo.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Dark gradient overlay for text visibility
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.25),
+                                    Colors.black.withValues(alpha: 0.65),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.medical_services_rounded,
-                                  size: 80,
-                                  color: _primaryColor,
+                                borderRadius: const BorderRadius.vertical(
+                                  bottom: Radius.circular(28),
                                 ),
                               ),
                             ),
@@ -498,11 +496,11 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
+                                  color: Colors.black.withValues(alpha: 0.75),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
-                                    width: 1,
+                                    color: Colors.white.withValues(alpha: 0.4),
+                                    width: 1.5,
                                   ),
                                 ),
                                 child: Row(
@@ -563,7 +561,7 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "د. ${_clinic.doctorName}",
+                                            _clinic.doctorName,
                                             style: const TextStyle(
                                               fontSize: 17,
                                               fontWeight: FontWeight.w700,
@@ -1191,7 +1189,7 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'تقييمات د. ${_clinic.doctorName}',
+                                'تقييمات ${_clinic.doctorName}',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1305,8 +1303,9 @@ class _ClinicDetailsScreenState extends State<ClinicDetailsScreen> {
 
     try {
       final formatted = _formatWhatsAppNumber(_clinic.whatsapp!);
+      final clinicPrefix = _clinic.doctorName;
       final message =
-          'مرحباً 👋\nأريد الاستفسار عن موعد في عيادة د. ${_clinic.doctorName}';
+          'مرحباً 👋\nأريد الاستفسار عن موعد في عيادة $clinicPrefix';
       final url =
           'https://wa.me/$formatted?text=${Uri.encodeComponent(message)}';
 

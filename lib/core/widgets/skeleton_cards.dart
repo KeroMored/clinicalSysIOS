@@ -63,11 +63,9 @@ class SkeletonPharmacyCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.merge(
-          const Border(right: BorderSide(color: Color(0xFFCCFBF1), width: 1)),
-          const Border(
-            bottom: BorderSide(color: Color(0xFF99F6E4), width: 1.6),
-          ),
+        border: Border.all(
+          color: const Color(0xFF99F6E4),
+          width: 1.3,
         ),
       ),
       child: const SkeletonShimmer(

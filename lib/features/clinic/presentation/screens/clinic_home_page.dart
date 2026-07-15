@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../data/models/clinic_department.dart';
 import 'clinics_search_delegate.dart';
 import 'clinics_list_screen.dart';
@@ -128,10 +129,10 @@ class ClinicHomePage extends StatelessWidget {
   ) {
     final icons = {
       ClinicDepartment.pediatrics: Icons.child_care,
-      ClinicDepartment.dentistry: Icons.medical_services,
-      ClinicDepartment.internalMedicine: Icons.medical_information,
+      ClinicDepartment.dentistry: Icons.health_and_safety,
+      ClinicDepartment.internalMedicine: Icons.health_and_safety,
       ClinicDepartment.dermatology: Icons.face,
-      ClinicDepartment.orthopedics: Icons.accessibility,
+      ClinicDepartment.orthopedics: Icons.healing,
       ClinicDepartment.cardiology: Icons.favorite,
       ClinicDepartment.ophthalmology: Icons.visibility,
       ClinicDepartment.ent: Icons.hearing,

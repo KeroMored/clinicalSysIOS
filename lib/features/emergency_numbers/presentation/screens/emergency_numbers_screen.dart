@@ -210,7 +210,7 @@ class EmergencyNumbersScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${numbers.length} جهات متاحة على مدار 24 ساعة',
+                  ' الجهات متاحة على مدار 24 ساعة',
                   style: const TextStyle(
                     color: Color(0xFFDCFCE7),
                     fontSize: 12,

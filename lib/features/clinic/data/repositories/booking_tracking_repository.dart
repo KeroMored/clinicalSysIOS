@@ -8,6 +8,7 @@ import '../models/booking_model.dart';
 class BookingTrackingInfo {
   final String clinicId;
   final String doctorName;
+  final String? clinicType; // "doctor" أو "center" أو null
   final String departmentName;
   final int bookingNumber;
   final DateTime appointmentDate;
@@ -16,16 +17,23 @@ class BookingTrackingInfo {
   const BookingTrackingInfo({
     required this.clinicId,
     required this.doctorName,
+    this.clinicType, // Optional
     required this.departmentName,
     required this.bookingNumber,
     required this.appointmentDate,
     this.userId,
   });
 
+  /// الحصول على اسم الدكتور/المركز كما هو بدون إضافة بادئة
+  String get displayName {
+    return doctorName;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'clinicId': clinicId,
       'doctorName': doctorName,
+      'clinicType': clinicType,
       'departmentName': departmentName,
       'bookingNumber': bookingNumber,
       'appointmentDate': appointmentDate.toIso8601String(),
@@ -37,6 +45,7 @@ class BookingTrackingInfo {
     return BookingTrackingInfo(
       clinicId: json['clinicId'] ?? '',
       doctorName: json['doctorName'] ?? '',
+      clinicType: json['clinicType'], // قراءة النوع من JSON
       departmentName: json['departmentName'] ?? '',
       bookingNumber: json['bookingNumber'] ?? 0,
       appointmentDate:

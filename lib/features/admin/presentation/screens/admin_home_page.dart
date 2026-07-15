@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'approve_pharmacies_screen.dart';
+import 'approve_medical_supplies_screen.dart';
 import 'clinic_approval_screen.dart';
 import 'add_clinic_screen.dart';
 import 'add_pharmacy_screen.dart';
@@ -11,7 +13,7 @@ import 'delivery_approval_screen.dart';
 import 'add_rehabilitation_center_screen.dart';
 import 'rehabilitation_approval_screen.dart';
 import 'send_admin_notification_screen.dart';
-import 'admin_medicine_requests_screen.dart';
+import 'admin_all_requests_screen.dart';
 import '../../../radiology/presentation/screens/add_radiology_screen.dart';
 import '../../../radiology/presentation/screens/radiology_approval_list_screen.dart';
 import '../../../gym/presentation/pages/add_gym_screen.dart';
@@ -123,7 +125,7 @@ class AdminHomePage extends StatelessWidget {
                     Expanded(
                       child: _buildModernAdminCard(
                         context,
-                        icon: Icons.local_hospital,
+                        icon: Icons.health_and_safety,
                         title: 'الموافقة على العيادات',
                         gradient: AppTheme.clinicGradient,
                         onTap: () => Navigator.push(
@@ -227,6 +229,33 @@ class AdminHomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
+                // Fourth Row - Medical Supplies
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildModernAdminCard(
+                        context,
+                        icon: Icons.medical_services_rounded,
+                        title: 'الموافقة على المستلزمات الطبية',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFEC4899), Color(0xFFC2185B)],
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ApproveMedicalSuppliesScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(), // Empty space for symmetry
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
                 // Fourth Row - Rehabilitation and Gym
                 Row(
                   children: [
@@ -262,6 +291,35 @@ class AdminHomePage extends StatelessWidget {
                         },
                       ),
                     ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Fifth Row - Medical Supplies (NEW)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildModernAdminCard(
+                        context,
+                        icon: Icons.medical_services_rounded,
+                        title: 'الموافقة على المستلزمات الطبية',
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+                        ),
+                        onTap: () {
+                          // TODO: Navigate to approve medical supplies screen
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('صفحة الموافقة على المستلزمات - قيد التطوير'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(child: SizedBox()), // Empty space
                   ],
                 ),
 
@@ -348,7 +406,7 @@ class AdminHomePage extends StatelessWidget {
                   ),
                 ),
 
-                // زرار طلبات الأدوية (يظهر فقط للأدمن kerolesmored@gmail.com)
+                // زرار طلبات الأدوية والعروض (يظهر فقط للأدمن kerolesmored@gmail.com)
                 Builder(
                   builder: (context) {
                     final authState = context.watch<AuthCubit>().state;
@@ -369,7 +427,7 @@ class AdminHomePage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
-                                  const AdminMedicineRequestsScreen(),
+                                  const AdminAllRequestsScreen(),
                             ),
                           ),
                           borderRadius: BorderRadius.circular(20),
@@ -399,7 +457,7 @@ class AdminHomePage extends StatelessWidget {
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
-                                    Icons.medical_services_rounded,
+                                    Icons.admin_panel_settings_rounded,
                                     size: 32,
                                     color: Colors.white,
                                   ),
@@ -411,7 +469,7 @@ class AdminHomePage extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        'طلبات الأدوية',
+                                        'إدارة الطلبات والعروض',
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
@@ -420,9 +478,9 @@ class AdminHomePage extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'عرض ومتابعة طلبات الأدوية من المستخدمين',
+                                        'طلبات الأدوية • عروض الصيدليات • العيادات • الجيمات • المستلزمات',
                                         style: TextStyle(
-                                          fontSize: 14,
+                                          fontSize: 11,
                                           color: Colors.white.withValues(
                                             alpha: 0.9,
                                           ),
@@ -636,7 +694,7 @@ class AdminHomePage extends StatelessWidget {
                   children: [
                     _buildAddServiceCard(
                       context,
-                      icon: Icons.local_hospital,
+                      icon: Icons.health_and_safety,
                       title: 'إضافة عيادة',
                       gradient: AppTheme.clinicGradient,
                       onTap: () => Navigator.push(
@@ -684,7 +742,7 @@ class AdminHomePage extends StatelessWidget {
                     ),
                     // _buildAddServiceCard(
                     //   context,
-                    //   icon: FontAwesomeIcons.userNurse,
+                    //   icon: Icons.medical_services,
                     //   title: 'إضافة ممرض',
                     //   gradient: AppTheme.nursingGradient,
                     //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddNurseScreen())),
@@ -728,6 +786,23 @@ class AdminHomePage extends StatelessWidget {
                               create: (context) => GymCubit(GymRepository()),
                               child: const AddGymScreen(),
                             ),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildAddServiceCard(
+                      context,
+                      icon: Icons.medical_services_rounded,
+                      title: 'إضافة مستلزمات طبية',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+                      ),
+                      onTap: () {
+                        // TODO: Navigate to add medical supply screen
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('صفحة إضافة المستلزمات الطبية - قيد التطوير'),
+                            backgroundColor: Colors.orange,
                           ),
                         );
                       },

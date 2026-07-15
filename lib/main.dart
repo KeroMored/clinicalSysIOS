@@ -1,17 +1,20 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_app_check/firebase_app_check.dart'; // Disabled temporarily
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/deep_link_navigation_service.dart';
 import 'core/security/security_manager.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/app_route_observer.dart';
 import 'features/auth/presentation/screens/auth_wrapper.dart';
 import 'features/pharmacy/data/repositories/pharmacy_repository.dart';
 import 'features/pharmacy/presentation/cubit/pharmacy_cubit.dart';
@@ -29,12 +32,19 @@ import 'features/rehabilitation/data/repositories/rehabilitation_repository.dart
 import 'features/rehabilitation/presentation/cubit/rehabilitation_cubit.dart';
 import 'features/gym/data/repositories/gym_repository.dart';
 import 'features/gym/presentation/cubit/gym_cubit.dart';
-import 'features/clinic/presentation/widgets/doctor_of_day_notification.dart';
-// import 'features/home/services/daily_health_tip_notification_service.dart'; // Disabled - uses awesome_notifications
+// import 'features/clinic/presentation/widgets/doctor_of_day_notification.dart'; // Removed - requires awesome_notifications
+// import 'features/home/services/daily_health_tip_notification_service.dart'; // Removed - requires awesome_notifications
 import 'features/clinic/data/repositories/patient_repository.dart';
 import 'features/clinic/presentation/cubit/patient_cubit.dart';
 import 'features/medicine_reminders/data/repositories/medicine_repository.dart';
 import 'features/medicine_reminders/presentation/cubit/medicine_cubit.dart';
+// Deep Linking imports
+import 'features/clinic/presentation/screens/bookings_management_screen.dart';
+import 'features/clinic/data/models/clinic_model.dart';
+import 'features/laboratory/presentation/screens/lab_bookings_management_screen.dart';
+import 'features/laboratory/data/models/laboratory_model.dart';
+import 'features/medicine_requests/presentation/screens/medicine_requests_list_screen.dart';
+import 'features/pharmacy/presentation/screens/offer_details_screen.dart';
 
 // Handle background messages
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -53,48 +63,30 @@ void _warmUpFirestore() {
   // Intentionally disabled to minimize startup reads.
 }
 
-bool _fallbackShown = false;
-
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterError.onError = (details) {
-    Zone.current.handleUncaughtError(
-      details.exception,
-      details.stack ?? StackTrace.current,
-    );
-  };
 
-  runZonedGuarded(() async {
-    await _startApp();
-  }, (error, stack) {
-    _runFallbackApp();
-    print('❌ Startup crash: $error');
-  });
-}
-
-Future<void> _startApp() async {
   // Initialize locale for calendar
   await initializeDateFormatting('ar', null);
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Firebase App Check temporarily disabled
-  // TODO: Re-enable after fixing configuration
-  // try {
-  //   if (Platform.isAndroid || Platform.isIOS) {
-  //     await FirebaseAppCheck.instance.activate(
-  //       androidProvider: kDebugMode
-  //           ? AndroidProvider.debug
-  //           : AndroidProvider.playIntegrity,
-  //       appleProvider: kDebugMode
-  //           ? AppleProvider.debug
-  //           : AppleProvider.appAttestWithDeviceCheckFallback,
-  //     );
-  //   }
-  // } catch (e) {
-  //   print('⚠️ App Check activation skipped: $e');
-  // }
+  // Enable Firebase App Check to avoid placeholder tokens in Firestore calls.
+  try {
+    if (Platform.isAndroid || Platform.isIOS) {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: kDebugMode
+            ? AndroidProvider.debug
+            : AndroidProvider.playIntegrity,
+        appleProvider: kDebugMode
+            ? AppleProvider.debug
+            : AppleProvider.appAttestWithDeviceCheckFallback,
+      );
+    }
+  } catch (e) {
+    print('⚠️ App Check activation skipped: $e');
+  }
 
   // 🚀 Enable Firestore offline persistence and warm up connection
   // This makes the first login much faster
@@ -112,43 +104,6 @@ Future<void> _startApp() async {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     unawaited(_startDeferredAppInitialization());
   });
-}
-
-void _runFallbackApp() {
-  if (_fallbackShown) return;
-  _fallbackShown = true;
-  runApp(const _StartupErrorApp());
-}
-
-class _StartupErrorApp extends StatelessWidget {
-  const _StartupErrorApp();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Directionality(
-      textDirection: TextDirection.rtl,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: Color(0xFFF3F8FB),
-          body: Center(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'حدث خطأ أثناء تشغيل التطبيق. برجاء إعادة المحاولة.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFF0F172A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 Future<void> _startDeferredAppInitialization() async {
@@ -191,26 +146,34 @@ Future<void> _initializeLowPriorityServices() async {
   }
 
   // Awesome notifications are low-priority at app startup.
+  // Disabled - awesome_notifications package not included
+  /*
   try {
     await DoctorOfTheDayNotification.initialize();
     await DoctorOfTheDayNotification.scheduleDailyNotification();
 
-    // DailyHealthTipNotificationService uses awesome_notifications (disabled for iOS)
-    // await DailyHealthTipNotificationService.initialize();
-    // await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
+    await DailyHealthTipNotificationService.initialize();
+    await DailyHealthTipNotificationService.scheduleDailyTipsAtMidnight();
 
     // Medicine notification service initializes lazily when scheduling reminders.
     print('✅ Background services initialized successfully');
   } catch (e) {
     print('❌ Error initializing Awesome Notifications: $e');
   }
+  */
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // Global navigator key للوصول إلى Navigator من أي مكان
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
+    // تسجيل الـ navigator key في DeepLinkNavigationService
+    DeepLinkNavigationService().setNavigatorKey(navigatorKey);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => PharmacyCubit(PharmacyRepository())),
@@ -230,9 +193,11 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => MedicineCubit(MedicineRepository())),
       ],
       child: MaterialApp(
-        title: "ملوي كيور - MallawyC are",
+        navigatorKey: MyApp.navigatorKey, // إضافة navigator key
+        title: "ملوي كيور | Mallawi Cure",
         debugShowCheckedModeBanner: false,
         theme: AppTheme.getTheme(),
+        navigatorObservers: [appRouteObserver],
         locale: const Locale('ar', 'EG'),
         supportedLocales: const [Locale('ar', 'EG')],
         localizationsDelegates: const [
@@ -254,6 +219,7 @@ class MyApp extends StatelessWidget {
         },
         home: const AuthWrapper(),
         onGenerateRoute: (settings) {
+          // Pharmacy Details
           if (settings.name == '/pharmacy-details') {
             final pharmacyId = settings.arguments as String;
             return MaterialPageRoute(
@@ -262,7 +228,9 @@ class MyApp extends StatelessWidget {
                 child: PharmacyDetailsScreen(pharmacyId: pharmacyId),
               ),
             );
-          } else if (settings.name == '/add_pharmacy') {
+          } 
+          // Add Pharmacy
+          else if (settings.name == '/add_pharmacy') {
             return MaterialPageRoute(
               builder: (context) => BlocProvider.value(
                 value: context.read<AdminCubit>(),
@@ -270,6 +238,112 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
+          // 🔗 Deep Link: Pharmacy Offer Details
+          else if (settings.name == '/pharmacy-offer-details') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => OfferDetailsScreen(
+                offerId: args['offerId'],
+                collectionName: 'offers',
+              ),
+            );
+          }
+          // 🔗 Deep Link: Clinic Offer Details
+          else if (settings.name == '/clinic-offer-details') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => OfferDetailsScreen(
+                offerId: args['offerId'],
+                collectionName: 'clinic_offers',
+              ),
+            );
+          }
+          // 🔗 Deep Link: Medicine Offer Details
+          else if (settings.name == '/medicine-offer-details') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => OfferDetailsScreen(
+                offerId: args['offerId'],
+                collectionName: 'medicine_offers',
+              ),
+            );
+          }
+          // 🔗 Deep Link: Bookings Management (للعيادة)
+          else if (settings.name == '/bookings-management') {
+            final args = settings.arguments as Map<String, dynamic>;
+            final clinicId = args['clinicId'] as String;
+            
+            // جلب بيانات العيادة وفتح الصفحة
+            return MaterialPageRoute(
+              builder: (context) => FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('clinics')
+                    .doc(clinicId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return Scaffold(
+                      body: Center(
+                        child: Text('العيادة غير موجودة'),
+                      ),
+                    );
+                  }
+                  
+                  final clinic = ClinicModel.fromFirestore(snapshot.data!);
+                  return BookingsManagementScreen(clinic: clinic);
+                },
+              ),
+            );
+          }
+          // 🔗 Deep Link: Medicine Requests (للصيدليات)
+          else if (settings.name == '/medicine-requests') {
+            return MaterialPageRoute(
+              builder: (context) => BlocProvider.value(
+                value: context.read<AuthCubit>(),
+                child: const MedicineRequestsListScreen(),
+              ),
+            );
+          }
+          // 🔗 Deep Link: Lab Bookings Management
+          else if (settings.name == '/lab-bookings-management') {
+            final args = settings.arguments as Map<String, dynamic>;
+            final laboratoryId = args['laboratoryId'] as String;
+            
+            // جلب بيانات المعمل وفتح الصفحة
+            return MaterialPageRoute(
+              builder: (context) => FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('laboratories')
+                    .doc(laboratoryId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return Scaffold(
+                      body: Center(
+                        child: Text('المعمل غير موجود'),
+                      ),
+                    );
+                  }
+                  
+                  final lab = LaboratoryModel.fromFirestore(snapshot.data!);
+                  return LabBookingsManagementScreen(laboratory: lab);
+                },
+              ),
+            );
+          }
+          
           return null;
         },
       ),

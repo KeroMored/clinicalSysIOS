@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/daily_featured_clinics_service.dart';
+import '../data/home_fab_cache_helper.dart';
 import '../../pharmacy/data/repositories/pharmacy_repository.dart';
 import '../../pharmacy/presentation/cubit/pharmacy_cubit.dart';
 import '../../pharmacy/presentation/screens/pharmacy_details_screen.dart';
@@ -17,6 +19,7 @@ import '../../clinic/presentation/screens/clinic_control_page.dart';
 import '../../clinic/presentation/screens/bookings_management_screen.dart';
 import '../../clinic/presentation/screens/clinics_selection_screen.dart';
 import '../../clinic/data/models/clinic_model.dart';
+import '../../clinic/data/models/clinic_department.dart';
 import '../../clinic/data/models/booking_model.dart';
 import '../../clinic/data/repositories/booking_tracking_repository.dart';
 import '../../laboratory/data/models/laboratory_model.dart';
@@ -29,13 +32,15 @@ import '../../radiology/presentation/cubit/radiology_cubit.dart';
 import '../../radiology/data/models/radiology_model.dart';
 import '../../radiology/data/repositories/radiology_repository.dart';
 import '../../profile/presentation/screens/edit_profile_screen.dart';
-import '../../rehabilitation/data/repositories/rehabilitation_repository.dart';
-import '../../gym/data/models/gym_model.dart';
+import '../../gym/data/models/gym_model.dart' hide WorkingHours;
 import '../../gym/presentation/pages/gyms_list_screen.dart';
 import '../../gym/presentation/pages/gym_details_screen.dart';
 import '../../gym/presentation/pages/gym_control_page.dart';
 import '../../gym/presentation/cubit/gym_cubit.dart';
 import '../../gym/data/repositories/gym_repository.dart';
+import '../../medical_supply/presentation/screens/medical_supplies_screen.dart';
+import '../../medical_supply/presentation/screens/medical_supply_home_page.dart';
+import '../../medical_supply/data/models/medical_supply_model.dart';
 import '../../auth/presentation/cubit/auth_cubit.dart';
 import '../../auth/presentation/screens/login_screen.dart';
 import '../../medicine_reminders/presentation/screens/medicines_screen.dart';
@@ -449,13 +454,13 @@ class _HomeScreenState extends State<HomeScreen>
               oldStatus == BookingStatus.pending) {
             NotificationService.showBookingStatusNotification(
               title: 'تم تأكيد حجزك ✅',
-              body: 'تم تأكيد حجزك لدى د. ${info.doctorName} - ${info.departmentName}',
+              body: 'تم تأكيد حجزك لدى ${info.displayName} - ${info.departmentName}',
               notificationId: 70000 + trackingId.hashCode.abs(),
             );
           } else if (newStatus == BookingStatus.cancelled) {
             NotificationService.showBookingStatusNotification(
               title: 'تم إلغاء حجزك',
-              body: 'تم إلغاء حجزك لدى د. ${info.doctorName}',
+              body: 'تم إلغاء حجزك لدى ${info.displayName}',
               notificationId: 70000 + trackingId.hashCode.abs(),
             );
           }
@@ -693,7 +698,7 @@ class _HomeScreenState extends State<HomeScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'د. ${info.doctorName}',
+                        info.displayName,
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -922,6 +927,22 @@ class _HomeScreenState extends State<HomeScreen>
                       builder: (_) => BlocProvider(
                         create: (_) => GymCubit(GymRepository()),
                         child: const GymsListScreen(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _QuickActionChip(
+                title: 'المستلزمات',
+                icon: Icons.medical_services_rounded,
+                colors: const [Color(0xFFEC4899), Color(0xFFDB2777)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<AuthCubit>(),
+                        child: const MedicalSuppliesScreen(),
                       ),
                     ),
                   );
@@ -1997,8 +2018,30 @@ class _HomeScreenState extends State<HomeScreen>
                 },
               ),
             ),
+            const SizedBox(width: 8),
+
+                        Expanded(
+              child: _HomeSecondaryServiceCard(
+                title: 'مستلزمات',
+                icon: Icons.medical_services_rounded,
+                accentColor: gymAccent,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider.value(
+                        value: context.read<AuthCubit>(),
+                        child: const MedicalSuppliesScreen(),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+         
           ],
         ),
+      
       ],
     );
   }
@@ -2362,6 +2405,83 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // Helper to create ClinicModel from cached data
+  ClinicModel _clinicFromCachedData(String id, Map<String, dynamic> data) {
+    // Parse working hours
+    Map<String, WorkingHours> parsedWorkingHours = {};
+    if (data['workingHours'] != null) {
+      final hoursData = data['workingHours'] as Map<String, dynamic>;
+      hoursData.forEach((day, hours) {
+        if (hours != null) {
+          parsedWorkingHours[day] = WorkingHours.fromMap(
+            hours as Map<String, dynamic>,
+          );
+        }
+      });
+    }
+
+    return ClinicModel(
+      id: id,
+      doctorName: data['doctorName'] ?? '',
+      clinicType: data['clinicType'],
+      department: ClinicDepartment.fromString(data['department'] ?? 'other'),
+      specialization: data['specialization'] != null
+          ? (data['specialization'] is List
+              ? List<String>.from(data['specialization'])
+              : [data['specialization'].toString()])
+          : [],
+      about: data['about'] ?? '',
+      consultationFee: (data['consultationFee'] ?? 0).toDouble(),
+      phones: data['phones'] != null
+          ? List<String>.from(data['phones'])
+          : (data['phone'] != null ? [data['phone']] : []),
+      whatsapp: data['whatsapp'],
+      address: data['address'] ?? '',
+      latitude: data['latitude']?.toDouble(),
+      longitude: data['longitude']?.toDouble(),
+      governorate: data['governorate'] ?? 'المنيا',
+      center: data['center'] ?? 'ملوي',
+      authEmails: data['authEmails'] != null
+          ? List<String>.from(data['authEmails'])
+          : (data['doctorEmail'] != null ? [data['doctorEmail']] : []),
+      doctorEmails: data['doctorEmails'] != null
+          ? List<String>.from(data['doctorEmails'])
+          : (data['doctorEmail'] != null ? [data['doctorEmail']] : []),
+      secretaryEmails: data['secretaryEmails'] != null
+          ? List<String>.from(data['secretaryEmails'])
+          : [],
+      doctorPhone: data['doctorPhone'],
+      workingHours: parsedWorkingHours,
+      holidays: List<String>.from(data['holidays'] ?? []),
+      hasNursery: data['hasNursery'] ?? false,
+      onlineBookingEnabled: data['onlineBookingEnabled'] ?? false,
+      bookingLockDate: data['bookingLockDate'] != null
+          ? (data['bookingLockDate'] is Timestamp
+              ? (data['bookingLockDate'] as Timestamp).toDate()
+              : DateTime.fromMillisecondsSinceEpoch(data['bookingLockDate']))
+          : null,
+      doctorImageUrl: data['doctorImageUrl'],
+      isActive: data['isActive'] ?? true,
+      status: data['status'] ?? 'pending',
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] is Timestamp
+              ? (data['createdAt'] as Timestamp).toDate()
+              : DateTime.fromMillisecondsSinceEpoch(data['createdAt']))
+          : DateTime.now(),
+      ownerId: data['ownerId'],
+      averageRating: (data['averageRating'] ?? 0.0).toDouble(),
+      totalRatings: data['totalRatings'] ?? 0,
+      totalLikes: data['totalLikes'] ?? 0,
+      viewsCount: (data['viewsCount'] as num? ?? 0).toInt(),
+      profileViewsCount: (data['profileViewsCount'] as num? ?? 0).toInt(),
+      lastFeaturedDate: data['lastFeaturedDate'] != null
+          ? (data['lastFeaturedDate'] is Timestamp
+              ? (data['lastFeaturedDate'] as Timestamp).toDate()
+              : DateTime.fromMillisecondsSinceEpoch(data['lastFeaturedDate']))
+          : null,
+    );
+  }
+
   Widget _buildCurrentTabBody(AuthState authState) {
     return IndexedStack(
       index: _bottomNavIndex,
@@ -2374,6 +2494,128 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  // دالة عرض dialog تأكيد الخروج
+  Future<bool> _showExitConfirmationDialog(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          backgroundColor: Colors.white,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // أيقونة
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0EA5E9).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.exit_to_app_rounded,
+                    size: 48,
+                    color: Color(0xFF0EA5E9),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // العنوان
+                const Text(
+                  'تأكيد الخروج',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // الرسالة
+                const Text(
+                  'هل أنت متأكد من الخروج من التطبيق؟',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF64748B),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                
+                // الأزرار
+                Row(
+                  children: [
+                    // زر الإلغاء
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.grey.shade300,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                        child: const Text(
+                          'إلغاء',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // زر الخروج
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          SystemNavigator.pop(); // إغلاق التطبيق
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'خروج',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ) ?? false; // إذا ضغط خارج الـ dialog يرجع false
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthCubit>().state;
@@ -2384,9 +2626,11 @@ class _HomeScreenState extends State<HomeScreen>
       Future.microtask(_ensureDailyTrackingForAuthenticatedUser);
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: const CustomHomeDrawer(),
+    return WillPopScope(
+      onWillPop: () => _showExitConfirmationDialog(context),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        drawer: const CustomHomeDrawer(),
       floatingActionButton: _bottomNavIndex == 0
           ? BlocBuilder<AuthCubit, AuthState>(
               builder: (context, state) {
@@ -2397,62 +2641,32 @@ class _HomeScreenState extends State<HomeScreen>
                     return const SizedBox.shrink();
                   }
 
-                  // Check all location types at once
-                  return FutureBuilder<List<QuerySnapshot>>(
-                    future: Future.wait([
-                      FirebaseFirestore.instance
-                          .collection('pharmacies')
-                          .where('authEmails', arrayContains: state.user.email)
-                          .where('status', isEqualTo: 'approved')
-                          .limit(1)
-                          .get(),
-                      FirebaseFirestore.instance
-                          .collection('clinics')
-                          .where('authEmails', arrayContains: state.user.email)
-                          .get(),
-                      FirebaseFirestore.instance
-                          .collection('laboratories')
-                          .where('authEmails', arrayContains: state.user.email)
-                          .where('status', isEqualTo: 'approved')
-                          .limit(1)
-                          .get(),
-                      FirebaseFirestore.instance
-                          .collection('radiology_centers')
-                          .where('authEmails', arrayContains: state.user.email)
-                          .where('isApproved', isEqualTo: true)
-                          .limit(1)
-                          .get(),
-                      FirebaseFirestore.instance
-                          .collection('gyms')
-                          .where('authEmails', arrayContains: state.user.email)
-                          .where('isApproved', isEqualTo: true)
-                          .limit(1)
-                          .get(),
-                      FirebaseFirestore.instance
-                          .collection('settingsforpatiants')
-                          .limit(1)
-                          .get(),
-                    ]),
+                  // Check all location types at once - WITH CACHE
+                  return FutureBuilder<Map<String, dynamic>>(
+                    future: HomeFABCacheHelper.loadFABQueries(state.user.email),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
-                        final pharmacySnapshot = snapshot.data![0];
-                        final clinicSnapshot = snapshot.data![1];
-                        final labSnapshot = snapshot.data![2];
-                        final radiologySnapshot = snapshot.data![3];
-                        final gymSnapshot = snapshot.data![4];
-                        final settingsSnapshot = snapshot.data![5];
+                        final cacheData = snapshot.data!;
+                        
+                        // Extract data from cache format
+                        final pharmacyDocs = HomeFABCacheHelper.getCollectionDocs(cacheData, 'pharmacies');
+                        final clinicDocs = HomeFABCacheHelper.getCollectionDocs(cacheData, 'clinics');
+                        final labDocs = HomeFABCacheHelper.getCollectionDocs(cacheData, 'laboratories');
+                        final radiologyDocs = HomeFABCacheHelper.getCollectionDocs(cacheData, 'radiology_centers');
+                        final gymDocs = HomeFABCacheHelper.getCollectionDocs(cacheData, 'gyms');
+                        final medicalSupplyDocs = HomeFABCacheHelper.getCollectionDocs(cacheData, 'medical_supplies');
 
-                        bool hideClinicManagement = false;
-                        if (settingsSnapshot.docs.isNotEmpty) {
-                          final settingsData =
-                              settingsSnapshot.docs.first.data()
-                                  as Map<String, dynamic>;
-                          hideClinicManagement =
-                              settingsData['ishidden'] == true;
-                        }
+                        print('📊 [FAB DEBUG] Docs count:');
+                        print('  - Pharmacy: ${pharmacyDocs.length}');
+                        print('  - Clinic: ${clinicDocs.length}');
+                        print('  - Lab: ${labDocs.length}');
+                        print('  - Radiology: ${radiologyDocs.length}');
+                        print('  - Gym: ${gymDocs.length}');
+                        print('  - Medical Supply: ${medicalSupplyDocs.length}');
 
-                        // Priority order: Pharmacy > Clinic > Laboratory > Radiology > Gym
-                        if (pharmacySnapshot.docs.isNotEmpty) {
+                        // Priority order: Pharmacy > Medical Supply > Clinic > Laboratory > Radiology > Gym
+                        if (pharmacyDocs.isNotEmpty) {
+                          print('✅ [FAB] Showing Pharmacy button');
                           return _buildOwnerFloatingActionButton(
                             label: 'إدارة الصيدلية',
                             icon: Icons.dashboard,
@@ -2466,39 +2680,80 @@ class _HomeScreenState extends State<HomeScreen>
                               );
                             },
                           );
-                        } else if (clinicSnapshot.docs.isNotEmpty) {
+                        } else if (medicalSupplyDocs.isNotEmpty) {
+                          try {
+                            final supplyMap = HomeFABCacheHelper.getFirstDocData(cacheData, 'medical_supplies');
+                            if (supplyMap == null) {
+                              return const SizedBox.shrink();
+                            }
+                            final supply = MedicalSupplyModel.fromJson(supplyMap);
+                            return _buildOwnerFloatingActionButton(
+                              label: 'إدارة المستلزمات',
+                              icon: Icons.medical_services_rounded,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        MedicalSupplyHomePage(supply: supply),
+                                  ),
+                                );
+                              },
+                            );
+                          } catch (e) {
+                            print('❌ Error loading medical supply: $e');
+                            return const SizedBox.shrink();
+                          }
+                        } else if (clinicDocs.isNotEmpty) {
                           // Check if user is secretary in ONE or MULTIPLE clinics
                           final userEmail = state.user.email;
                           final List<ClinicModel> secretaryClinics = [];
                           ClinicModel? ownerClinic;
 
+                          print('🏥 [FAB DEBUG] Found ${clinicDocs.length} clinic docs');
+                          print('🏥 [FAB DEBUG] User email: $userEmail');
+
                           // Loop through all clinics to find where user is registered
-                          for (var clinicDoc in clinicSnapshot.docs) {
-                            final clinicData =
-                                clinicDoc.data() as Map<String, dynamic>;
-                            final secretaryEmails =
+                          for (var clinicDocData in clinicDocs) {
+                            try {
+                              final clinicData = clinicDocData['data'] as Map<String, dynamic>;
+                              final clinicId = clinicDocData['id'] as String;
+                              
+                              final secretaryEmails =
                                 clinicData['secretaryEmails'] != null
                                 ? List<String>.from(
                                     clinicData['secretaryEmails'],
                                   )
                                 : <String>[];
-                            final authEmails = clinicData['authEmails'] != null
+                              final authEmails = clinicData['authEmails'] != null
                                 ? List<String>.from(clinicData['authEmails'])
                                 : <String>[];
 
-                            // Check if user is secretary
-                            if (secretaryEmails.contains(userEmail)) {
-                              secretaryClinics.add(
-                                ClinicModel.fromFirestore(clinicDoc),
-                              );
-                            }
-                            // Check if user is owner/doctor (not secretary)
-                            else if (authEmails.contains(userEmail)) {
-                              ownerClinic = ClinicModel.fromFirestore(
-                                clinicDoc,
-                              );
+                              print('🏥 [FAB DEBUG] Clinic ID: $clinicId');
+                              print('🏥 [FAB DEBUG] Secretary emails: $secretaryEmails');
+                              print('🏥 [FAB DEBUG] Auth emails: $authEmails');
+
+                              // Check if user is secretary
+                              if (secretaryEmails.contains(userEmail)) {
+                                print('✅ [FAB DEBUG] User is SECRETARY in clinic $clinicId');
+                                secretaryClinics.add(
+                                  _clinicFromCachedData(clinicId, clinicData),
+                                );
+                              }
+                              // Check if user is owner/doctor (not secretary)
+                              else if (authEmails.contains(userEmail)) {
+                                print('✅ [FAB DEBUG] User is OWNER in clinic $clinicId');
+                                ownerClinic = _clinicFromCachedData(clinicId, clinicData);
+                              } else {
+                                print('❌ [FAB DEBUG] User email NOT found in clinic $clinicId');
+                              }
+                            } catch (e) {
+                              print('❌ Error parsing clinic from cache: $e');
                             }
                           }
+
+                          print('🏥 [FAB DEBUG] Secretary clinics: ${secretaryClinics.length}');
+                          print('🏥 [FAB DEBUG] Owner clinic: ${ownerClinic != null ? "YES" : "NO"}');
 
                           // Priority: Secretary > Owner
                           if (secretaryClinics.isNotEmpty) {
@@ -2549,8 +2804,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 },
                               );
                             }
-                          } else if (ownerClinic != null &&
-                              !hideClinicManagement) {
+                          } else if (ownerClinic != null) {
                             // User is owner/doctor - goes to control page
                             return _buildOwnerFloatingActionButton(
                               label: 'إدارة العيادة',
@@ -2566,7 +2820,7 @@ class _HomeScreenState extends State<HomeScreen>
                               },
                             );
                           }
-                        } else if (labSnapshot.docs.isNotEmpty) {
+                        } else if (labDocs.isNotEmpty) {
                           return _buildOwnerFloatingActionButton(
                             label: 'إدارة المعمل',
                             icon: Icons.dashboard,
@@ -2580,7 +2834,7 @@ class _HomeScreenState extends State<HomeScreen>
                               );
                             },
                           );
-                        } else if (radiologySnapshot.docs.isNotEmpty) {
+                        } else if (radiologyDocs.isNotEmpty) {
                           return _buildOwnerFloatingActionButton(
                             label: 'إدارة مركز الأشعة',
                             icon: Icons.dashboard,
@@ -2594,7 +2848,7 @@ class _HomeScreenState extends State<HomeScreen>
                               );
                             },
                           );
-                        } else if (gymSnapshot.docs.isNotEmpty) {
+                        } else if (gymDocs.isNotEmpty) {
                           return _buildOwnerFloatingActionButton(
                             label: 'إدارة الجيم',
                             icon: Icons.dashboard,
@@ -2621,6 +2875,7 @@ class _HomeScreenState extends State<HomeScreen>
           : null,
       body: _buildCurrentTabBody(authState),
       bottomNavigationBar: _buildBottomNavBar(),
+      ),
     );
   }
 }
@@ -3344,18 +3599,105 @@ class _HomeDoctorPreviewCardState extends State<_HomeDoctorPreviewCard> {
   }
 
   Widget _clinicImagePlaceholder() {
+    // نسخة 1: باللوجو (أبسط وأنظف)
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color.fromARGB(255, 100, 193, 243), Color(0xFFE0F2FE)],
+      decoration: BoxDecoration(
+        color: Colors.white
+      /*   gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+         /*  colors: [
+            const Color(0xFFF8FAFC),
+          //  const Color(0xFFE0F2FE).withOpacity(0.5),
+            const Color.fromARGB(255, 255, 255, 255),
+          ], */
+          stops: const [0.0, 0.5, 1.0],
+        ), */
+      ),
+      child: Center(
+        child: Container(
+          color: Colors.white,
+        //  padding: const EdgeInsets.all(16),
+          child: Image.asset(
+            'assets/images/clinicLogo.png',
+           // width: 120,
+           // height: 120,
+            fit: BoxFit.fill,
+            // Add subtle shadow
+            //color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.05),
+            colorBlendMode: BlendMode.dstATop,
+          ),
         ),
       ),
-      child: const Icon(
-        Icons.local_hospital_rounded,
-        color: Color(0xFF0369A1),
-        size: 44,
+    );
+    
+    /* نسخة 2: بالدوائر والأيقونة (الحالية - أكثر تفصيل)
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF0EA5E9).withOpacity(0.08),
+            const Color(0xFF06B6D4).withOpacity(0.12),
+            const Color(0xFF0891B2).withOpacity(0.08),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Decorative circles in background
+          Positioned(
+            top: -20,
+            right: -20,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF0EA5E9).withOpacity(0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -30,
+            left: -30,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF06B6D4).withOpacity(0.08),
+              ),
+            ),
+          ),
+          // Medical icon
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0EA5E9).withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.medical_services_rounded,
+                color: const Color(0xFF0891B2),
+                size: 42,
+              ),
+            ),
+          ),
+        ],
       ),
     );
+    */
   }
 
   @override
@@ -3544,7 +3886,7 @@ class _HomeDoctorPreviewCardState extends State<_HomeDoctorPreviewCard> {
                                   Text(
                                     doctorName.isEmpty
                                         ? 'دكتور متاح'
-                                        : 'د. $doctorName',
+                                        : doctorName,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(

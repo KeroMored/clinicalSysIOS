@@ -10,6 +10,7 @@ import 'bookings_management_screen.dart';
 import 'bookings_history_screen.dart';
 import 'patients_management_screen.dart';
 import 'send_clinic_notification_screen.dart';
+import 'clinic_offers_management_screen.dart';
 import '../cubit/patient_cubit.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
@@ -23,6 +24,7 @@ class ClinicControlPage extends StatefulWidget {
 class _ClinicControlPageState extends State<ClinicControlPage> {
   ClinicModel? _clinic;
   bool _isLoading = true;
+  int _offersCount = 0;
   final NotificationService _notificationService = NotificationService();
 
   // Theme colors aligned with the refreshed app style
@@ -42,6 +44,25 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
   void initState() {
     super.initState();
     _loadClinicData();
+  }
+
+  Future<void> _loadOffersCount() async {
+    if (_clinic == null) return;
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('clinic_offers')
+          .where('clinicId', isEqualTo: _clinic!.id)
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _offersCount = snapshot.docs.length;
+        });
+      }
+    } catch (e) {
+      print('Error loading offers count: $e');
+    }
   }
 
   Future<void> _loadClinicData() async {
@@ -65,6 +86,8 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
               _clinic = ClinicModel.fromFirestore(doc);
               _isLoading = false;
             });
+            // Load offers count after clinic data is loaded
+            _loadOffersCount();
           }
 
           print('✅ تم تحميل بيانات العيادة - ID: ${doc.id}');
@@ -189,7 +212,67 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildHeaderSummaryCard(),
-                            const SizedBox(height: 14),
+                            const SizedBox(height: 20),
+                            
+                            // Statistics
+                            const Text(
+                              'الإحصائيات',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: _textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    icon: Icons.remove_red_eye_rounded,
+                                    title: 'المشاهدات',
+                                    value: '${_clinic!.profileViewsCount}',
+                                    color: const Color(0xFF3B82F6),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    icon: Icons.star_rounded,
+                                    title: 'التقييم',
+                                    value: _clinic!.averageRating.toStringAsFixed(1),
+                                    color: const Color(0xFFFBBF24),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildStatCard(
+                                    icon: Icons.local_offer_rounded,
+                                    title: 'العروض',
+                                    value: '$_offersCount',
+                                    color: _primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildStatCard(
+                                    icon: Icons.favorite_rounded,
+                                    title: 'الإعجابات',
+                                    value: '${_clinic!.totalLikes}',
+                                    color: const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+                            
                             const Text(
                               'إجراءات الإدارة',
                               style: TextStyle(
@@ -201,19 +284,10 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
                             const SizedBox(height: 10),
                             // Action Buttons
                             _buildActionButtons(),
-                            const SizedBox(height: 24),
-                            const Text(
-                              'معلومات العيادة',
-                              style: TextStyle(
-                                color: _textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-
-                            // Clinic Info Card
-                            _buildClinicInfoCard(),
+                            const SizedBox(height: 20),
+                            
+                            // Edit Clinic Button
+                            _buildEditClinicButton(),
                             const SizedBox(height: 24),
                           ],
                         ),
@@ -348,7 +422,7 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
               children: [
                 Text(
                   _clinic != null
-                      ? 'د. ${_clinic!.doctorName}'
+                      ? _clinic!.doctorName
                       : 'إدارة العيادة',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -472,7 +546,7 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
             _buildInfoRow(
               icon: Icons.person_rounded,
               label: 'اسم الطبيب',
-              value: 'د. ${_clinic!.doctorName}',
+              value: _clinic!.doctorName,
               color: _primaryColor,
             ),
             const SizedBox(height: 18),
@@ -674,6 +748,21 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
               MaterialPageRoute(
                 builder: (context) =>
                     BookingsHistoryScreen(clinicId: _clinic!.id),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildControlButton(
+          icon: Icons.local_offer_rounded,
+          title: 'إدارة العروض',
+          subtitle: 'إضافة وعرض عروض العيادة',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    ClinicOffersManagementScreen(clinic: _clinic!),
               ),
             );
           },
@@ -883,5 +972,147 @@ class _ClinicControlPageState extends State<ClinicControlPage> {
         );
       }
     }
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditClinicButton() {
+    final authState = context.read<AuthCubit>().state;
+    String? currentUserEmail;
+    if (authState is Authenticated) {
+      currentUserEmail = authState.user.email;
+    }
+
+    // التحقق: هل المستخدم الحالي هو الدكتور؟
+    final bool isDoctor =
+        currentUserEmail != null &&
+        _clinic!.authEmails.any(
+          (email) => email.toLowerCase() == currentUserEmail!.toLowerCase(),
+        );
+
+    if (!isDoctor) {
+      return const SizedBox.shrink();
+    }
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EditClinicScreen(clinic: _clinic!),
+          ),
+        ).then((_) => _loadClinicData());
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.edit_rounded,
+                color: _primaryColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'تعديل بيانات العيادة',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'تحديث المعلومات والمواعيد والإعدادات',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Color(0xFF94A3B8),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

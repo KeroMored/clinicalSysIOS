@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -34,7 +34,7 @@ class _EditGymScreenState extends State<EditGymScreen> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _addressController;
-  late TextEditingController _phoneController;
+  late List<TextEditingController> _phoneControllers;
   late TextEditingController _whatsappController;
   late TextEditingController _ownerNameController;
 
@@ -61,22 +61,8 @@ class _EditGymScreenState extends State<EditGymScreen> {
   bool _hasMaleSection = false;
   bool _hasFemaleSection = false;
 
-  // Features
-  bool _hasPersonalTraining = false;
-  bool _hasNutritionConsultation = false;
-  bool _hasSwimmingPool = false;
-  bool _hasSauna = false;
-  bool _hasSteamRoom = false;
-  bool _hasYogaClasses = false;
-  bool _hasCrossFit = false;
-  bool _hasMartialArts = false;
-
-  // Training types
-  bool _hasCardio = false;
-  bool _hasWeightLifting = false;
-  bool _hasBodybuilding = false;
-  bool _hasFunctionalTraining = false;
-  bool _hasGroupClasses = false;
+  // Features - Dynamic list
+  final List<TextEditingController> _featureControllers = [];
 
   bool _isSaving = false;
 
@@ -100,10 +86,8 @@ class _EditGymScreenState extends State<EditGymScreen> {
     'friday': 'الجمعة',
   };
 
-  final Map<String, Map<String, TextEditingController>> _maleTimeControllers =
-      {};
-  final Map<String, Map<String, TextEditingController>> _femaleTimeControllers =
-      {};
+  final Map<String, List<Map<String, TextEditingController>>> _maleTimeControllers = {};
+  final Map<String, List<Map<String, TextEditingController>>> _femaleTimeControllers = {};
   final Map<String, bool> _maleDayClosed = {};
   final Map<String, bool> _femaleDayClosed = {};
 
@@ -120,7 +104,9 @@ class _EditGymScreenState extends State<EditGymScreen> {
     _nameController = TextEditingController(text: gym.name);
     _descriptionController = TextEditingController(text: gym.description);
     _addressController = TextEditingController(text: gym.address);
-    _phoneController = TextEditingController(text: gym.phone);
+    _phoneControllers = gym.phones.isNotEmpty
+        ? gym.phones.map((p) => TextEditingController(text: p)).toList()
+        : [TextEditingController()];
     _whatsappController = TextEditingController(text: gym.whatsapp);
     _ownerNameController = TextEditingController(text: gym.ownerName);
 
@@ -147,20 +133,15 @@ class _EditGymScreenState extends State<EditGymScreen> {
     _hasMaleSection = gym.hasMaleSection;
     _hasFemaleSection = gym.hasFemaleSection;
 
-    _hasPersonalTraining = gym.hasPersonalTraining;
-    _hasNutritionConsultation = gym.hasNutritionConsultation;
-    _hasSwimmingPool = gym.hasSwimmingPool;
-    _hasSauna = gym.hasSauna;
-    _hasSteamRoom = gym.hasSteamRoom;
-    _hasYogaClasses = gym.hasYogaClasses;
-    _hasCrossFit = gym.hasCrossFit;
-    _hasMartialArts = gym.hasMartialArts;
-
-    _hasCardio = gym.hasCardio;
-    _hasWeightLifting = gym.hasWeightLifting;
-    _hasBodybuilding = gym.hasBodybuilding;
-    _hasFunctionalTraining = gym.hasFunctionalTraining;
-    _hasGroupClasses = gym.hasGroupClasses;
+    // Initialize feature controllers from gym data
+    if (gym.features.isNotEmpty) {
+      _featureControllers.addAll(
+        gym.features.map((f) => TextEditingController(text: f)),
+      );
+    } else {
+      // Initialize with at least one empty controller
+      _featureControllers.add(TextEditingController());
+    }
   }
 
   void _initTimeControllers() {
@@ -168,17 +149,42 @@ class _EditGymScreenState extends State<EditGymScreen> {
       final male = widget.gym.maleWorkingHours[day];
       final female = widget.gym.femaleWorkingHours[day];
 
-      _maleTimeControllers[day] = {
-        'start': TextEditingController(text: male?.openTime ?? '08:00'),
-        'end': TextEditingController(text: male?.closeTime ?? '22:00'),
-      };
-      _femaleTimeControllers[day] = {
-        'start': TextEditingController(text: female?.openTime ?? '08:00'),
-        'end': TextEditingController(text: female?.closeTime ?? '14:00'),
-      };
+      // Initialize male slots
+      if (male != null && male.slots.isNotEmpty) {
+        _maleTimeControllers[day] = male.slots.map((slot) {
+          return {
+            'start': TextEditingController(text: slot.from),
+            'end': TextEditingController(text: slot.to),
+          };
+        }).toList();
+      } else {
+        _maleTimeControllers[day] = [
+          {
+            'start': TextEditingController(text: '08:00'),
+            'end': TextEditingController(text: '22:00'),
+          }
+        ];
+      }
 
-      _maleDayClosed[day] = male == null || male.isHoliday;
-      _femaleDayClosed[day] = female == null || female.isHoliday;
+      // Initialize female slots
+      if (female != null && female.slots.isNotEmpty) {
+        _femaleTimeControllers[day] = female.slots.map((slot) {
+          return {
+            'start': TextEditingController(text: slot.from),
+            'end': TextEditingController(text: slot.to),
+          };
+        }).toList();
+      } else {
+        _femaleTimeControllers[day] = [
+          {
+            'start': TextEditingController(text: '08:00'),
+            'end': TextEditingController(text: '14:00'),
+          }
+        ];
+      }
+
+      _maleDayClosed[day] = male == null || male.isClosed;
+      _femaleDayClosed[day] = female == null || female.isClosed;
     }
   }
 
@@ -187,24 +193,36 @@ class _EditGymScreenState extends State<EditGymScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _addressController.dispose();
-    _phoneController.dispose();
     _whatsappController.dispose();
     _ownerNameController.dispose();
     _monthlyController.dispose();
     _yearlyController.dispose();
     _singleSessionController.dispose();
 
+    for (final c in _phoneControllers) {
+      c.dispose();
+    }
+
     for (final c in _authEmailControllers) {
       c.dispose();
     }
 
-    for (final dayMap in _maleTimeControllers.values) {
-      dayMap['start']?.dispose();
-      dayMap['end']?.dispose();
+    for (var dayControllers in _maleTimeControllers.values) {
+      for (var slotControllers in dayControllers) {
+        slotControllers['start']?.dispose();
+        slotControllers['end']?.dispose();
+      }
     }
-    for (final dayMap in _femaleTimeControllers.values) {
-      dayMap['start']?.dispose();
-      dayMap['end']?.dispose();
+    for (var dayControllers in _femaleTimeControllers.values) {
+      for (var slotControllers in dayControllers) {
+        slotControllers['start']?.dispose();
+        slotControllers['end']?.dispose();
+      }
+    }
+
+    // Dispose feature controllers
+    for (var controller in _featureControllers) {
+      controller.dispose();
     }
 
     super.dispose();
@@ -394,6 +412,67 @@ class _EditGymScreenState extends State<EditGymScreen> {
     return ref.getDownloadURL();
   }
 
+  // Add time slot to a day
+  void _addTimeSlot(String day, bool isMale) {
+    setState(() {
+      final controllers = isMale ? _maleTimeControllers : _femaleTimeControllers;
+      controllers[day]!.add({
+        'start': TextEditingController(text: '12:00'),
+        'end': TextEditingController(text: '14:00'),
+      });
+    });
+  }
+
+  // Remove time slot from a day
+  void _removeTimeSlot(String day, int index, bool isMale) {
+    setState(() {
+      final controllers = isMale ? _maleTimeControllers : _femaleTimeControllers;
+      if (controllers[day]!.length > 1) {
+        controllers[day]![index]['start']?.dispose();
+        controllers[day]![index]['end']?.dispose();
+        controllers[day]!.removeAt(index);
+      }
+    });
+  }
+
+  // Copy first day's slots to all days
+  void _copyToAllDays(bool isMale) {
+    setState(() {
+      final controllers = isMale ? _maleTimeControllers : _femaleTimeControllers;
+      final closedMap = isMale ? _maleDayClosed : _femaleDayClosed;
+      
+      final firstDay = _daysOfWeek.first;
+      final firstDaySlots = controllers[firstDay]!;
+      final firstDayClosed = closedMap[firstDay]!;
+      
+      for (var day in _daysOfWeek.skip(1)) {
+        // Dispose old controllers
+        for (var slot in controllers[day]!) {
+          slot['start']?.dispose();
+          slot['end']?.dispose();
+        }
+        
+        // Copy slots from first day
+        controllers[day] = firstDaySlots.map((slot) {
+          return {
+            'start': TextEditingController(text: slot['start']!.text),
+            'end': TextEditingController(text: slot['end']!.text),
+          };
+        }).toList();
+        
+        closedMap[day] = firstDayClosed;
+      }
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم نسخ المواعيد لجميع الأيام'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> _selectTime(TextEditingController controller) async {
     final parts = controller.text.split(':');
     TimeOfDay initial = const TimeOfDay(hour: 8, minute: 0);
@@ -424,16 +503,18 @@ class _EditGymScreenState extends State<EditGymScreen> {
   Widget _buildDayRow({
     required String dayKey,
     required String dayName,
-    required Map<String, TextEditingController> controllers,
+    required List<Map<String, TextEditingController>> slotControllers,
     required bool isClosed,
     required ValueChanged<bool> onClosedChanged,
     required Color color,
+    required bool isMale,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -468,36 +549,59 @@ class _EditGymScreenState extends State<EditGymScreen> {
             ),
             if (!isClosed) ...[
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(controllers['start']!),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'من',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.access_time),
+              // Display all time slots
+              ...List.generate(slotControllers.length, (index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _selectTime(slotControllers[index]['start']!),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'من',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.access_time),
+                            ),
+                            child: Text(slotControllers[index]['start']!.text),
+                          ),
                         ),
-                        child: Text(controllers['start']!.text),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(controllers['end']!),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'إلى',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.access_time),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _selectTime(slotControllers[index]['end']!),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'إلى',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.access_time),
+                            ),
+                            child: Text(slotControllers[index]['end']!.text),
+                          ),
                         ),
-                        child: Text(controllers['end']!.text),
                       ),
-                    ),
+                      if (slotControllers.length > 1)
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle, color: Colors.red),
+                          onPressed: () => _removeTimeSlot(dayKey, index, isMale),
+                          tooltip: 'حذف الفترة',
+                        ),
+                    ],
                   ),
-                ],
+                );
+              }),
+              // Add slot button
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => _addTimeSlot(dayKey, isMale),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('إضافة فترة ثانية'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: color,
+                  ),
+                ),
               ),
             ],
           ],
@@ -506,21 +610,27 @@ class _EditGymScreenState extends State<EditGymScreen> {
     );
   }
 
-  Map<String, WorkingHours> _collectWorkingHours(
+  Map<String, GymWorkingHours> _collectWorkingHours(
     bool enabled,
-    Map<String, Map<String, TextEditingController>> controllers,
+    Map<String, List<Map<String, TextEditingController>>> controllers,
     Map<String, bool> closedMap,
   ) {
     if (!enabled) return {};
 
-    final result = <String, WorkingHours>{};
+    final result = <String, GymWorkingHours>{};
     for (final day in _daysOfWeek) {
       final isClosed = closedMap[day] ?? true;
       if (!isClosed) {
-        result[day] = WorkingHours(
-          openTime: controllers[day]!['start']!.text,
-          closeTime: controllers[day]!['end']!.text,
-          isHoliday: false,
+        final slots = controllers[day]!.map((slotControllers) {
+          return TimeSlot(
+            from: slotControllers['start']!.text,
+            to: slotControllers['end']!.text,
+          );
+        }).toList();
+        
+        result[day] = GymWorkingHours(
+          slots: slots,
+          isClosed: false,
         );
       }
     }
@@ -590,13 +700,30 @@ class _EditGymScreenState extends State<EditGymScreen> {
           .where((e) => e.isNotEmpty)
           .toList();
 
+      final phones = _phoneControllers
+          .map((c) => c.text.trim())
+          .where((text) => text.isNotEmpty)
+          .toList();
+
+      if (phones.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('يجب إضافة رقم هاتف واحد على الأقل'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       final updateData = {
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
         'address': _addressController.text.trim(),
         'latitude': _latitude ?? widget.gym.latitude,
         'longitude': _longitude ?? widget.gym.longitude,
-        'phone': _phoneController.text.trim(),
+        'phones': phones,
         'whatsapp': _whatsappController.text.trim(),
         'ownerName': _ownerNameController.text.trim(),
         'authEmails': authEmails,
@@ -613,19 +740,25 @@ class _EditGymScreenState extends State<EditGymScreen> {
         'singleSessionPrice': double.tryParse(
           _singleSessionController.text.trim(),
         ),
-        'hasPersonalTraining': _hasPersonalTraining,
-        'hasNutritionConsultation': _hasNutritionConsultation,
-        'hasSwimmingPool': _hasSwimmingPool,
-        'hasSauna': _hasSauna,
-        'hasSteamRoom': _hasSteamRoom,
-        'hasYogaClasses': _hasYogaClasses,
-        'hasCrossFit': _hasCrossFit,
-        'hasMartialArts': _hasMartialArts,
-        'hasCardio': _hasCardio,
-        'hasWeightLifting': _hasWeightLifting,
-        'hasBodybuilding': _hasBodybuilding,
-        'hasFunctionalTraining': _hasFunctionalTraining,
-        'hasGroupClasses': _hasGroupClasses,
+        'features': _featureControllers
+            .map((c) => c.text.trim())
+            .where((text) => text.isNotEmpty)
+            .toList(),
+        'trainingTypes': [], // Empty since we removed training types section
+        // Keep old boolean fields for backward compatibility
+        'hasPersonalTraining': false,
+        'hasNutritionConsultation': false,
+        'hasSwimmingPool': false,
+        'hasSauna': false,
+        'hasSteamRoom': false,
+        'hasYogaClasses': false,
+        'hasCrossFit': false,
+        'hasMartialArts': false,
+        'hasCardio': false,
+        'hasWeightLifting': false,
+        'hasBodybuilding': false,
+        'hasFunctionalTraining': false,
+        'hasGroupClasses': false,
       };
 
       await FirebaseFirestore.instance
@@ -673,6 +806,63 @@ class _EditGymScreenState extends State<EditGymScreen> {
       activeColor: _primaryColor,
       contentPadding: EdgeInsets.zero,
     );
+  }
+
+  List<Widget> _buildDynamicTextFields({
+    required List<TextEditingController> controllers,
+    required String label,
+    required IconData icon,
+    required VoidCallback onAdd,
+    required Function(int) onRemove,
+  }) {
+    List<Widget> widgets = [];
+
+    for (int i = 0; i < controllers.length; i++) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controllers[i],
+                  decoration: _inputDecoration(
+                    label: '$label ${i + 1}',
+                    icon: icon,
+                  ).copyWith(
+                    suffixIcon: controllers.length > 1
+                        ? IconButton(
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            onPressed: () => onRemove(i),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Add button
+    widgets.add(
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: OutlinedButton.icon(
+          onPressed: onAdd,
+          icon: const Icon(Icons.add_rounded),
+          label: Text('إضافة $label آخر'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: _primaryColor,
+            side: const BorderSide(color: _primaryColor),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          ),
+        ),
+      ),
+    );
+
+    return widgets;
   }
 
   Widget _buildImageTile({
@@ -940,18 +1130,8 @@ class _EditGymScreenState extends State<EditGymScreen> {
                               title: 'التواصل والمالك',
                               icon: Icons.contact_phone,
                               children: [
-                                TextFormField(
-                                  controller: _phoneController,
-                                  keyboardType: TextInputType.phone,
-                                  decoration: _inputDecoration(
-                                    label: 'رقم الهاتف',
-                                    icon: Icons.phone_rounded,
-                                  ),
-                                  validator: (v) =>
-                                      (v == null || v.trim().isEmpty)
-                                      ? 'مطلوب'
-                                      : null,
-                                ),
+                                // Dynamic phone fields
+                                ..._buildDynamicPhoneFields(),
                                 const SizedBox(height: 16),
                                 TextFormField(
                                   controller: _whatsappController,
@@ -1173,11 +1353,31 @@ class _EditGymScreenState extends State<EditGymScreen> {
                                 ),
                                 if (_hasMaleSection) ...[
                                   const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'مواعيد القسم الرجالي',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      TextButton.icon(
+                                        onPressed: () => _copyToAllDays(true),
+                                        icon: const Icon(Icons.content_copy, size: 18),
+                                        label: const Text('نسخ السبت للكل'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: const Color(0xFF06B6D4),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   ..._daysOfWeek.map(
                                     (day) => _buildDayRow(
                                       dayKey: day,
                                       dayName: _dayNamesArabic[day]!,
-                                      controllers: _maleTimeControllers[day]!,
+                                      slotControllers: _maleTimeControllers[day]!,
                                       isClosed: _maleDayClosed[day] ?? true,
                                       onClosedChanged: (val) {
                                         setState(() {
@@ -1185,6 +1385,7 @@ class _EditGymScreenState extends State<EditGymScreen> {
                                         });
                                       },
                                       color: const Color(0xFF06B6D4),
+                                      isMale: true,
                                     ),
                                   ),
                                 ],
@@ -1199,11 +1400,31 @@ class _EditGymScreenState extends State<EditGymScreen> {
                                 ),
                                 if (_hasFemaleSection) ...[
                                   const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'مواعيد القسم النسائي',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      TextButton.icon(
+                                        onPressed: () => _copyToAllDays(false),
+                                        icon: const Icon(Icons.content_copy, size: 18),
+                                        label: const Text('نسخ السبت للكل'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: const Color(0xFFEC4899),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                   ..._daysOfWeek.map(
                                     (day) => _buildDayRow(
                                       dayKey: day,
                                       dayName: _dayNamesArabic[day]!,
-                                      controllers: _femaleTimeControllers[day]!,
+                                      slotControllers: _femaleTimeControllers[day]!,
                                       isClosed: _femaleDayClosed[day] ?? true,
                                       onClosedChanged: (val) {
                                         setState(() {
@@ -1211,6 +1432,7 @@ class _EditGymScreenState extends State<EditGymScreen> {
                                         });
                                       },
                                       color: const Color(0xFFEC4899),
+                                      isMale: false,
                                     ),
                                   ),
                                 ],
@@ -1251,110 +1473,28 @@ class _EditGymScreenState extends State<EditGymScreen> {
                             ),
                             const SizedBox(height: 20),
                             _sectionCard(
-                              title: 'أنواع التدريب',
-                              icon: Icons.sports_gymnastics,
-                              children: [
-                                _buildFeatureSwitch(
-                                  title: 'كارديو',
-                                  value: _hasCardio,
-                                  onChanged: (v) =>
-                                      setState(() => _hasCardio = v),
-                                  icon: Icons.directions_run,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'رفع الأثقال',
-                                  value: _hasWeightLifting,
-                                  onChanged: (v) =>
-                                      setState(() => _hasWeightLifting = v),
-                                  icon: Icons.fitness_center,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'كمال أجسام',
-                                  value: _hasBodybuilding,
-                                  onChanged: (v) =>
-                                      setState(() => _hasBodybuilding = v),
-                                  icon: Icons.sports_gymnastics,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'تدريب وظيفي',
-                                  value: _hasFunctionalTraining,
-                                  onChanged: (v) => setState(
-                                    () => _hasFunctionalTraining = v,
-                                  ),
-                                  icon: Icons.sports,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'حصص جماعية',
-                                  value: _hasGroupClasses,
-                                  onChanged: (v) =>
-                                      setState(() => _hasGroupClasses = v),
-                                  icon: Icons.groups,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            _sectionCard(
                               title: 'مميزات الجيم',
                               icon: Icons.workspace_premium,
-                              children: [
-                                _buildFeatureSwitch(
-                                  title: 'تدريب شخصي',
-                                  value: _hasPersonalTraining,
-                                  onChanged: (v) =>
-                                      setState(() => _hasPersonalTraining = v),
-                                  icon: Icons.person,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'استشارات تغذية',
-                                  value: _hasNutritionConsultation,
-                                  onChanged: (v) => setState(
-                                    () => _hasNutritionConsultation = v,
-                                  ),
-                                  icon: Icons.restaurant,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'حمام سباحة',
-                                  value: _hasSwimmingPool,
-                                  onChanged: (v) =>
-                                      setState(() => _hasSwimmingPool = v),
-                                  icon: Icons.pool,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'ساونا',
-                                  value: _hasSauna,
-                                  onChanged: (v) =>
-                                      setState(() => _hasSauna = v),
-                                  icon: Icons.hot_tub,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'غرفة بخار',
-                                  value: _hasSteamRoom,
-                                  onChanged: (v) =>
-                                      setState(() => _hasSteamRoom = v),
-                                  icon: Icons.cloud,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'حصص يوجا',
-                                  value: _hasYogaClasses,
-                                  onChanged: (v) =>
-                                      setState(() => _hasYogaClasses = v),
-                                  icon: Icons.self_improvement,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'كروس فيت',
-                                  value: _hasCrossFit,
-                                  onChanged: (v) =>
-                                      setState(() => _hasCrossFit = v),
-                                  icon: Icons.sports_mma,
-                                ),
-                                _buildFeatureSwitch(
-                                  title: 'فنون قتالية',
-                                  value: _hasMartialArts,
-                                  onChanged: (v) =>
-                                      setState(() => _hasMartialArts = v),
-                                  icon: Icons.sports_kabaddi,
-                                ),
-                              ],
+                              children: _buildDynamicTextFields(
+                                controllers: _featureControllers,
+                                label: 'الميزة',
+                                icon: Icons.star,
+                                onAdd: () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _featureControllers.add(TextEditingController());
+                                    });
+                                  }
+                                },
+                                onRemove: (index) {
+                                  if (mounted && _featureControllers.length > 1) {
+                                    setState(() {
+                                      _featureControllers[index].dispose();
+                                      _featureControllers.removeAt(index);
+                                    });
+                                  }
+                                },
+                              ),
                             ),
                             const SizedBox(height: 30),
                             Container(
@@ -1412,5 +1552,66 @@ class _EditGymScreenState extends State<EditGymScreen> {
               ),
       ),
     );
+  }
+
+  List<Widget> _buildDynamicPhoneFields() {
+    List<Widget> widgets = [];
+
+    for (int i = 0; i < _phoneControllers.length; i++) {
+      widgets.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: i < _phoneControllers.length - 1 ? 12 : 0),
+          child: TextFormField(
+            controller: _phoneControllers[i],
+            keyboardType: TextInputType.phone,
+            decoration: _inputDecoration(
+              label: 'رقم الهاتف ${i + 1}',
+              icon: Icons.phone_rounded,
+            ).copyWith(
+              suffixIcon: _phoneControllers.length > 1
+                  ? IconButton(
+                      icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      onPressed: () {
+                        if (mounted && _phoneControllers.length > 1) {
+                          setState(() {
+                            _phoneControllers[i].dispose();
+                            _phoneControllers.removeAt(i);
+                          });
+                        }
+                      },
+                    )
+                  : null,
+            ),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+          ),
+        ),
+      );
+    }
+
+    // Add button
+    widgets.add(
+      Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: OutlinedButton.icon(
+          onPressed: () {
+            if (mounted) {
+              setState(() {
+                _phoneControllers.add(TextEditingController());
+              });
+            }
+          },
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('إضافة رقم آخر'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: _primaryColor,
+            side: const BorderSide(color: _primaryColor),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          ),
+        ),
+      ),
+    );
+
+    return widgets;
   }
 }

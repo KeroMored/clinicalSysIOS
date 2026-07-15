@@ -16,7 +16,7 @@ class SendAdminNotificationScreen extends StatefulWidget {
 class _SendAdminNotificationScreenState
     extends State<SendAdminNotificationScreen> {
   static const String _playStoreUrl =
-      'https://play.google.com/store/apps/details?id=com.mored.mallawycare&pcampaignid=web_share';
+      'https://play.google.com/store/apps/details?id=com.mored.MallawyHealthCare&pcampaignid=web_share';
 
   final _formKey = GlobalKey<FormState>();
   final _messageController = TextEditingController();

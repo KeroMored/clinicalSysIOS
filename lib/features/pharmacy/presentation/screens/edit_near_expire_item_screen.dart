@@ -3,13 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../data/models/near_expire_item_model.dart';
+import '../../data/models/pharmacy_model.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 class EditNearExpireItemScreen extends StatefulWidget {
-  final NearExpireItemModel item;
+  final PharmacyModel pharmacy;
+  final String userId;
+  final String itemId;
+  final Map<String, dynamic> itemData;
 
-  const EditNearExpireItemScreen({super.key, required this.item});
+  const EditNearExpireItemScreen({
+    super.key,
+    required this.pharmacy,
+    required this.userId,
+    required this.itemId,
+    required this.itemData,
+  });
 
   @override
   State<EditNearExpireItemScreen> createState() =>
@@ -17,6 +26,9 @@ class EditNearExpireItemScreen extends StatefulWidget {
 }
 
 class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
+  static const Color _primary = Color(0xFF0B8293);
+  static const Color _bg = Color(0xFFF4F6F8);
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _medicineNameController;
   late final TextEditingController _descriptionController;
@@ -25,7 +37,7 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
   late final TextEditingController _customTypeController;
 
   File? _selectedImage;
-  String? _currentImageUrl;
+  String? _existingImageUrl;
   bool _isLoading = false;
   int? _selectedYear;
   int? _selectedMonth;
@@ -47,29 +59,32 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // Pre-fill data
     _medicineNameController = TextEditingController(
-      text: widget.item.medicineName,
+      text: widget.itemData['medicineName'] as String? ?? '',
     );
     _descriptionController = TextEditingController(
-      text: widget.item.medicineDescription ?? '',
+      text: widget.itemData['description'] as String? ?? '',
     );
     _quantityController = TextEditingController(
-      text: widget.item.quantity.toString(),
+      text: (widget.itemData['quantity'] as int? ?? 0).toString(),
     );
     _totalPriceController = TextEditingController(
-      text: widget.item.totalPrice?.toString() ?? '',
+      text: (widget.itemData['totalPrice'] as num? ?? 0).toString(),
     );
     _customTypeController = TextEditingController();
-
-    _currentImageUrl = widget.item.imageUrl;
-    _selectedYear = widget.item.expiryDate.year;
-    _selectedMonth = widget.item.expiryDate.month;
-
-    if (_medicineTypes.contains(widget.item.medicineType)) {
-      _selectedType = widget.item.medicineType;
-    } else {
+    
+    _existingImageUrl = widget.itemData['imageUrl'] as String?;
+    _selectedType = widget.itemData['medicineType'] as String?;
+    _selectedYear = widget.itemData['expiryYear'] as int?;
+    _selectedMonth = widget.itemData['expiryMonth'] as int?;
+    
+    // Check if custom type
+    if (_selectedType != null && !_medicineTypes.contains(_selectedType)) {
       _isCustomType = true;
-      _customTypeController.text = widget.item.medicineType;
+      _customTypeController.text = _selectedType!;
+      _selectedType = 'أخرى';
     }
   }
 
@@ -81,6 +96,34 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
     _totalPriceController.dispose();
     _customTypeController.dispose();
     super.dispose();
+  }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    required IconData icon,
+    String? suffixText,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(fontSize: 13),
+      prefixIcon: Icon(icon, color: _primary, size: 20),
+      suffixText: suffixText,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: _primary, width: 1.6),
+      ),
+    );
   }
 
   Future<void> _pickImage() async {
@@ -100,7 +143,7 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
   }
 
   Future<String?> _uploadImage() async {
-    if (_selectedImage == null) return _currentImageUrl;
+    if (_selectedImage == null) return _existingImageUrl;
 
     try {
       final fileName =
@@ -114,7 +157,7 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
       return await ref.getDownloadURL();
     } catch (e) {
       print('خطأ في رفع الصورة: $e');
-      return _currentImageUrl;
+      return _existingImageUrl;
     }
   }
 
@@ -124,27 +167,17 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
     if (_selectedYear == null || _selectedMonth == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('من فضلك اختر تاريخ الانتهاء (السنة والشهر)'),
+          content: Text('من فضلك اختر تاريخ الانتهاء'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
-    if (_selectedType == null && !_isCustomType) {
+    if (_selectedType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('من فضلك اختر نوع الدواء'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    if (_isCustomType && _customTypeController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('من فضلك أدخل نوع الدواء'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -155,42 +188,39 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
 
     try {
       final imageUrl = await _uploadImage();
-      final expiryDate = DateTime(_selectedYear!, _selectedMonth!, 1);
+      
       final finalType = _isCustomType
           ? _customTypeController.text.trim()
           : _selectedType!;
+
       final totalPrice = _totalPriceController.text.trim().isEmpty
           ? null
           : double.parse(_totalPriceController.text.trim());
 
       await FirebaseFirestore.instance
           .collection('near_expire_items')
-          .doc(widget.item.id)
+          .doc(widget.itemId)
           .update({
-            'medicineName': _medicineNameController.text.trim(),
-            'medicineType': finalType,
-            'medicineDescription': _descriptionController.text.trim().isEmpty
-                ? null
-                : _descriptionController.text.trim(),
-            'expiryDate': Timestamp.fromDate(expiryDate),
-            'quantity': int.parse(_quantityController.text.trim()),
-            'totalPrice': totalPrice,
-            'imageUrl': imageUrl,
-          });
+        'medicineName': _medicineNameController.text.trim(),
+        'medicineType': finalType,
+        'description': _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        'expiryYear': _selectedYear,
+        'expiryMonth': _selectedMonth,
+        'quantity': int.parse(_quantityController.text.trim()),
+        'totalPrice': totalPrice,
+        'imageUrl': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تحديث المنتج بنجاح'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('حدث خطأ: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -202,271 +232,221 @@ class _EditNearExpireItemScreenState extends State<EditNearExpireItemScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          'تعديل المنتج',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: _bg,
+        appBar: AppBar(
+          backgroundColor: _primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          title: const Text(
+            'تعديل منتج قرب ينتهي',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          centerTitle: true,
         ),
-        backgroundColor: const Color(0xFF00BCD4),
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 2,
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'معلومات المنتج',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
-            // صورة المنتج
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[300]!),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Image
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: _selectedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                        )
+                      : _existingImageUrl != null && _existingImageUrl!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                _existingImageUrl!,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_photo_alternate,
+                                    size: 40, color: Colors.grey.shade400),
+                                const SizedBox(height: 8),
+                                Text('اضغط لتغيير الصورة',
+                                    style: TextStyle(color: Colors.grey.shade600)),
+                              ],
+                            ),
                 ),
-                child: _selectedImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(_selectedImage!, fit: BoxFit.cover),
-                      )
-                    : _currentImageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          _currentImageUrl!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_photo_alternate,
-                            size: 60,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'اضغط لتغيير الصورة',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // اسم الدواء
-            TextFormField(
-              controller: _medicineNameController,
-              decoration: const InputDecoration(
-                labelText: 'اسم الدواء *',
-                prefixIcon: Icon(Icons.medical_services),
-                border: OutlineInputBorder(),
+              // Medicine Name
+              TextFormField(
+                controller: _medicineNameController,
+                decoration: _fieldDecoration(
+                  label: 'اسم الدواء',
+                  icon: Icons.medication_rounded,
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'مطلوب' : null,
               ),
-              validator: (v) => v?.trim().isEmpty ?? true ? 'مطلوب' : null,
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-            // نوع الدواء
-            if (!_isCustomType)
+              // Medicine Type
               DropdownButtonFormField<String>(
                 value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'نوع الدواء *',
-                  prefixIcon: Icon(Icons.category),
-                  border: OutlineInputBorder(),
+                decoration: _fieldDecoration(
+                  label: 'نوع الدواء',
+                  icon: Icons.category_rounded,
                 ),
-                items: _medicineTypes.map((type) {
-                  return DropdownMenuItem(value: type, child: Text(type));
-                }).toList(),
+                items: _medicineTypes
+                    .map((type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type),
+                        ))
+                    .toList(),
                 onChanged: (value) {
-                  if (value == 'أخرى') {
-                    setState(() {
-                      _isCustomType = true;
-                      _selectedType = null;
-                    });
-                  } else {
-                    setState(() => _selectedType = value);
-                  }
+                  setState(() {
+                    _selectedType = value;
+                    _isCustomType = value == 'أخرى';
+                  });
                 },
-              )
-            else
-              Column(
-                children: [
-                  TextFormField(
-                    controller: _customTypeController,
-                    decoration: const InputDecoration(
-                      labelText: 'اكتب نوع الدواء *',
-                      prefixIcon: Icon(Icons.edit),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) =>
-                        v?.trim().isEmpty ?? true ? 'مطلوب' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _isCustomType = false;
-                        _customTypeController.clear();
-                      });
-                    },
-                    icon: const Icon(Icons.arrow_back, size: 16),
-                    label: const Text('العودة للقائمة'),
-                  ),
-                ],
+                validator: (v) => v == null ? 'اختر نوع الدواء' : null,
               ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-            // الوصف
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'الوصف (اختياري)',
-                prefixIcon: Icon(Icons.description),
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-
-            // تاريخ الانتهاء
-            const Text(
-              'تاريخ الانتهاء *',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedYear,
-                    decoration: const InputDecoration(
-                      labelText: 'السنة',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.calendar_today),
-                    ),
-                    items: List.generate(3, (index) {
-                      final year = DateTime.now().year + index;
-                      return DropdownMenuItem(
-                        value: year,
-                        child: Text('$year'),
-                      );
-                    }),
-                    onChanged: (value) => setState(() => _selectedYear = value),
+              if (_isCustomType)
+                TextFormField(
+                  controller: _customTypeController,
+                  decoration: _fieldDecoration(
+                    label: 'حدد النوع',
+                    icon: Icons.edit,
                   ),
+                  validator: (v) =>
+                      v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _selectedMonth,
-                    decoration: const InputDecoration(
-                      labelText: 'الشهر',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.event),
+              if (_isCustomType) const SizedBox(height: 14),
+
+              // Description
+              TextFormField(
+                controller: _descriptionController,
+                decoration: _fieldDecoration(
+                  label: 'الوصف (اختياري)',
+                  icon: Icons.description_rounded,
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 14),
+
+              // Quantity
+              TextFormField(
+                controller: _quantityController,
+                decoration: _fieldDecoration(
+                  label: 'الكمية',
+                  icon: Icons.inventory_2_outlined,
+                ),
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'مطلوب';
+                  if (int.tryParse(v) == null) return 'رقم غير صحيح';
+                  if (int.parse(v) <= 0) return 'يجب أن يكون أكبر من صفر';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 14),
+
+              // Total Price
+              TextFormField(
+                controller: _totalPriceController,
+                decoration: _fieldDecoration(
+                  label: 'السعر الإجمالي (اختياري)',
+                  icon: Icons.payments_outlined,
+                  suffixText: 'ج.م',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 14),
+
+              // Expiry Year
+              DropdownButtonFormField<int>(
+                value: _selectedYear,
+                decoration: _fieldDecoration(
+                  label: 'سنة الانتهاء',
+                  icon: Icons.calendar_today,
+                ),
+                items: List.generate(5, (i) {
+                  final year = DateTime.now().year + i;
+                  return DropdownMenuItem(value: year, child: Text('$year'));
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedYear = value),
+                validator: (v) => v == null ? 'اختر السنة' : null,
+              ),
+              const SizedBox(height: 14),
+
+              // Expiry Month
+              DropdownButtonFormField<int>(
+                value: _selectedMonth,
+                decoration: _fieldDecoration(
+                  label: 'شهر الانتهاء',
+                  icon: Icons.calendar_month,
+                ),
+                items: List.generate(12, (i) {
+                  final monthNames = [
+                    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+                    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+                  ];
+                  return DropdownMenuItem(
+                    value: i + 1,
+                    child: Text(monthNames[i]),
+                  );
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedMonth = value),
+                validator: (v) => v == null ? 'اختر الشهر' : null,
+              ),
+              const SizedBox(height: 20),
+
+              // Submit Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _updateItem,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 1, child: Text('يناير')),
-                      DropdownMenuItem(value: 2, child: Text('فبراير')),
-                      DropdownMenuItem(value: 3, child: Text('مارس')),
-                      DropdownMenuItem(value: 4, child: Text('أبريل')),
-                      DropdownMenuItem(value: 5, child: Text('مايو')),
-                      DropdownMenuItem(value: 6, child: Text('يونيو')),
-                      DropdownMenuItem(value: 7, child: Text('يوليو')),
-                      DropdownMenuItem(value: 8, child: Text('أغسطس')),
-                      DropdownMenuItem(value: 9, child: Text('سبتمبر')),
-                      DropdownMenuItem(value: 10, child: Text('أكتوبر')),
-                      DropdownMenuItem(value: 11, child: Text('نوفمبر')),
-                      DropdownMenuItem(value: 12, child: Text('ديسمبر')),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _selectedMonth = value),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // الكمية
-            TextFormField(
-              controller: _quantityController,
-              decoration: const InputDecoration(
-                labelText: 'الكمية المتاحة *',
-                prefixIcon: Icon(Icons.inventory),
-                border: OutlineInputBorder(),
-                suffixText: 'عبوة',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (v) {
-                if (v?.trim().isEmpty ?? true) return 'مطلوب';
-                if (int.tryParse(v!) == null) return 'أدخل رقم صحيح';
-                if (int.parse(v) <= 0) return 'يجب أن يكون أكبر من صفر';
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // السعر الكلي
-            TextFormField(
-              controller: _totalPriceController,
-              decoration: const InputDecoration(
-                labelText: 'السعر الكلي (اختياري)',
-                prefixIcon: Icon(Icons.attach_money),
-                border: OutlineInputBorder(),
-                suffixText: 'جنيه',
-                helperText: 'إذا لم يتم تحديده سيظهر "غير محدد"',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) return null;
-                if (double.tryParse(v) == null) return 'أدخل رقم صحيح';
-                if (double.parse(v) <= 0) return 'يجب أن يكون أكبر من صفر';
-                return null;
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // زر التحديث
-            SizedBox(
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _updateItem,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00BCD4),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: AppLoadingIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: AppLoadingIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'حفظ التعديلات',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      )
-                    : const Text(
-                        'تحديث المنتج',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

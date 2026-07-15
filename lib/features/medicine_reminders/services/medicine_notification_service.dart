@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -26,48 +26,19 @@ class MedicineNotificationService {
   static Future<void> initialize() async {
     if (_localNotificationsReady) return;
 
-    print('🔔 Initializing Medicine Notification Service...');
-
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
-      defaultPresentAlert: true,
-      defaultPresentBadge: true,
-      defaultPresentSound: true,
     );
     const initSettings = InitializationSettings(
       android: androidInit,
       iOS: iosInit,
     );
 
-    final initialized = await _localNotifications.initialize(initSettings);
-    print('📲 Medicine notifications initialized: $initialized');
+    await _localNotifications.initialize(initSettings);
 
-    // Request iOS permissions explicitly
-    if (Platform.isIOS) {
-      print('🍎 Requesting iOS notification permissions...');
-      final iosPlugin = _localNotifications
-          .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin
-          >();
-      
-      final granted = await iosPlugin?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-      
-      print('🍎 iOS permissions granted: $granted');
-      
-      if (granted != true) {
-        print('⚠️ iOS notification permissions not granted!');
-        print('💡 Please enable notifications in Settings → App → Notifications');
-      }
-    }
-
-    // Android channels
     const medicineChannel = AndroidNotificationChannel(
       channelKey,
       channelName,
@@ -96,10 +67,15 @@ class MedicineNotificationService {
     await androidPlugin?.createNotificationChannel(followUpChannel);
     await androidPlugin?.requestNotificationsPermission();
 
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+
     await _ensureExactAlarmPermission();
 
     _localNotificationsReady = true;
-    print('✅ Medicine Notification Service ready!');
   }
 
   static Future<void> _ensureInitialized() async {

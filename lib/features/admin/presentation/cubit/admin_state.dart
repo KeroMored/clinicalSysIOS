@@ -1,4 +1,5 @@
 import '../../data/models/pharmacy_request_model.dart';
+import '../../data/models/medical_supply_request_model.dart';
 import '../../../laboratory/data/models/laboratory_model.dart';
 
 abstract class AdminState {}
@@ -99,4 +100,36 @@ class RehabilitationCenterAdded extends AdminState {
   final String message;
 
   RehabilitationCenterAdded(this.message);
+}
+
+// ============ MEDICAL SUPPLY STATES ============
+
+class MedicalSupplyRequestsLoaded extends AdminState {
+  final List<MedicalSupplyRequestModel> requests;
+
+  MedicalSupplyRequestsLoaded(this.requests);
+}
+
+class MedicalSupplyRequestApproved extends AdminState {
+  final String message;
+
+  MedicalSupplyRequestApproved(this.message);
+}
+
+class MedicalSupplyRequestRejected extends AdminState {
+  final String message;
+
+  MedicalSupplyRequestRejected(this.message);
+}
+
+class MedicalSupplyRequestSetToPending extends AdminState {
+  final String message;
+
+  MedicalSupplyRequestSetToPending(this.message);
+}
+
+class MedicalSupplyAddedSuccessfully extends AdminState {
+  final String message;
+
+  MedicalSupplyAddedSuccessfully(this.message);
 }

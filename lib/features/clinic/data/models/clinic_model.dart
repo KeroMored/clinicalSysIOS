@@ -4,6 +4,7 @@ import 'clinic_department.dart';
 class ClinicModel {
   final String id;
   final String doctorName;
+  final String? clinicType; // "doctor" أو "center" أو null (للعيادات القديمة)
   final ClinicDepartment department;
   final List<String> specialization; // خدمات العيادة كنقاط
   final String about; // نبذة عن الدكتور
@@ -51,6 +52,7 @@ class ClinicModel {
   ClinicModel({
     required this.id,
     required this.doctorName,
+    this.clinicType, // Optional - يمكن أن يكون null للعيادات القديمة
     required this.department,
     required this.specialization,
     required this.about,
@@ -111,6 +113,7 @@ class ClinicModel {
     return ClinicModel(
       id: doc.id,
       doctorName: data['doctorName'] ?? '',
+      clinicType: data['clinicType'], // null للعيادات القديمة
       department: ClinicDepartment.fromString(data['department'] ?? 'other'),
       specialization: _parseSpecialization(data['specialization']),
       about: data['about'] ?? '',
@@ -187,6 +190,7 @@ class ClinicModel {
 
     return {
       'doctorName': doctorName,
+      'clinicType': clinicType, // إضافة نوع العيادة
       'department': department.englishName,
       'specialization': specialization,
       'about': about,

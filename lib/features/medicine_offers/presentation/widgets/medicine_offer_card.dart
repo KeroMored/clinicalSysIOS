@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/medicine_offer_model.dart';
 import '../../../pharmacy/presentation/screens/pharmacy_details_screen.dart';

@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/services/notification_service.dart';
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../data/models/laboratory_model.dart';
-import '../../data/models/lab_booking_model.dart';
 import '../cubit/lab_tests_cubit.dart';
 import 'lab_bookings_management_screen.dart';
 import 'lab_bookings_history_screen.dart';
 import 'edit_laboratory_screen.dart';
 import 'send_lab_notification_screen.dart';
-import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
 
 /// صفحة التحكم الرئيسية لمعمل التحاليل
 class LaboratoryControlPage extends StatefulWidget {
@@ -27,19 +22,29 @@ class LaboratoryControlPage extends StatefulWidget {
 }
 
 class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
+  // Theme colors aligned with clinic control page
   static const Color _primaryColor = Color(0xFF0B8293);
   static const Color _secondaryColor = Color(0xFF179AAC);
-  static const Color _surfaceColor = Color(0xFFF3F8FB);
+  static const Color _backgroundColor = Color(0xFFF3F8FB);
+  static const Color _cardColor = Colors.white;
   static const Color _textPrimary = Color(0xFF0F172A);
+  static const Color _textSecondary = Color(0xFF64748B);
+  static const LinearGradient _primaryGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [_primaryColor, _secondaryColor],
+  );
 
   late LabTestsCubit _cubit;
   final NotificationService _notificationService = NotificationService();
+  int _offersCount = 0;
 
   @override
   void initState() {
     super.initState();
     _cubit = LabTestsCubit();
     _subscribeToNotifications();
+    _loadOffersCount();
   }
 
   Future<void> _subscribeToNotifications() async {
@@ -52,6 +57,24 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
     }
   }
 
+  Future<void> _loadOffersCount() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('laboratory_offers')
+          .where('laboratoryId', isEqualTo: widget.laboratory.id)
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _offersCount = snapshot.docs.length;
+        });
+      }
+    } catch (e) {
+      print('Error loading offers count: $e');
+    }
+  }
+
   @override
   void dispose() {
     _cubit.close();
@@ -60,85 +83,279 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _cubit,
-      child: Scaffold(
-        backgroundColor: _surfaceColor,
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 120,
-              pinned: true,
-              elevation: 0,
-              title: Text(
-                widget.laboratory.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
-              centerTitle: true,
-              backgroundColor: _primaryColor,
-              iconTheme: const IconThemeData(color: Colors.white),
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [_primaryColor, _secondaryColor],
-                      begin: Alignment.topRight,
-                      end: Alignment.bottomLeft,
-                    ),
-                  ),
-                  child: const Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: 14),
-                      child: Text(
-                        'إدارة المعمل اليومية',
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: BlocProvider.value(
+        value: _cubit,
+        child: Scaffold(
+          backgroundColor: _backgroundColor,
+          body: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Premium App Bar
+              _buildAppBar(),
+
+              // Content
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeaderSummaryCard(),
+                      const SizedBox(height: 20),
+                      
+                      // Statistics
+                      const Text(
+                        'الإحصائيات',
                         style: TextStyle(
-                          color: Color(0xFFE2F7FB),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: _textPrimary,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.remove_red_eye_rounded,
+                              title: 'المشاهدات',
+                              value: '0',
+                              color: const Color(0xFF3B82F6),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.star_rounded,
+                              title: 'التقييم',
+                              value: widget.laboratory.averageRating.toStringAsFixed(1),
+                              color: const Color(0xFFFBBF24),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.local_offer_rounded,
+                              title: 'العروض',
+                              value: '$_offersCount',
+                              color: _primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.favorite_rounded,
+                              title: 'الإعجابات',
+                              value: '${widget.laboratory.totalLikes}',
+                              color: const Color(0xFFEF4444),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+                      
+                      const Text(
+                        'إجراءات الإدارة',
+                        style: TextStyle(
+                          color: _textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Action Buttons
+                      _buildActionButtons(),
+                      const SizedBox(height: 24),
+                    ],
                   ),
                 ),
               ),
-            ),
-
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildQuickActionsGrid(),
-                  const SizedBox(height: 16),
-
-                  _buildRecentActivitySection(),
-                ]),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// شبكة الإجراءات (بدون عنوان)
-  Widget _buildQuickActionsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.35,
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      floating: false,
+      pinned: true,
+      toolbarHeight: 62,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.white,
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: _textPrimary,
+          size: 18,
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      centerTitle: true,
+      title: const Text(
+        'إدارة المعمل',
+        style: TextStyle(
+          color: _textPrimary,
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.refresh_rounded,
+            color: _textPrimary,
+            size: 20,
+          ),
+          onPressed: () {
+            setState(() {
+              _loadOffersCount();
+            });
+          },
+          tooltip: 'تحديث',
+        ),
+      ],
+      bottom: const PreferredSize(
+        preferredSize: Size.fromHeight(1),
+        child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+      ),
+    );
+  }
+
+  Widget _buildHeaderSummaryCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: _primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryColor.withOpacity(0.24),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.science_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.laboratory.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'إدارة الحجوزات والإشعارات من مكان واحد',
+                  style: TextStyle(
+                    color: Color(0xFFE7F6FA),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Column(
       children: [
-        _buildActionCard(
-          icon: Icons.calendar_today,
+        // Manage Bookings Button
+        _buildControlButton(
+          icon: Icons.calendar_month_rounded,
           title: 'إدارة الحجوزات',
-          gradient: AppTheme.laboratoryGradient,
+          subtitle: 'عرض وتأكيد الحجوزات الأونلاين',
           onTap: () {
             Navigator.push(
               context,
@@ -149,27 +366,30 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
             );
           },
         ),
-        _buildActionCard(
-          icon: Icons.archive,
+        const SizedBox(height: 16),
+
+        // Bookings History
+        _buildControlButton(
+          icon: Icons.history_rounded,
           title: 'الأرشيف',
-          gradient: AppTheme.primaryGradient,
+          subtitle: 'عرض سجل الحجوزات السابقة حسب التاريخ',
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => LabBookingsHistoryScreen(
-                  laboratoryId: widget.laboratory.id,
-                ),
+                builder: (context) =>
+                    LabBookingsHistoryScreen(laboratoryId: widget.laboratory.id),
               ),
             );
           },
         ),
-        _buildActionCard(
+        const SizedBox(height: 16),
+
+        // Send Notifications Button
+        _buildControlButton(
           icon: Icons.notifications_active,
           title: 'إرسال إشعارات',
-          gradient: LinearGradient(
-            colors: [Colors.purple[600]!, Colors.purple[400]!],
-          ),
+          subtitle: 'إرسال إشعار لجميع مستخدمي التطبيق',
           onTap: () {
             Navigator.push(
               context,
@@ -180,12 +400,13 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
             );
           },
         ),
-        _buildActionCard(
-          icon: Icons.edit,
+        const SizedBox(height: 16),
+
+        // Edit Laboratory Button
+        _buildControlButton(
+          icon: Icons.edit_rounded,
           title: 'تعديل بيانات المعمل',
-          gradient: LinearGradient(
-            colors: [Colors.orange[600]!, Colors.orange[400]!],
-          ),
+          subtitle: 'تحديث المعلومات والمواعيد والإعدادات',
           onTap: () {
             Navigator.push(
               context,
@@ -193,237 +414,97 @@ class _LaboratoryControlPageState extends State<LaboratoryControlPage> {
                 builder: (context) =>
                     EditLaboratoryScreen(laboratory: widget.laboratory),
               ),
-            );
+            ).then((_) {
+              // Refresh data after edit
+              setState(() {
+                _loadOffersCount();
+              });
+            });
           },
         ),
       ],
     );
   }
 
-  Widget _buildActionCard({
+  Widget _buildControlButton({
     required IconData icon,
     required String title,
-    required LinearGradient gradient,
+    required String subtitle,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withValues(alpha: 0.24),
-              blurRadius: 14,
-              offset: const Offset(0, 8),
+    return Container(
+      height: 74,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: _cardColor,
+        border: Border.all(color: const Color(0xFFDCE6EF), width: 1.1),
+        boxShadow: [
+          BoxShadow(
+            color: _primaryColor.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _primaryColor.withOpacity(0.15),
+                        _secondaryColor.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: _primaryColor, size: 21),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: _textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: _textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: _textSecondary,
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-
-  /// قسم النشاطات الأخيرة
-  Widget _buildRecentActivitySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'النشاطات الأخيرة',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: _textPrimary,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LabBookingsManagementScreen(
-                      laboratory: widget.laboratory,
-                    ),
-                  ),
-                );
-              },
-              child: const Text(
-                'عرض الكل',
-                style: TextStyle(
-                  color: _primaryColor,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('lab_bookings')
-              .where('laboratoryId', isEqualTo: widget.laboratory.id)
-              .where('archivedDate', isNull: true)
-              .orderBy('createdAt', descending: true)
-              .limit(5)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const ModernCard(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(40.0),
-                    child: AppLoadingIndicator(),
-                  ),
-                ),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return ModernCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text('حدث خطأ: ${snapshot.error}'),
-                ),
-              );
-            }
-
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return ModernCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.event_busy,
-                          size: 48,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'لا توجد حجوزات حديثة',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            final bookings = snapshot.data!.docs
-                .map((doc) => LabBookingModel.fromFirestore(doc))
-                .toList();
-
-            return ModernCard(
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: bookings.length,
-                separatorBuilder: (_, __) => const Divider(),
-                itemBuilder: (context, index) {
-                  final booking = bookings[index];
-                  final isPending = booking.status == LabBookingStatus.pending;
-                  final isConfirmed =
-                      booking.status == LabBookingStatus.confirmed;
-
-                  Color statusColor = isPending
-                      ? Colors.orange
-                      : isConfirmed
-                      ? Colors.green
-                      : Colors.grey;
-
-                  IconData statusIcon = isPending
-                      ? Icons.pending_rounded
-                      : isConfirmed
-                      ? Icons.check_circle_rounded
-                      : Icons.task_alt_rounded;
-
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: statusColor.withOpacity(0.1),
-                      child: Icon(statusIcon, color: statusColor),
-                    ),
-                    title: Text(
-                      booking.patientName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: _textPrimary,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (booking.testTypes.isNotEmpty)
-                          Text(
-                            booking.testTypes.join('، '),
-                            style: const TextStyle(fontSize: 12),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        Text(
-                          DateFormat(
-                            'd MMM yyyy - h:mm a',
-                            'ar',
-                          ).format(booking.createdAt),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '#${booking.bookingNumber}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 }

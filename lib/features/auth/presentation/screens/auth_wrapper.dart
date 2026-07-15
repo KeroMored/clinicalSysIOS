@@ -18,7 +18,7 @@ class AuthWrapper extends StatelessWidget {
           // User is logged in - go to home
           return const HomeScreen();
         } else {
-          // User not logged in - show home (user can tap login button)
+          // User not logged in - show home (with login button)
           return const HomeScreen();
         }
       },

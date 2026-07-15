@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../data/models/clinic_model.dart';
 import '../../data/models/booking_model.dart';
 import '../../data/services/booking_block_service.dart';
@@ -795,7 +796,7 @@ class _BookingCard extends StatelessWidget {
     final Color statusColor = isCancelled
         ? const Color(0xFFDC2626)
         : isCompleted
-        ? const Color(0xFFE5E7EB)
+        ? const Color(0xFF059669)
         : isNoShow
         ? const Color(0xFFDC2626)
         : isPending
@@ -820,16 +821,16 @@ class _BookingCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        color: isCompleted ? const Color(0xFFE5E7EB) : Colors.white,
+        color: isCompleted ? const Color(0xFFDDF7EC) : Colors.white,
         border: Border.all(
           color: isCompleted
-              ? const Color(0xFFCBD5E1)
+              ? const Color(0xFF059669).withValues(alpha: 0.3)
               : const Color(0xFFDDE7EF),
         ),
         boxShadow: [
           BoxShadow(
             color: isCompleted
-                ? const Color(0xFF475569).withValues(alpha: 0.22)
+                ? const Color(0xFF059669).withValues(alpha: 0.15)
                 : const Color(0xFF0F172A).withValues(alpha: 0.05),
             blurRadius: isCompleted ? 10 : 12,
             offset: const Offset(0, 6),
@@ -849,13 +850,13 @@ class _BookingCard extends StatelessWidget {
                 color: isNoShow
                     ? const Color(0xFFFFF5F5)
                     : isCompleted
-                    ? const Color(0xFFE5E7EB)
+                    ? const Color(0xFFDDF7EC)
                     : Colors.white,
                 border: Border.all(
                   color: isNoShow
                       ? const Color(0xFFDC2626).withValues(alpha: 0.3)
                       : isCompleted
-                      ? const Color(0xFFCBD5E1)
+                      ? const Color(0xFF059669).withValues(alpha: 0.3)
                       : const Color(0xFFDDE7EF),
                 ),
               ),
@@ -1077,15 +1078,7 @@ class _BookingCard extends StatelessWidget {
               ),
             ),
           ),
-          if (isCompleted)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: CustomPaint(painter: _CompletedCardStrikePainter()),
-                ),
-              ),
-            ),
+
         ],
       ),
     );
@@ -1562,6 +1555,32 @@ class _BookingCard extends StatelessWidget {
           .doc(booking.id!)
           .update({'status': 'confirmed', 'confirmedAt': Timestamp.now()});
 
+      // ✅ إرسال إشعار للمريض بتأكيد الحجز
+      try {
+        await FirebaseFirestore.instance
+            .collection('notifications_queue')
+            .add({
+          // 🔗 Deep Link Data
+          'type': 'booking_confirmed',
+          'bookingId': booking.id,
+          'clinicId': booking.clinicId,
+          'patientId': booking.userId ?? '',
+          
+          // 📱 Notification Content
+          'title': '✅ تم تأكيد حجزك',
+          'body': 'تم تأكيد حجزك لدى ${booking.doctorName}',
+          
+          // 🎯 Delivery Settings
+          'topic': 'patient_${booking.userId}',
+          'sent': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        
+        debugPrint('✅ إشعار تأكيد الحجز تم إضافته للـ queue');
+      } catch (notifError) {
+        debugPrint('⚠️ خطأ في إرسال إشعار التأكيد: $notifError');
+      }
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1779,6 +1798,32 @@ class _BookingCard extends StatelessWidget {
           .collection('bookings')
           .doc(booking.id!)
           .update({'status': 'cancelled', 'cancelledAt': Timestamp.now()});
+
+      // ✅ إرسال إشعار للمريض بإلغاء الحجز
+      try {
+        await FirebaseFirestore.instance
+            .collection('notifications_queue')
+            .add({
+          // 🔗 Deep Link Data
+          'type': 'booking_cancelled',
+          'bookingId': booking.id,
+          'clinicId': booking.clinicId,
+          'patientId': booking.userId ?? '',
+          
+          // 📱 Notification Content
+          'title': '❌ تم إلغاء حجزك',
+          'body': 'تم إلغاء حجزك لدى ${booking.doctorName}',
+          
+          // 🎯 Delivery Settings
+          'topic': 'patient_${booking.userId}',
+          'sent': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        
+        debugPrint('✅ إشعار إلغاء الحجز تم إضافته للـ queue');
+      } catch (notifError) {
+        debugPrint('⚠️ خطأ في إرسال إشعار الإلغاء: $notifError');
+      }
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2488,7 +2533,7 @@ class _DayBookingsScreenState extends State<_DayBookingsScreen> {
                                           const SizedBox(width: 4),
                                           Expanded(
                                             child: Text(
-                                              'عيادة د. ${booking.doctorName}',
+                                              'عيادة ${booking.displayName}',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 color: Colors.grey[600],

@@ -18,7 +18,8 @@ class LaboratoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+
+      margin: const EdgeInsets.only(bottom: 10,left: 12,right: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),

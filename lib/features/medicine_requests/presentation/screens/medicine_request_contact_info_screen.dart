@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+
 import '../../../auth/presentation/cubit/auth_cubit.dart';
 import '../../../../features/medicine_reminders/services/medicine_notification_service.dart';
 import 'package:clinicalsystem/core/widgets/app_loading_indicator.dart';
@@ -131,7 +132,7 @@ class _MedicineRequestContactInfoScreenState
           .add(requestData);
 
       // جدولة إشعار تذكير بعد 24 ساعة (مرة واحدة فقط)
-     // MedicineNotificationService.scheduleMedicineRequestFollowUp(docRef.id);
+      MedicineNotificationService.scheduleMedicineRequestFollowUp(docRef.id);
 
       // Save contact info to user profile
       final name = _nameController.text.trim();

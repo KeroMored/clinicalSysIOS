@@ -69,6 +69,41 @@ class _AddOfferScreenState extends State<AddOfferScreen> {
     });
   }
 
+  Future<void> _sendOfferNotification(String offerId) async {
+    try {
+      // ✅ حفظ في notifications_queue مع بيانات Deep Linking كاملة
+      await FirebaseFirestore.instance
+          .collection('notifications_queue')
+          .add({
+        // 🔗 Deep Link Data - مهم جداً!
+        'type': 'new_pharmacy_offer', // ✅ unified type name
+        'offerId': offerId,
+        'pharmacyId': widget.pharmacy.id,
+        'pharmacyName': widget.pharmacy.name,
+        
+        // 📱 Notification Content
+        'title': '💊 عرض جديد من ${widget.pharmacy.name}',
+        'body': _titleController.text.trim().isNotEmpty
+            ? _titleController.text.trim()
+            : 'عرض جديد متاح الآن',
+        
+        // 🎯 Delivery Settings
+        'topic': 'all_users',
+        'sent': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('✅ تم إضافة الإشعار إلى notifications_queue');
+      debugPrint('🔗 Deep Link Type: new_pharmacy_offer');
+      debugPrint('📦 Offer ID: $offerId, Pharmacy ID: ${widget.pharmacy.id}');
+      
+      // ملاحظة: Cloud Function sendNotificationFromQueue سترسل الإشعار تلقائياً
+      // عند الضغط على الإشعار، سيفتح صفحة تفاصيل العرض مباشرة ✅
+    } catch (e) {
+      debugPrint('❌ خطأ في إرسال الإشعار: $e');
+    }
+  }
+
   Future<void> _saveOffer() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -119,7 +154,12 @@ class _AddOfferScreenState extends State<AddOfferScreen> {
         'images': imageUrls,
         'createdAt': FieldValue.serverTimestamp(),
         'isActive': true,
+        'viewsCount': 0,
+        'category': 'صيدليات',
       });
+
+      // ✅ إرسال إشعار لجميع المستخدمين
+      await _sendOfferNotification(offerId);
 
       if (mounted) {
         Navigator.pop(context, true); // Return true to indicate success

@@ -69,75 +69,20 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  // Sign in with Google - Enhanced Error Handling
+  // Sign in with Google
   Future<void> signInWithGoogle() async {
     try {
-      print('🔐 [AuthCubit] Starting Google Sign-In flow...');
       emit(AuthLoading());
 
-      final user = await _authRepository.signInWithGoogle().timeout(
-        const Duration(seconds: 60),
-        onTimeout: () {
-          print('❌ [AuthCubit] Google Sign-In timeout');
-          throw TimeoutException('انتهت مهلة تسجيل الدخول');
-        },
-      );
+      final user = await _authRepository.signInWithGoogle();
 
       if (user != null) {
-        print('🔐 [AuthCubit] Google Sign-In success! Emitting Authenticated state');
         emit(Authenticated(user));
       } else {
-        print('🔐 [AuthCubit] Google Sign-In returned null (user cancelled)');
         emit(Unauthenticated());
       }
-    } on TimeoutException catch (e) {
-      print('❌ [AuthCubit] Google Sign-In timeout: $e');
-      emit(AuthError('انتهت مهلة تسجيل الدخول، يرجى المحاولة مرة أخرى'));
     } catch (e) {
-      print('❌ [AuthCubit] Google Sign-In error: $e');
-      
-      String errorMessage = e.toString();
-      if (errorMessage.startsWith('Exception: ')) {
-        errorMessage = errorMessage.substring(11);
-      }
-      
-      emit(AuthError(errorMessage));
-    }
-  }
-
-  // Sign in with Apple - Enhanced Error Handling
-  Future<void> signInWithApple() async {
-    try {
-      print('🍎 [AuthCubit] Starting Apple Sign-In flow...');
-      emit(AuthLoading());
-
-      final user = await _authRepository.signInWithApple().timeout(
-        const Duration(seconds: 90),
-        onTimeout: () {
-          print('❌ [AuthCubit] Apple Sign-In timeout');
-          throw TimeoutException('انتهت مهلة تسجيل الدخول');
-        },
-      );
-      
-      if (user != null) {
-        print('🍎 [AuthCubit] Apple Sign-In success! Emitting Authenticated state');
-        emit(Authenticated(user));
-      } else {
-        print('🍎 [AuthCubit] Apple Sign-In returned null (user cancelled)');
-        emit(Unauthenticated());
-      }
-    } on TimeoutException catch (e) {
-      print('❌ [AuthCubit] Apple Sign-In timeout: $e');
-      emit(AuthError('انتهت مهلة تسجيل الدخول، يرجى المحاولة مرة أخرى'));
-    } catch (e) {
-      print('❌ [AuthCubit] Apple Sign-In error: $e');
-      
-      String errorMessage = e.toString();
-      if (errorMessage.startsWith('Exception: ')) {
-        errorMessage = errorMessage.substring(11);
-      }
-      
-      emit(AuthError(errorMessage));
+      emit(AuthError('فشل تسجيل الدخول: ${e.toString()}'));
     }
   }
 
@@ -148,39 +93,6 @@ class AuthCubit extends Cubit<AuthState> {
       emit(Unauthenticated());
     } catch (e) {
       emit(AuthError('فشل تسجيل الخروج: ${e.toString()}'));
-    }
-  }
-
-  // Delete account permanently
-  Future<void> deleteAccount() async {
-    try {
-      print('🗑️ [AuthCubit] Starting account deletion...');
-      emit(AuthLoading());
-
-      await _authRepository.deleteAccount().timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw TimeoutException('انتهت مهلة حذف الحساب');
-        },
-      );
-
-      print('✅ [AuthCubit] Account deleted successfully');
-      emit(Unauthenticated());
-    } on TimeoutException catch (e) {
-      print('❌ [AuthCubit] Delete account timeout: $e');
-      emit(AuthError('انتهت مهلة حذف الحساب، يرجى المحاولة مرة أخرى'));
-    } catch (e) {
-      print('❌ [AuthCubit] Delete account error: $e');
-      
-      String errorMessage = e.toString();
-      if (errorMessage.startsWith('Exception: ')) {
-        errorMessage = errorMessage.substring(11);
-      }
-      
-      emit(AuthError(errorMessage));
-      
-      // Re-check auth state after error
-      await checkAuthState();
     }
   }
 

@@ -381,7 +381,7 @@ class _SendClinicNotificationScreenState
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'د. ${widget.clinic.doctorName}',
+                                          widget.clinic.doctorName,
                                           style: const TextStyle(
                                             color: _textPrimary,
                                             fontSize: 14,
