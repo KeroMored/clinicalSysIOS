@@ -1,96 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-	<dict>
-		<key>CFBundleDevelopmentRegion</key>
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ar</string>
+	<key>CFBundleDisplayName</key>
+	<string>ملوي كيور | Mallawi Cure</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
 		<string>ar</string>
-		<key>CFBundleDisplayName</key>
-		<string>ملوي كيور | Mallawi Cure</string>
-		<key>CFBundleExecutable</key>
-		<string>$(EXECUTABLE_NAME)</string>
-		<key>CFBundleIdentifier</key>
-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-		<key>CFBundleInfoDictionaryVersion</key>
-		<string>6.0</string>
-		<key>CFBundleName</key>
-		<string>mallawicure</string>
-		<key>CFBundlePackageType</key>
-		<string>APPL</string>
-		<key>CFBundleShortVersionString</key>
-		<string>$(FLUTTER_BUILD_NAME)</string>
-		<key>CFBundleSignature</key>
-		<string>????</string>
-		<key>CFBundleURLTypes</key>
-		<array>
-			<dict>
-				<key>CFBundleTypeRole</key>
-				<string>Editor</string>
-				<key>CFBundleURLSchemes</key>
-				<array>
-					<string>com.googleusercontent.apps.718616577077-kurm59ra3ee6us2501r5j6bebtu2aope</string>
-				</array>
-			</dict>
-		</array>
-		<key>CFBundleVersion</key>
-		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<key>LSRequiresIPhoneOS</key>
-		<true/>
-		<key>UILaunchStoryboardName</key>
-		<string>LaunchScreen</string>
-		<key>UIMainStoryboardFile</key>
-		<string>Main</string>
-		<key>UISupportedInterfaceOrientations</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true/>
-		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true/>
-		<key>NSCameraUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى الكاميرا لالتقاط صور الصيدلية</string>
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى معرض الصور لاختيار صور الصيدلية</string>
-		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى معرض الصور لحفظ الصور</string>
-		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى موقعك لتحديد موقع الصيدلية تلقائياً</string>
-		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى موقعك لتحديد موقع الصيدلية تلقائياً</string>
-		<key>UIStatusBarHidden</key>
-		<false/>
-		<key>CFBundleLocalizations</key>
-		<array>
-			<string>ar</string>
-			<string>en</string>
-		</array>
-		<key>NSContactsUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى جهات الاتصال لتسهيل التواصل مع الأطباء والصيدليات</string>
-		<key>NSMicrophoneUsageDescription</key>
-		<string>نحتاج إلى الميكروفون للمكالمات الصوتية</string>
-		<key>NSMotionUsageDescription</key>
-		<string>نحتاج للوصول إلى بيانات الحركة لحساب خطواتك اليومية</string>
-		<key>NSCalendarsUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى التقويم لجدولة المواعيد</string>
-		<key>NSRemindersUsageDescription</key>
-		<string>نحتاج إلى الوصول إلى التذكيرات لإدارة المواعيد</string>
-		<key>ITSAppUsesNonExemptEncryption</key>
-		<false/>
-		<key>UIBackgroundModes</key>
-		<array>
-			<string>fetch</string>
-			<string>remote-notification</string>
-		</array>
-		<key>FirebaseAppDelegateProxyEnabled</key>
-		<false/>
-	</dict>
+		<string>en</string>
+	</array>
+	<key>CFBundleName</key>
+	<string>mallawicure</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.718616577077-kurm59ra3ee6us2501r5j6bebtu2aope</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى التقويم لجدولة المواعيد</string>
+	<key>NSCameraUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى الكاميرا لالتقاط صور الصيدلية</string>
+	<key>NSContactsUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى جهات الاتصال لتسهيل التواصل مع الأطباء والصيدليات</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى موقعك لتحديد موقع الصيدلية تلقائياً</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى موقعك لتحديد موقع الصيدلية تلقائياً</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>نحتاج إلى الميكروفون للمكالمات الصوتية</string>
+	<key>NSMotionUsageDescription</key>
+	<string>نحتاج للوصول إلى بيانات الحركة لحساب خطواتك اليومية</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى معرض الصور لحفظ الصور</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى معرض الصور لاختيار صور الصيدلية</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>نحتاج إلى الوصول إلى التذكيرات لإدارة المواعيد</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIStatusBarHidden</key>
+	<false/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
 </plist>

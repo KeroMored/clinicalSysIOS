@@ -19,6 +19,8 @@ class NotificationService {
 
   /// Initialize notifications and request permissions
   Future<void> initialize() async {
+    print('🔧 [DEBUG] Starting notification initialization...');
+    
     // Initialize local notifications
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
@@ -37,11 +39,13 @@ class NotificationService {
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
+    print('✅ [DEBUG] Local notifications initialized');
 
     // Create notification channels
     await _createNotificationChannels();
 
     // Request permission for iOS and Android 13+
+    print('🔧 [DEBUG] Requesting notification permissions...');
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -49,15 +53,35 @@ class NotificationService {
       provisional: false,
     );
 
+    print('🔧 [DEBUG] Permission status: ${settings.authorizationStatus}');
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       print('✅ User granted notification permission');
+    } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      print('❌ User DENIED notification permission');
+    } else if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+      print('⚠️ User has NOT responded to permission request');
     } else {
-      print('❌ User declined or has not accepted permission');
+      print('❌ User declined or has not accepted permission: ${settings.authorizationStatus}');
     }
 
     // Get FCM token
+    print('🔧 [DEBUG] Getting FCM Token...');
     String? token = await _messaging.getToken();
-    print('📱 FCM Token: $token');
+    if (token != null && token.isNotEmpty) {
+      print('✅ [DEBUG] FCM Token obtained successfully!');
+      print('📱 FCM Token: $token');
+      print('📱 Token length: ${token.length} characters');
+    } else {
+      print('❌ [DEBUG] FAILED to get FCM Token!');
+      print('❌ This means APNs is NOT working properly on iOS');
+      print('❌ Check:');
+      print('   1. Push Notifications capability in Xcode');
+      print('   2. Provisioning profile supports Push');
+      print('   3. APNs key uploaded to Firebase');
+      print('   4. Internet connection');
+    }
+    
+    print('🔧 [DEBUG] Notification initialization complete');
   }
 
   /// Create notification channels for Android
@@ -188,11 +212,13 @@ class NotificationService {
   /// Subscribe ALL users to the general topic for offers and announcements
   Future<void> subscribeToAllUsersTopic(String userId) async {
     try {
+      print('🔧 [DEBUG] Subscribing user $userId to all_users topic...');
       await _messaging.subscribeToTopic(allUsersTopic);
       print('✅ Subscribed to all_users topic');
 
       // Get FCM token
       String? token = await _messaging.getToken();
+      print('📱 [DEBUG] FCM Token for all_users subscription: $token');
 
       // Update user document with FCM token and topic subscription
       await _firestore.collection('users').doc(userId).update({
@@ -200,20 +226,29 @@ class NotificationService {
         'subscribedToAllUsers': true,
         'allUsersTopicSubscribedAt': FieldValue.serverTimestamp(),
       });
+      print('✅ [DEBUG] User document updated with FCM token and subscription');
     } catch (e) {
       print('❌ Error subscribing to all_users topic: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
   /// Subscribe pharmacy owner to the topic
   Future<void> subscribeToPharmacyTopic(String userId) async {
     try {
+      print('🔧 [DEBUG] Subscribing pharmacy $userId to topic...');
       await _messaging.subscribeToTopic(pharmacyTopic);
       print('✅ Subscribed to pharmacy topic: $pharmacyTopic');
 
       // Get and print FCM token for debugging
       String? token = await _messaging.getToken();
       print('📱 FCM Token: $token');
+      
+      if (token == null || token.isEmpty) {
+        print('❌ [CRITICAL] FCM Token is NULL! APNs not working!');
+      } else {
+        print('✅ [DEBUG] FCM Token is valid (${token.length} chars)');
+      }
 
       // Optional: Save subscription info in Firestore
       await _firestore.collection('pharmacy_subscriptions').doc(userId).set({
@@ -222,8 +257,10 @@ class NotificationService {
         'isActive': true,
         'fcmToken': token,
       });
+      print('✅ [DEBUG] Pharmacy subscription saved to Firestore');
     } catch (e) {
       print('❌ Error subscribing to topic: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -247,12 +284,20 @@ class NotificationService {
   Future<void> subscribeToClinicTopic(String clinicId, String userId) async {
     try {
       final clinicTopic = 'clinic_$clinicId';
+      print('🔧 [DEBUG] Subscribing clinic $clinicId (user: $userId) to topic: $clinicTopic');
+      
       await _messaging.subscribeToTopic(clinicTopic);
       print('✅ Subscribed to clinic topic: $clinicTopic');
 
       // Get FCM token
       String? token = await _messaging.getToken();
       print('📱 FCM Token for clinic: $token');
+      
+      if (token == null || token.isEmpty) {
+        print('❌ [CRITICAL] FCM Token is NULL for clinic! APNs not working!');
+      } else {
+        print('✅ [DEBUG] Clinic FCM Token is valid (${token.length} chars)');
+      }
 
       // Save subscription info and FCM token
       await _firestore.collection('clinic_subscriptions').doc(clinicId).set({
@@ -262,14 +307,17 @@ class NotificationService {
         'fcmToken': token,
         'userId': userId,
       });
+      print('✅ [DEBUG] Clinic subscription saved to Firestore');
 
       // Also update user document with FCM token
       await _firestore.collection('users').doc(userId).update({
         'fcmToken': token,
         'fcmUpdatedAt': FieldValue.serverTimestamp(),
       });
+      print('✅ [DEBUG] User document updated with FCM token');
     } catch (e) {
       print('❌ Error subscribing to clinic topic: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -386,17 +434,31 @@ class NotificationService {
 
   /// Handle foreground notifications
   void handleForegroundNotifications() {
+    print('🔧 [DEBUG] Setting up foreground notification handler...');
+    
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      print('═══════════════════════════════════════════════════════');
       print('📩 Got a message whilst in the foreground!');
       print('📊 Message data: ${message.data}');
+      print('📊 Message ID: ${message.messageId}');
+      print('📊 Sent time: ${message.sentTime}');
 
       if (message.notification != null) {
-        print('📬 Message notification: ${message.notification!.title}');
+        print('📬 Message notification:');
+        print('   Title: ${message.notification!.title}');
+        print('   Body: ${message.notification!.body}');
+        print('   Android channel: ${message.notification!.android?.channelId}');
 
         // Show local notification
         await _showLocalNotification(message);
+        print('✅ Local notification displayed');
+      } else {
+        print('⚠️ Message has NO notification payload (data-only message)');
       }
+      print('═══════════════════════════════════════════════════════');
     });
+    
+    print('✅ [DEBUG] Foreground notification handler set up successfully');
   }
 
   /// Show local notification
